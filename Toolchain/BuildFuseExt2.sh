@@ -18,7 +18,7 @@ mkdir -p "$DIR"/Tarballs
 pushd "$DIR"/Tarballs
 
 if [ ! -d fuse-ext2 ]; then
-    git clone https://github.com/alperakcan/fuse-ext2.git	
+    git clone git@github.com:alperakcan/fuse-ext2.git
 fi
 
 cd fuse-ext2
