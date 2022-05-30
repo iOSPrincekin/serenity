@@ -203,9 +203,9 @@ endfunction()
 function(download_file url path)
     if (NOT EXISTS "${path}")
         get_filename_component(file "${path}" NAME)
-        message(STATUS "Downloading file ${file} from ${url}")
+        message(STATUS "Downloading path ${path}, file ${file} from ${url}")
 
-        file(DOWNLOAD "${url}" "${path}" INACTIVITY_TIMEOUT 10 STATUS download_result)
+        file(DOWNLOAD "${url}" "${path}" INACTIVITY_TIMEOUT 1000 STATUS download_result)
         list(GET download_result 0 status_code)
         list(GET download_result 1 error_message)
 
