@@ -1,0 +1,323 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install",
+			"serenity_install_sources",
+			"serenity_bin",
+			"serenity_app"
+		],
+		"files" : 
+		[
+			"Meta/CMake/utils.cmake",
+			"Userland/Applications/DisplaySettings/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 3,
+				"file" : 1,
+				"line" : 31,
+				"parent" : 0
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 126,
+				"parent" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 85,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 88,
+				"parent" : 2
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 4,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/DisplaySettings",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/DisplaySettings/BackgroundSettingsWidget.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 5,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/DisplaySettings",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/DisplaySettings/BackgroundSettingsWidget.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 6,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/DisplaySettings",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/DisplaySettings/DesktopSettingsWidget.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 7,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/DisplaySettings",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/DisplaySettings/DesktopSettingsWidget.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 8,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/DisplaySettings",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/DisplaySettings/FontSettingsWidget.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 9,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/DisplaySettings",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/DisplaySettings/FontSettingsWidget.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 10,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/DisplaySettings",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/DisplaySettings/MonitorSettingsWidget.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 11,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/DisplaySettings",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/DisplaySettings/MonitorSettingsWidget.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 12,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/DisplaySettings",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/DisplaySettings/MonitorWidget.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 13,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/DisplaySettings",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/DisplaySettings/MonitorWidget.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 14,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/DisplaySettings",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/DisplaySettings/ThemePreviewWidget.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 15,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/DisplaySettings",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/DisplaySettings/ThemePreviewWidget.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 16,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/DisplaySettings",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/DisplaySettings/ThemesSettingsWidget.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 17,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/DisplaySettings",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/DisplaySettings/ThemesSettingsWidget.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 18,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/DisplaySettings",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/DisplaySettings/main.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 19,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/DisplaySettings/DisplaySettings"
+			],
+			"targetId" : "DisplaySettings::@2478c4a1e0dcd8239418",
+			"targetIndex" : 315,
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "Userland/Applications/DisplaySettings",
+		"source" : "Userland/Applications/DisplaySettings"
+	}
+}

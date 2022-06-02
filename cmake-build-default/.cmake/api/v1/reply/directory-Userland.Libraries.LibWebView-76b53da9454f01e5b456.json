@@ -1,0 +1,491 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install",
+			"serenity_install_headers",
+			"serenity_lib",
+			"serenity_install_sources"
+		],
+		"files" : 
+		[
+			"Meta/CMake/utils.cmake",
+			"Userland/Libraries/LibWebView/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 2,
+				"file" : 1,
+				"line" : 18,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 37,
+				"parent" : 1
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 3,
+				"file" : 0,
+				"line" : 38,
+				"parent" : 1
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 11
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 11
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 11
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 11
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 11
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 11
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 11
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 11
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 11
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 11
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 11
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 11
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 11
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 11
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 11
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 11
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 42,
+				"parent" : 1
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 3,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibWebView",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibWebView/DOMTreeModel.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 4,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibWebView",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibWebView/Forward.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 5,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibWebView",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibWebView/ImageDecoderClientAdapter.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 6,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibWebView",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibWebView/OutOfProcessWebView.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 7,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibWebView",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibWebView/RequestServerAdapter.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 8,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibWebView",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibWebView/StylePropertiesModel.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 9,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibWebView",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibWebView/WebContentClient.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 10,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibWebView",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibWebView/WebSocketClientAdapter.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 12,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibWebView",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibWebView/DOMTreeModel.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 13,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibWebView",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibWebView/DOMTreeModel.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 14,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibWebView/DumpLayoutTree",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibWebView/DumpLayoutTree/main.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 15,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibWebView",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibWebView/Forward.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 16,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibWebView",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibWebView/ImageDecoderClientAdapter.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 17,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibWebView",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibWebView/ImageDecoderClientAdapter.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 18,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibWebView",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibWebView/OutOfProcessWebView.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 19,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibWebView",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibWebView/OutOfProcessWebView.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 20,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibWebView",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibWebView/RequestServerAdapter.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 21,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibWebView",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibWebView/RequestServerAdapter.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 22,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibWebView",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibWebView/StylePropertiesModel.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 23,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibWebView",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibWebView/StylePropertiesModel.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 24,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibWebView",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibWebView/WebContentClient.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 25,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibWebView",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibWebView/WebContentClient.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 26,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibWebView",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibWebView/WebSocketClientAdapter.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 27,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibWebView",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibWebView/WebSocketClientAdapter.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 28,
+			"component" : "Unspecified",
+			"destination" : "usr/lib",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibWebView/libwebview.so.serenity"
+			],
+			"targetId" : "LibWebView::@c8bdc842974fac5dc051",
+			"targetIndex" : 413,
+			"targetInstallNamelink" : "skip",
+			"type" : "target"
+		},
+		{
+			"backtrace" : 28,
+			"component" : "Unspecified",
+			"destination" : "usr/lib",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibWebView/libwebview.so"
+			],
+			"targetId" : "LibWebView::@c8bdc842974fac5dc051",
+			"targetIndex" : 413,
+			"targetInstallNamelink" : "only",
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "Userland/Libraries/LibWebView",
+		"source" : "Userland/Libraries/LibWebView"
+	}
+}

@@ -1,0 +1,70 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install",
+			"serenity_test"
+		],
+		"files" : 
+		[
+			"Meta/CMake/utils.cmake",
+			"Tests/LibGL/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 6,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 109,
+				"parent" : 1
+			},
+			{
+				"command" : 0,
+				"file" : 1,
+				"line" : 9,
+				"parent" : 0
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 2,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/LibGL",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Tests/LibGL/TestRender"
+			],
+			"targetId" : "TestRender::@795d9d6b33d962d08c75",
+			"targetIndex" : 572,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 3,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/LibGL",
+			"paths" : 
+			[
+				"Tests/LibGL/reference-images"
+			],
+			"type" : "directory"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "Tests/LibGL",
+		"source" : "Tests/LibGL"
+	}
+}

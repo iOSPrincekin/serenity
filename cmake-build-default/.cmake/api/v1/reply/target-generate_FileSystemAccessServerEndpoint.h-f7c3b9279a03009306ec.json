@@ -1,0 +1,86 @@
+{
+	"backtrace" : 2,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_custom_target",
+			"compile_ipc"
+		],
+		"files" : 
+		[
+			"Meta/CMake/code_generators.cmake",
+			"Userland/Services/FileSystemAccessServer/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 7,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 33,
+				"parent" : 1
+			}
+		]
+	},
+	"id" : "generate_FileSystemAccessServerEndpoint.h::@6d1d813955452be7b5bb",
+	"name" : "generate_FileSystemAccessServerEndpoint.h",
+	"paths" : 
+	{
+		"build" : "Userland/Services/FileSystemAccessServer",
+		"source" : "Userland/Services/FileSystemAccessServer"
+	},
+	"sourceGroups" : 
+	[
+		{
+			"name" : "Header Files",
+			"sourceIndexes" : 
+			[
+				0
+			]
+		},
+		{
+			"name" : "CMake Rules",
+			"sourceIndexes" : 
+			[
+				1
+			]
+		},
+		{
+			"name" : "",
+			"sourceIndexes" : 
+			[
+				2
+			]
+		}
+	],
+	"sources" : 
+	[
+		{
+			"backtrace" : 2,
+			"isGenerated" : true,
+			"path" : "cmake-build-default/Userland/Services/FileSystemAccessServer/CMakeFiles/generate_FileSystemAccessServerEndpoint.h",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 0,
+			"isGenerated" : true,
+			"path" : "cmake-build-default/Userland/Services/FileSystemAccessServer/CMakeFiles/generate_FileSystemAccessServerEndpoint.h.rule",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 0,
+			"path" : "Userland/Services/FileSystemAccessServer/FileSystemAccessServer.ipc",
+			"sourceGroupIndex" : 2
+		}
+	],
+	"type" : "UTILITY"
+}

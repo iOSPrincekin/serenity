@@ -1,0 +1,86 @@
+{
+	"backtrace" : 2,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_custom_target",
+			"compile_gml"
+		],
+		"files" : 
+		[
+			"Meta/CMake/code_generators.cmake",
+			"Userland/Applications/Calculator/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 7,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 17,
+				"parent" : 1
+			}
+		]
+	},
+	"id" : "generate_CalculatorGML.h::@f2d9570f617aa3558d7f",
+	"name" : "generate_CalculatorGML.h",
+	"paths" : 
+	{
+		"build" : "Userland/Applications/Calculator",
+		"source" : "Userland/Applications/Calculator"
+	},
+	"sourceGroups" : 
+	[
+		{
+			"name" : "Header Files",
+			"sourceIndexes" : 
+			[
+				0
+			]
+		},
+		{
+			"name" : "CMake Rules",
+			"sourceIndexes" : 
+			[
+				1
+			]
+		},
+		{
+			"name" : "",
+			"sourceIndexes" : 
+			[
+				2
+			]
+		}
+	],
+	"sources" : 
+	[
+		{
+			"backtrace" : 2,
+			"isGenerated" : true,
+			"path" : "cmake-build-default/Userland/Applications/Calculator/CMakeFiles/generate_CalculatorGML.h",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 0,
+			"isGenerated" : true,
+			"path" : "cmake-build-default/Userland/Applications/Calculator/CMakeFiles/generate_CalculatorGML.h.rule",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 0,
+			"path" : "Userland/Applications/Calculator/CalculatorWindow.gml",
+			"sourceGroupIndex" : 2
+		}
+	],
+	"type" : "UTILITY"
+}

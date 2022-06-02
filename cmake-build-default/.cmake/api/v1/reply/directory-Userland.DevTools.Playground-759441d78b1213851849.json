@@ -1,0 +1,85 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install",
+			"serenity_install_sources",
+			"serenity_bin",
+			"serenity_app"
+		],
+		"files" : 
+		[
+			"Meta/CMake/utils.cmake",
+			"Userland/DevTools/Playground/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 3,
+				"file" : 1,
+				"line" : 11,
+				"parent" : 0
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 126,
+				"parent" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 85,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 88,
+				"parent" : 2
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 4,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/Playground",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/Playground/main.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 5,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/Playground/Playground"
+			],
+			"targetId" : "Playground::@964c59f47f1c1551dc8c",
+			"targetIndex" : 433,
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "Userland/DevTools/Playground",
+		"source" : "Userland/DevTools/Playground"
+	}
+}

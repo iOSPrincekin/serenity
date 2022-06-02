@@ -1,0 +1,89 @@
+{
+	"backtrace" : 3,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_custom_target",
+			"invoke_generator",
+			"generate_css_implementation"
+		],
+		"files" : 
+		[
+			"Meta/CMake/utils.cmake",
+			"Meta/CMake/libweb_generators.cmake",
+			"Userland/Libraries/LibWeb/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 2
+			},
+			{
+				"command" : 2,
+				"file" : 2,
+				"line" : 362,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 37,
+				"parent" : 1
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 199,
+				"parent" : 2
+			}
+		]
+	},
+	"id" : "generate_TransformFunctions.cpp::@50cdf3c1ba635fd16ab3",
+	"name" : "generate_TransformFunctions.cpp",
+	"paths" : 
+	{
+		"build" : "Userland/Libraries/LibWeb",
+		"source" : "Userland/Libraries/LibWeb"
+	},
+	"sourceGroups" : 
+	[
+		{
+			"name" : "Source Files",
+			"sourceIndexes" : 
+			[
+				0
+			]
+		},
+		{
+			"name" : "CMake Rules",
+			"sourceIndexes" : 
+			[
+				1,
+				2
+			]
+		}
+	],
+	"sources" : 
+	[
+		{
+			"backtrace" : 3,
+			"isGenerated" : true,
+			"path" : "cmake-build-default/Userland/Libraries/LibWeb/CMakeFiles/generate_TransformFunctions.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 0,
+			"isGenerated" : true,
+			"path" : "cmake-build-default/Userland/Libraries/LibWeb/CMakeFiles/generate_TransformFunctions.cpp.rule",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 0,
+			"isGenerated" : true,
+			"path" : "cmake-build-default/Userland/Libraries/LibWeb/CSS/TransformFunctions.h.rule",
+			"sourceGroupIndex" : 1
+		}
+	],
+	"type" : "UTILITY"
+}

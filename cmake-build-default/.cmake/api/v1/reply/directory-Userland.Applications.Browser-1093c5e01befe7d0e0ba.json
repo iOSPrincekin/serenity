@@ -1,0 +1,578 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install",
+			"serenity_install_sources",
+			"serenity_bin",
+			"serenity_app"
+		],
+		"files" : 
+		[
+			"Meta/CMake/utils.cmake",
+			"Userland/Applications/Browser/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 3,
+				"file" : 1,
+				"line" : 35,
+				"parent" : 0
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 126,
+				"parent" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 85,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 88,
+				"parent" : 2
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 4,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Browser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Browser/BookmarksBarWidget.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 5,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Browser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Browser/BookmarksBarWidget.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 6,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Browser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Browser/Browser.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 7,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Browser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Browser/BrowserWindow.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 8,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Browser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Browser/BrowserWindow.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 9,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Browser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Browser/ConsoleWidget.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 10,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Browser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Browser/ConsoleWidget.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 11,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Browser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Browser/CookieJar.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 12,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Browser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Browser/CookieJar.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 13,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Browser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Browser/CookiesModel.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 14,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Browser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Browser/CookiesModel.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 15,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Browser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Browser/DownloadWidget.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 16,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Browser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Browser/DownloadWidget.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 17,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Browser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Browser/ElementSizePreviewWidget.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 18,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Browser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Browser/ElementSizePreviewWidget.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 19,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Browser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Browser/History.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 20,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Browser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Browser/History.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 21,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Browser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Browser/IconBag.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 22,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Browser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Browser/IconBag.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 23,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Browser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Browser/InspectorWidget.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 24,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Browser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Browser/InspectorWidget.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 25,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Browser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Browser/LocalStorageModel.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 26,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Browser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Browser/LocalStorageModel.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 27,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Browser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Browser/StorageWidget.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 28,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Browser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Browser/StorageWidget.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 29,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Browser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Browser/Tab.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 30,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Browser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Browser/Tab.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 31,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Browser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Browser/WindowActions.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 32,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Browser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Browser/WindowActions.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 33,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Browser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Browser/main.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 34,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Browser/Browser"
+			],
+			"targetId" : "Browser::@e9bd503f4cec5cc50e69",
+			"targetIndex" : 10,
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "Userland/Applications/Browser",
+		"source" : "Userland/Applications/Browser"
+	}
+}

@@ -1,0 +1,86 @@
+{
+	"backtrace" : 2,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_custom_target",
+			"compile_ipc"
+		],
+		"files" : 
+		[
+			"Meta/CMake/code_generators.cmake",
+			"Userland/Services/ImageDecoder/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 6,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 33,
+				"parent" : 1
+			}
+		]
+	},
+	"id" : "generate_ImageDecoderServerEndpoint.h::@9fde22ac7dbb79dd0213",
+	"name" : "generate_ImageDecoderServerEndpoint.h",
+	"paths" : 
+	{
+		"build" : "Userland/Services/ImageDecoder",
+		"source" : "Userland/Services/ImageDecoder"
+	},
+	"sourceGroups" : 
+	[
+		{
+			"name" : "Header Files",
+			"sourceIndexes" : 
+			[
+				0
+			]
+		},
+		{
+			"name" : "CMake Rules",
+			"sourceIndexes" : 
+			[
+				1
+			]
+		},
+		{
+			"name" : "",
+			"sourceIndexes" : 
+			[
+				2
+			]
+		}
+	],
+	"sources" : 
+	[
+		{
+			"backtrace" : 2,
+			"isGenerated" : true,
+			"path" : "cmake-build-default/Userland/Services/ImageDecoder/CMakeFiles/generate_ImageDecoderServerEndpoint.h",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 0,
+			"isGenerated" : true,
+			"path" : "cmake-build-default/Userland/Services/ImageDecoder/CMakeFiles/generate_ImageDecoderServerEndpoint.h.rule",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 0,
+			"path" : "Userland/Services/ImageDecoder/ImageDecoderServer.ipc",
+			"sourceGroupIndex" : 2
+		}
+	],
+	"type" : "UTILITY"
+}

@@ -1,0 +1,714 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install",
+			"serenity_test"
+		],
+		"files" : 
+		[
+			"Tests/Kernel/CMakeLists.txt",
+			"Meta/CMake/utils.cmake"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 29,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 29,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 29,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 29,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 29,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 29,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 29,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 29,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 29,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 29,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 29,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 29,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 29,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 29,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 29,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 29,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 29,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 29,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 29,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 29,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 32,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 1,
+				"line" : 109,
+				"parent" : 21
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 1,
+				"line" : 109,
+				"parent" : 23
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 1,
+				"line" : 109,
+				"parent" : 25
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 1,
+				"line" : 109,
+				"parent" : 27
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 1,
+				"line" : 109,
+				"parent" : 29
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 1,
+				"line" : 109,
+				"parent" : 31
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 1,
+				"line" : 109,
+				"parent" : 33
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 1,
+				"line" : 109,
+				"parent" : 35
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 1,
+				"line" : 109,
+				"parent" : 37
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 1,
+				"line" : 109,
+				"parent" : 39
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 1,
+				"line" : 109,
+				"parent" : 41
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 1,
+				"line" : 109,
+				"parent" : 43
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 1,
+				"line" : 109,
+				"parent" : 45
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 1,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel/Legacy",
+			"paths" : 
+			[
+				"Tests/Kernel/bind-local-socket-to-symlink"
+			],
+			"targetId" : "bind-local-socket-to-symlink::@90763eceb699b072dc9f",
+			"targetIndex" : 644,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 2,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel/Legacy",
+			"paths" : 
+			[
+				"Tests/Kernel/crash-fcntl-invalid-cmd"
+			],
+			"targetId" : "crash-fcntl-invalid-cmd::@90763eceb699b072dc9f",
+			"targetIndex" : 668,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 3,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel/Legacy",
+			"paths" : 
+			[
+				"Tests/Kernel/elf-execve-mmap-race"
+			],
+			"targetId" : "elf-execve-mmap-race::@90763eceb699b072dc9f",
+			"targetIndex" : 685,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 4,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel/Legacy",
+			"paths" : 
+			[
+				"Tests/Kernel/elf-symbolication-kernel-read-exploit"
+			],
+			"targetId" : "elf-symbolication-kernel-read-exploit::@90763eceb699b072dc9f",
+			"targetIndex" : 686,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 5,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel/Legacy",
+			"paths" : 
+			[
+				"Tests/Kernel/fuzz-syscalls"
+			],
+			"targetId" : "fuzz-syscalls::@90763eceb699b072dc9f",
+			"targetIndex" : 699,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 6,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel/Legacy",
+			"paths" : 
+			[
+				"Tests/Kernel/kill-pidtid-confusion"
+			],
+			"targetId" : "kill-pidtid-confusion::@90763eceb699b072dc9f",
+			"targetIndex" : 1896,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 7,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel/Legacy",
+			"paths" : 
+			[
+				"Tests/Kernel/mmap-write-into-running-programs-executable-file"
+			],
+			"targetId" : "mmap-write-into-running-programs-executable-file::@90763eceb699b072dc9f",
+			"targetIndex" : 1917,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 8,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel/Legacy",
+			"paths" : 
+			[
+				"Tests/Kernel/mprotect-multi-region-mprotect"
+			],
+			"targetId" : "mprotect-multi-region-mprotect::@90763eceb699b072dc9f",
+			"targetIndex" : 1919,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 9,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel/Legacy",
+			"paths" : 
+			[
+				"Tests/Kernel/munmap-multi-region-unmapping"
+			],
+			"targetId" : "munmap-multi-region-unmapping::@90763eceb699b072dc9f",
+			"targetIndex" : 1920,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 10,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel/Legacy",
+			"paths" : 
+			[
+				"Tests/Kernel/nanosleep-race-outbuf-munmap"
+			],
+			"targetId" : "nanosleep-race-outbuf-munmap::@90763eceb699b072dc9f",
+			"targetIndex" : 1922,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 11,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel/Legacy",
+			"paths" : 
+			[
+				"Tests/Kernel/null-deref-close-during-select"
+			],
+			"targetId" : "null-deref-close-during-select::@90763eceb699b072dc9f",
+			"targetIndex" : 1929,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 12,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel/Legacy",
+			"paths" : 
+			[
+				"Tests/Kernel/null-deref-crash-during-pthread_join"
+			],
+			"targetId" : "null-deref-crash-during-pthread_join::@90763eceb699b072dc9f",
+			"targetIndex" : 1930,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 13,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel/Legacy",
+			"paths" : 
+			[
+				"Tests/Kernel/path-resolution-race"
+			],
+			"targetId" : "path-resolution-race::@90763eceb699b072dc9f",
+			"targetIndex" : 1935,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 14,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel/Legacy",
+			"paths" : 
+			[
+				"Tests/Kernel/pthread-cond-timedwait-example"
+			],
+			"targetId" : "pthread-cond-timedwait-example::@90763eceb699b072dc9f",
+			"targetIndex" : 1947,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 15,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel/Legacy",
+			"paths" : 
+			[
+				"Tests/Kernel/setpgid-across-sessions-without-leader"
+			],
+			"targetId" : "setpgid-across-sessions-without-leader::@90763eceb699b072dc9f",
+			"targetIndex" : 1962,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 16,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel/Legacy",
+			"paths" : 
+			[
+				"Tests/Kernel/siginfo-example"
+			],
+			"targetId" : "siginfo-example::@90763eceb699b072dc9f",
+			"targetIndex" : 1967,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 17,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel/Legacy",
+			"paths" : 
+			[
+				"Tests/Kernel/stress-truncate"
+			],
+			"targetId" : "stress-truncate::@90763eceb699b072dc9f",
+			"targetIndex" : 1974,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 18,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel/Legacy",
+			"paths" : 
+			[
+				"Tests/Kernel/stress-writeread"
+			],
+			"targetId" : "stress-writeread::@90763eceb699b072dc9f",
+			"targetIndex" : 1975,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 19,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel/Legacy",
+			"paths" : 
+			[
+				"Tests/Kernel/uaf-close-while-blocked-in-read"
+			],
+			"targetId" : "uaf-close-while-blocked-in-read::@90763eceb699b072dc9f",
+			"targetIndex" : 2013,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 20,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel/Legacy",
+			"paths" : 
+			[
+				"Tests/Kernel/unveil-symlinks"
+			],
+			"targetId" : "unveil-symlinks::@90763eceb699b072dc9f",
+			"targetIndex" : 2018,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 22,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Tests/Kernel/crash"
+			],
+			"targetId" : "crash::@90763eceb699b072dc9f",
+			"targetIndex" : 667,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 24,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Tests/Kernel/TestEFault"
+			],
+			"targetId" : "TestEFault::@90763eceb699b072dc9f",
+			"targetIndex" : 495,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 26,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Tests/Kernel/TestInvalidUIDSet"
+			],
+			"targetId" : "TestInvalidUIDSet::@90763eceb699b072dc9f",
+			"targetIndex" : 520,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 28,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Tests/Kernel/TestKernelAlarm"
+			],
+			"targetId" : "TestKernelAlarm::@90763eceb699b072dc9f",
+			"targetIndex" : 523,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 30,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Tests/Kernel/TestKernelFilePermissions"
+			],
+			"targetId" : "TestKernelFilePermissions::@90763eceb699b072dc9f",
+			"targetIndex" : 524,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 32,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Tests/Kernel/TestKernelPledge"
+			],
+			"targetId" : "TestKernelPledge::@90763eceb699b072dc9f",
+			"targetIndex" : 525,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 34,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Tests/Kernel/TestKernelUnveil"
+			],
+			"targetId" : "TestKernelUnveil::@90763eceb699b072dc9f",
+			"targetIndex" : 526,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 36,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Tests/Kernel/TestMemoryDeviceMmap"
+			],
+			"targetId" : "TestMemoryDeviceMmap::@90763eceb699b072dc9f",
+			"targetIndex" : 549,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 38,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Tests/Kernel/TestMunMap"
+			],
+			"targetId" : "TestMunMap::@90763eceb699b072dc9f",
+			"targetIndex" : 552,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 40,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Tests/Kernel/TestProcFS"
+			],
+			"targetId" : "TestProcFS::@90763eceb699b072dc9f",
+			"targetIndex" : 561,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 42,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Tests/Kernel/TestProcFSWrite"
+			],
+			"targetId" : "TestProcFSWrite::@90763eceb699b072dc9f",
+			"targetIndex" : 562,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 44,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Tests/Kernel/TestSigAltStack"
+			],
+			"targetId" : "TestSigAltStack::@90763eceb699b072dc9f",
+			"targetIndex" : 575,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 46,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Kernel",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Tests/Kernel/TestSigWait"
+			],
+			"targetId" : "TestSigWait::@90763eceb699b072dc9f",
+			"targetIndex" : 576,
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "Tests/Kernel",
+		"source" : "Tests/Kernel"
+	}
+}

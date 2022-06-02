@@ -1,0 +1,86 @@
+{
+	"backtrace" : 2,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_custom_target",
+			"compile_ipc"
+		],
+		"files" : 
+		[
+			"Meta/CMake/code_generators.cmake",
+			"Userland/Services/NotificationServer/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 7,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 33,
+				"parent" : 1
+			}
+		]
+	},
+	"id" : "generate_NotificationServerEndpoint.h::@c92b205b5a385adc9262",
+	"name" : "generate_NotificationServerEndpoint.h",
+	"paths" : 
+	{
+		"build" : "Userland/Services/NotificationServer",
+		"source" : "Userland/Services/NotificationServer"
+	},
+	"sourceGroups" : 
+	[
+		{
+			"name" : "Header Files",
+			"sourceIndexes" : 
+			[
+				0
+			]
+		},
+		{
+			"name" : "CMake Rules",
+			"sourceIndexes" : 
+			[
+				1
+			]
+		},
+		{
+			"name" : "",
+			"sourceIndexes" : 
+			[
+				2
+			]
+		}
+	],
+	"sources" : 
+	[
+		{
+			"backtrace" : 2,
+			"isGenerated" : true,
+			"path" : "cmake-build-default/Userland/Services/NotificationServer/CMakeFiles/generate_NotificationServerEndpoint.h",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 0,
+			"isGenerated" : true,
+			"path" : "cmake-build-default/Userland/Services/NotificationServer/CMakeFiles/generate_NotificationServerEndpoint.h.rule",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 0,
+			"path" : "Userland/Services/NotificationServer/NotificationServer.ipc",
+			"sourceGroupIndex" : 2
+		}
+	],
+	"type" : "UTILITY"
+}

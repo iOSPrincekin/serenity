@@ -1,0 +1,57 @@
+{
+	"backtrace" : 2,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_custom_target",
+			"serenity_component",
+			"add_dependencies"
+		],
+		"files" : 
+		[
+			"Meta/CMake/serenity_components.cmake",
+			"Userland/Demos/CatDog/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 1,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 15,
+				"parent" : 1
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 26,
+				"parent" : 1
+			}
+		]
+	},
+	"dependencies" : 
+	[
+		{
+			"backtrace" : 3,
+			"id" : "CatDog::@f38b4cfb6c4304dd872b"
+		}
+	],
+	"id" : "ComponentCatDog::@f38b4cfb6c4304dd872b",
+	"name" : "ComponentCatDog",
+	"paths" : 
+	{
+		"build" : "Userland/Demos/CatDog",
+		"source" : "Userland/Demos/CatDog"
+	},
+	"sources" : [],
+	"type" : "UTILITY"
+}

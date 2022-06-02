@@ -1,0 +1,86 @@
+{
+	"backtrace" : 2,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_custom_target",
+			"compile_gml"
+		],
+		"files" : 
+		[
+			"Meta/CMake/code_generators.cmake",
+			"Userland/Applications/CrashReporter/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 7,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 17,
+				"parent" : 1
+			}
+		]
+	},
+	"id" : "generate_CrashReporterWindowGML.h::@7ce70341bd3853934d09",
+	"name" : "generate_CrashReporterWindowGML.h",
+	"paths" : 
+	{
+		"build" : "Userland/Applications/CrashReporter",
+		"source" : "Userland/Applications/CrashReporter"
+	},
+	"sourceGroups" : 
+	[
+		{
+			"name" : "Header Files",
+			"sourceIndexes" : 
+			[
+				0
+			]
+		},
+		{
+			"name" : "CMake Rules",
+			"sourceIndexes" : 
+			[
+				1
+			]
+		},
+		{
+			"name" : "",
+			"sourceIndexes" : 
+			[
+				2
+			]
+		}
+	],
+	"sources" : 
+	[
+		{
+			"backtrace" : 2,
+			"isGenerated" : true,
+			"path" : "cmake-build-default/Userland/Applications/CrashReporter/CMakeFiles/generate_CrashReporterWindowGML.h",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 0,
+			"isGenerated" : true,
+			"path" : "cmake-build-default/Userland/Applications/CrashReporter/CMakeFiles/generate_CrashReporterWindowGML.h.rule",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 0,
+			"path" : "Userland/Applications/CrashReporter/CrashReporterWindow.gml",
+			"sourceGroupIndex" : 2
+		}
+	],
+	"type" : "UTILITY"
+}

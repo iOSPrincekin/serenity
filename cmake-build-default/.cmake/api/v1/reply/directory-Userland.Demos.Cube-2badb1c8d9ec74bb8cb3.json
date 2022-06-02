@@ -1,0 +1,85 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install",
+			"serenity_install_sources",
+			"serenity_bin",
+			"serenity_app"
+		],
+		"files" : 
+		[
+			"Meta/CMake/utils.cmake",
+			"Userland/Demos/Cube/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 3,
+				"file" : 1,
+				"line" : 10,
+				"parent" : 0
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 126,
+				"parent" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 85,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 88,
+				"parent" : 2
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 4,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Demos/Cube",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Demos/Cube/Cube.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 5,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Demos/Cube/Cube"
+			],
+			"targetId" : "Cube::@288cd374af3431121a85",
+			"targetIndex" : 312,
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "Userland/Demos/Cube",
+		"source" : "Userland/Demos/Cube"
+	}
+}

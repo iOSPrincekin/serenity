@@ -1,0 +1,77 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install",
+			"serenity_install_sources",
+			"serenity_libc"
+		],
+		"files" : 
+		[
+			"Meta/CMake/utils.cmake",
+			"Userland/Libraries/LibSanitizer/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 2,
+				"file" : 1,
+				"line" : 10,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 60,
+				"parent" : 1
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 63,
+				"parent" : 1
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 3,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibSanitizer",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibSanitizer/UBSanitizer.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 4,
+			"component" : "Unspecified",
+			"destination" : "usr/lib",
+			"paths" : 
+			[
+				"Userland/Libraries/LibSanitizer/libubsan.so"
+			],
+			"targetId" : "LibUBSanitizer::@168a3f8d3c84f9ab7177",
+			"targetIndex" : 403,
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "Userland/Libraries/LibSanitizer",
+		"source" : "Userland/Libraries/LibSanitizer"
+	}
+}

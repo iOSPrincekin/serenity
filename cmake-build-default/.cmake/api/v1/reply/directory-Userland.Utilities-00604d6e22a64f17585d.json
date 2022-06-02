@@ -1,0 +1,3508 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install"
+		],
+		"files" : 
+		[
+			"Userland/Utilities/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 44,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 45,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 44,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 45,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 54,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 55,
+				"parent" : 0
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 1,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/abench"
+			],
+			"targetId" : "abench::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 634,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 2,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/adjtime"
+			],
+			"targetId" : "adjtime::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 635,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 3,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/allocate"
+			],
+			"targetId" : "allocate::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 637,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 4,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/aplay"
+			],
+			"targetId" : "aplay::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 638,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 5,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/arp"
+			],
+			"targetId" : "arp::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 639,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 6,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/asctl"
+			],
+			"targetId" : "asctl::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 640,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 7,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/base64"
+			],
+			"targetId" : "base64::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 641,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 8,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/basename"
+			],
+			"targetId" : "basename::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 642,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 9,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/beep"
+			],
+			"targetId" : "beep::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 643,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 10,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/blockdev"
+			],
+			"targetId" : "blockdev::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 645,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 11,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/bt"
+			],
+			"targetId" : "bt::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 646,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 12,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/cal"
+			],
+			"targetId" : "cal::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 647,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 13,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/cat"
+			],
+			"targetId" : "cat::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 648,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 14,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/checksum"
+			],
+			"targetId" : "checksum::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 650,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 15,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/chgrp"
+			],
+			"targetId" : "chgrp::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 651,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 16,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/chmod"
+			],
+			"targetId" : "chmod::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 652,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 17,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/chown"
+			],
+			"targetId" : "chown::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 653,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 18,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/chres"
+			],
+			"targetId" : "chres::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 654,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 19,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/cksum"
+			],
+			"targetId" : "cksum::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 655,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 20,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/clear"
+			],
+			"targetId" : "clear::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 656,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 21,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/cmp"
+			],
+			"targetId" : "cmp::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 657,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 22,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/comm"
+			],
+			"targetId" : "comm::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 658,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 23,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/config"
+			],
+			"targetId" : "config::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 660,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 24,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/copy"
+			],
+			"targetId" : "copy::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 662,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 25,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/cp"
+			],
+			"targetId" : "cp::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 663,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 26,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/cpp-lexer"
+			],
+			"targetId" : "cpp-lexer::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 664,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 27,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/cpp-parser"
+			],
+			"targetId" : "cpp-parser::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 665,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 28,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/cpp-preprocessor"
+			],
+			"targetId" : "cpp-preprocessor::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 666,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 29,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/cut"
+			],
+			"targetId" : "cut::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 673,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 30,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/date"
+			],
+			"targetId" : "date::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 674,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 31,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/dd"
+			],
+			"targetId" : "dd::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 675,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 32,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/ddate"
+			],
+			"targetId" : "ddate::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 676,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 33,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/df"
+			],
+			"targetId" : "df::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 677,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 34,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/diff"
+			],
+			"targetId" : "diff::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 678,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 35,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/dirname"
+			],
+			"targetId" : "dirname::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 679,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 36,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/disasm"
+			],
+			"targetId" : "disasm::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 680,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 37,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/disk_benchmark"
+			],
+			"targetId" : "disk_benchmark::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 681,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 38,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/dmesg"
+			],
+			"targetId" : "dmesg::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 682,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 39,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/du"
+			],
+			"targetId" : "du::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 683,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 40,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/echo"
+			],
+			"targetId" : "echo::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 684,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 41,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/env"
+			],
+			"targetId" : "env::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 687,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 42,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/errno"
+			],
+			"targetId" : "errno::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 688,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 43,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/expr"
+			],
+			"targetId" : "expr::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 689,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 44,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/false"
+			],
+			"targetId" : "false::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 691,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 45,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/fdtdump"
+			],
+			"targetId" : "fdtdump::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 692,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 46,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/fgrep"
+			],
+			"targetId" : "fgrep::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 693,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 47,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/file"
+			],
+			"targetId" : "file::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 694,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 48,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/find"
+			],
+			"targetId" : "find::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 695,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 49,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/flock"
+			],
+			"targetId" : "flock::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 696,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 50,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/fortune"
+			],
+			"targetId" : "fortune::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 697,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 51,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/functrace"
+			],
+			"targetId" : "functrace::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 698,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 52,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/gml-format"
+			],
+			"targetId" : "gml-format::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1870,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 53,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/grep"
+			],
+			"targetId" : "grep::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1871,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 54,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/gron"
+			],
+			"targetId" : "gron::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1872,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 55,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/groupadd"
+			],
+			"targetId" : "groupadd::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1873,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 56,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/groupdel"
+			],
+			"targetId" : "groupdel::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1874,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 57,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/groups"
+			],
+			"targetId" : "groups::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1875,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 58,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/gunzip"
+			],
+			"targetId" : "gunzip::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1877,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 59,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/gzip"
+			],
+			"targetId" : "gzip::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1878,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 60,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/head"
+			],
+			"targetId" : "head::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1879,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 61,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/hexdump"
+			],
+			"targetId" : "hexdump::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1880,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 62,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/host"
+			],
+			"targetId" : "host::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1881,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 63,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/hostname"
+			],
+			"targetId" : "hostname::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1882,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 64,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/id"
+			],
+			"targetId" : "id::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1883,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 65,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/ifconfig"
+			],
+			"targetId" : "ifconfig::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1884,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 66,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/ini"
+			],
+			"targetId" : "ini::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1886,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 67,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"paths" : 
+			[
+				"Userland/Utilities/install-bin"
+			],
+			"targetId" : "install-bin::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1887,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 68,
+			"component" : "Unspecified",
+			"type" : "code"
+		},
+		{
+			"backtrace" : 69,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/jp"
+			],
+			"targetId" : "jp::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1890,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 70,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/js"
+			],
+			"targetId" : "js::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1891,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 71,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/kcov-example"
+			],
+			"targetId" : "kcov-example::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1892,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 72,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/keymap"
+			],
+			"targetId" : "keymap::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1894,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 73,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/kill"
+			],
+			"targetId" : "kill::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1895,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 74,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/killall"
+			],
+			"targetId" : "killall::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1897,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 75,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/less"
+			],
+			"targetId" : "less::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1898,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 76,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/ln"
+			],
+			"targetId" : "ln::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1901,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 77,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/logout"
+			],
+			"targetId" : "logout::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1902,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 78,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/ls"
+			],
+			"targetId" : "ls::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1903,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 79,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/lscpu"
+			],
+			"targetId" : "lscpu::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1904,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 80,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/lsirq"
+			],
+			"targetId" : "lsirq::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1905,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 81,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/lsof"
+			],
+			"targetId" : "lsof::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1906,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 82,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/lspci"
+			],
+			"targetId" : "lspci::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1907,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 83,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/lsusb"
+			],
+			"targetId" : "lsusb::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1908,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 84,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/man"
+			],
+			"targetId" : "man::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1909,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 85,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/markdown-check"
+			],
+			"targetId" : "markdown-check::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1910,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 86,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/matroska"
+			],
+			"targetId" : "matroska::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1911,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 87,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/md"
+			],
+			"targetId" : "md::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1912,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 88,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/mkdir"
+			],
+			"targetId" : "mkdir::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1913,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 89,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/mkfifo"
+			],
+			"targetId" : "mkfifo::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1914,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 90,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/mknod"
+			],
+			"targetId" : "mknod::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1915,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 91,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/mktemp"
+			],
+			"targetId" : "mktemp::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1916,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 92,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/mount"
+			],
+			"targetId" : "mount::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1918,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 93,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/mv"
+			],
+			"targetId" : "mv::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1921,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 94,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/nc"
+			],
+			"targetId" : "nc::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1923,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 95,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/netstat"
+			],
+			"targetId" : "netstat::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1924,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 96,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/nl"
+			],
+			"targetId" : "nl::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1925,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 97,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/notify"
+			],
+			"targetId" : "notify::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1926,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 98,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/nproc"
+			],
+			"targetId" : "nproc::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1927,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 99,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/ntpquery"
+			],
+			"targetId" : "ntpquery::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1928,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 100,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/open"
+			],
+			"targetId" : "open::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1931,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 101,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/pape"
+			],
+			"targetId" : "pape::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1932,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 102,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/passwd"
+			],
+			"targetId" : "passwd::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1933,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 103,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/paste"
+			],
+			"targetId" : "paste::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1934,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 104,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/pathchk"
+			],
+			"targetId" : "pathchk::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1936,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 105,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/pgrep"
+			],
+			"targetId" : "pgrep::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1937,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 106,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/pidof"
+			],
+			"targetId" : "pidof::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1938,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 107,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/ping"
+			],
+			"targetId" : "ping::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1939,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 108,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/pls"
+			],
+			"targetId" : "pls::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1940,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 109,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/pmap"
+			],
+			"targetId" : "pmap::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1941,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 110,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/pmemdump"
+			],
+			"targetId" : "pmemdump::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1942,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 111,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/printf"
+			],
+			"targetId" : "printf::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1943,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 112,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/pro"
+			],
+			"targetId" : "pro::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1944,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 113,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/profile"
+			],
+			"targetId" : "profile::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1945,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 114,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/ps"
+			],
+			"targetId" : "ps::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1946,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 115,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/purge"
+			],
+			"targetId" : "purge::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1948,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 116,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/pwd"
+			],
+			"targetId" : "pwd::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1949,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 117,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/readelf"
+			],
+			"targetId" : "readelf::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1951,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 118,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/readlink"
+			],
+			"targetId" : "readlink::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1952,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 119,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/realpath"
+			],
+			"targetId" : "realpath::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1953,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 120,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/reboot"
+			],
+			"targetId" : "reboot::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1954,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 121,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/rev"
+			],
+			"targetId" : "rev::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1955,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 122,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/rm"
+			],
+			"targetId" : "rm::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1956,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 123,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/rmdir"
+			],
+			"targetId" : "rmdir::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1957,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 124,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/route"
+			],
+			"targetId" : "route::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1958,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 125,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/run-tests"
+			],
+			"targetId" : "run-tests::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1960,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 126,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/seq"
+			],
+			"targetId" : "seq::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1961,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 127,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/shot"
+			],
+			"targetId" : "shot::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1964,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 128,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/shuf"
+			],
+			"targetId" : "shuf::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1965,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 129,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/shutdown"
+			],
+			"targetId" : "shutdown::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1966,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 130,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/sleep"
+			],
+			"targetId" : "sleep::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1968,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 131,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/sort"
+			],
+			"targetId" : "sort::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1969,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 132,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/sql"
+			],
+			"targetId" : "sql::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1970,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 133,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/stat"
+			],
+			"targetId" : "stat::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1972,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 134,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/strace"
+			],
+			"targetId" : "strace::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1973,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 135,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/stty"
+			],
+			"targetId" : "stty::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1976,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 136,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/su"
+			],
+			"targetId" : "su::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1977,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 137,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/sync"
+			],
+			"targetId" : "sync::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1978,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 138,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/syscall"
+			],
+			"targetId" : "syscall::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1979,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 139,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/sysctl"
+			],
+			"targetId" : "sysctl::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1980,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 140,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/tac"
+			],
+			"targetId" : "tac::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1981,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 141,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/tail"
+			],
+			"targetId" : "tail::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1982,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 142,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/tar"
+			],
+			"targetId" : "tar::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1983,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 143,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/tee"
+			],
+			"targetId" : "tee::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1984,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 144,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/telws"
+			],
+			"targetId" : "telws::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1985,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 145,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/test-bindtodevice"
+			],
+			"targetId" : "test-bindtodevice::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1987,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 146,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/test-fuzz"
+			],
+			"targetId" : "test-fuzz::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1992,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 147,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/test-imap"
+			],
+			"targetId" : "test-imap::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1993,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 148,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/test-pthread"
+			],
+			"targetId" : "test-pthread::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1997,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 149,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/test-unveil"
+			],
+			"targetId" : "test-unveil::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2000,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 150,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"paths" : 
+			[
+				"Userland/Utilities/test-bin"
+			],
+			"targetId" : "test-bin::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 1986,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 151,
+			"component" : "Unspecified",
+			"type" : "code"
+		},
+		{
+			"backtrace" : 152,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/test_env"
+			],
+			"targetId" : "test_env::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2002,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 153,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/timezone"
+			],
+			"targetId" : "timezone::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2003,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 154,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/top"
+			],
+			"targetId" : "top::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2004,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 155,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/touch"
+			],
+			"targetId" : "touch::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2005,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 156,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/tr"
+			],
+			"targetId" : "tr::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2006,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 157,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/traceroute"
+			],
+			"targetId" : "traceroute::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2007,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 158,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/tree"
+			],
+			"targetId" : "tree::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2008,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 159,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/true"
+			],
+			"targetId" : "true::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2009,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 160,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/truncate"
+			],
+			"targetId" : "truncate::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2010,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 161,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/tt"
+			],
+			"targetId" : "tt::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2011,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 162,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/tty"
+			],
+			"targetId" : "tty::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2012,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 163,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/umount"
+			],
+			"targetId" : "umount::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2015,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 164,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/uname"
+			],
+			"targetId" : "uname::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2016,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 165,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/uniq"
+			],
+			"targetId" : "uniq::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2017,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 166,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/unzip"
+			],
+			"targetId" : "unzip::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2019,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 167,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/update-cpp-test-results"
+			],
+			"targetId" : "update-cpp-test-results::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2020,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 168,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/uptime"
+			],
+			"targetId" : "uptime::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2021,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 169,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/useradd"
+			],
+			"targetId" : "useradd::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2022,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 170,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/userdel"
+			],
+			"targetId" : "userdel::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2023,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 171,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/usermod"
+			],
+			"targetId" : "usermod::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2024,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 172,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/utmpupdate"
+			],
+			"targetId" : "utmpupdate::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2025,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 173,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/w"
+			],
+			"targetId" : "w::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2026,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 174,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/wasm"
+			],
+			"targetId" : "wasm::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2027,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 175,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/watch"
+			],
+			"targetId" : "watch::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2028,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 176,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/wc"
+			],
+			"targetId" : "wc::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2029,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 177,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/which"
+			],
+			"targetId" : "which::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2030,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 178,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/whoami"
+			],
+			"targetId" : "whoami::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2031,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 179,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/wsctl"
+			],
+			"targetId" : "wsctl::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2032,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 180,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/xargs"
+			],
+			"targetId" : "xargs::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2033,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 181,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/xml"
+			],
+			"targetId" : "xml::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2034,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 182,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/yes"
+			],
+			"targetId" : "yes::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2035,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 183,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Utilities/zip"
+			],
+			"targetId" : "zip::@bbf15b51adcdf6c35d20",
+			"targetIndex" : 2036,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 184,
+			"component" : "Unspecified",
+			"type" : "code"
+		},
+		{
+			"backtrace" : 185,
+			"component" : "Unspecified",
+			"type" : "code"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "Userland/Utilities",
+		"source" : "Userland/Utilities"
+	}
+}

@@ -1,0 +1,54 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install",
+			"serenity_test"
+		],
+		"files" : 
+		[
+			"Meta/CMake/utils.cmake",
+			"Tests/LibTimeZone/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 6,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 109,
+				"parent" : 1
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 2,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/LibTimeZone",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Tests/LibTimeZone/TestTimeZone"
+			],
+			"targetId" : "TestTimeZone::@c81fb0fbc1a21a0297aa",
+			"targetIndex" : 602,
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "Tests/LibTimeZone",
+		"source" : "Tests/LibTimeZone"
+	}
+}

@@ -1,0 +1,70 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install",
+			"serenity_test"
+		],
+		"files" : 
+		[
+			"Meta/CMake/utils.cmake",
+			"Tests/LibWeb/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 6,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 109,
+				"parent" : 1
+			},
+			{
+				"command" : 0,
+				"file" : 1,
+				"line" : 9,
+				"parent" : 0
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 2,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/LibWeb",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Tests/LibWeb/TestHTMLTokenizer"
+			],
+			"targetId" : "TestHTMLTokenizer::@28f9650b40624f2caad3",
+			"targetIndex" : 507,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 3,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/LibWeb",
+			"paths" : 
+			[
+				"Tests/LibWeb/tokenizer-test.html"
+			],
+			"type" : "file"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "Tests/LibWeb",
+		"source" : "Tests/LibWeb"
+	}
+}

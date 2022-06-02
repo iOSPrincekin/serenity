@@ -1,0 +1,85 @@
+{
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_custom_target"
+		],
+		"files" : 
+		[
+			"Userland/Libraries/LibC/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 154,
+				"parent" : 0
+			}
+		]
+	},
+	"dependencies" : 
+	[
+		{
+			"backtrace" : 1,
+			"id" : "ssp::@3cca7b4a6aef5983008a"
+		},
+		{
+			"backtrace" : 1,
+			"id" : "LibCStaticWithoutDeps::@3cca7b4a6aef5983008a"
+		},
+		{
+			"backtrace" : 1,
+			"id" : "LibUBSanitizerStatic::@168a3f8d3c84f9ab7177"
+		},
+		{
+			"backtrace" : 1,
+			"id" : "LibSystemStatic::@07377bf51a42f9c349e4"
+		}
+	],
+	"id" : "LibCStatic::@3cca7b4a6aef5983008a",
+	"name" : "LibCStatic",
+	"paths" : 
+	{
+		"build" : "Userland/Libraries/LibC",
+		"source" : "Userland/Libraries/LibC"
+	},
+	"sourceGroups" : 
+	[
+		{
+			"name" : "",
+			"sourceIndexes" : 
+			[
+				0
+			]
+		},
+		{
+			"name" : "CMake Rules",
+			"sourceIndexes" : 
+			[
+				1
+			]
+		}
+	],
+	"sources" : 
+	[
+		{
+			"backtrace" : 1,
+			"isGenerated" : true,
+			"path" : "cmake-build-default/Userland/Libraries/LibC/CMakeFiles/LibCStatic",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 0,
+			"isGenerated" : true,
+			"path" : "cmake-build-default/Userland/Libraries/LibC/CMakeFiles/LibCStatic.rule",
+			"sourceGroupIndex" : 1
+		}
+	],
+	"type" : "UTILITY"
+}

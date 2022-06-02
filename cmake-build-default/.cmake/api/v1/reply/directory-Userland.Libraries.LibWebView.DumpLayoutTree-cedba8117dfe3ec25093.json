@@ -1,0 +1,78 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install",
+			"serenity_install_sources",
+			"serenity_bin"
+		],
+		"files" : 
+		[
+			"Meta/CMake/utils.cmake",
+			"Userland/Libraries/LibWebView/DumpLayoutTree/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 2,
+				"file" : 1,
+				"line" : 5,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 85,
+				"parent" : 1
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 88,
+				"parent" : 1
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 3,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibWebView/DumpLayoutTree",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibWebView/DumpLayoutTree/main.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 4,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibWebView/DumpLayoutTree/DumpLayoutTree"
+			],
+			"targetId" : "DumpLayoutTree::@367a5f9c83ccab36ae1d",
+			"targetIndex" : 316,
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "Userland/Libraries/LibWebView/DumpLayoutTree",
+		"source" : "Userland/Libraries/LibWebView/DumpLayoutTree"
+	}
+}

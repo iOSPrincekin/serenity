@@ -1,0 +1,321 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install",
+			"serenity_install_headers",
+			"serenity_lib",
+			"serenity_install_sources"
+		],
+		"files" : 
+		[
+			"Meta/CMake/utils.cmake",
+			"Userland/Libraries/LibXML/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 2,
+				"file" : 1,
+				"line" : 6,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 37,
+				"parent" : 1
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 3,
+				"file" : 0,
+				"line" : 38,
+				"parent" : 1
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 9
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 9
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 9
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 9
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 9
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 9
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 9
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 9
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 42,
+				"parent" : 1
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 3,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibXML/DOM",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibXML/DOM/Document.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 4,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibXML/DOM",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibXML/DOM/DocumentTypeDeclaration.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 5,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibXML/DOM",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibXML/DOM/Node.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 6,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibXML",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibXML/Forward.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 7,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibXML",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibXML/FundamentalTypes.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 8,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibXML/Parser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibXML/Parser/Parser.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 10,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibXML/DOM",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibXML/DOM/Document.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 11,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibXML/DOM",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibXML/DOM/DocumentTypeDeclaration.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 12,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibXML/DOM",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibXML/DOM/Node.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 13,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibXML/DOM",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibXML/DOM/Node.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 14,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibXML",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibXML/Forward.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 15,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibXML",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibXML/FundamentalTypes.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 16,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibXML/Parser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibXML/Parser/Parser.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 17,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibXML/Parser",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibXML/Parser/Parser.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 18,
+			"component" : "Unspecified",
+			"destination" : "usr/lib",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibXML/libxml.so.serenity"
+			],
+			"targetId" : "LibXML::@36b0c7c892901f8cc0d8",
+			"targetIndex" : 415,
+			"targetInstallNamelink" : "skip",
+			"type" : "target"
+		},
+		{
+			"backtrace" : 18,
+			"component" : "Unspecified",
+			"destination" : "usr/lib",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibXML/libxml.so"
+			],
+			"targetId" : "LibXML::@36b0c7c892901f8cc0d8",
+			"targetIndex" : 415,
+			"targetInstallNamelink" : "only",
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "Userland/Libraries/LibXML",
+		"source" : "Userland/Libraries/LibXML"
+	}
+}

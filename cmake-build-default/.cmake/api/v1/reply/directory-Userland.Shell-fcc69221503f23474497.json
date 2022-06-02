@@ -1,0 +1,933 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install",
+			"serenity_install_headers",
+			"serenity_lib",
+			"serenity_install_sources",
+			"serenity_bin"
+		],
+		"files" : 
+		[
+			"Meta/CMake/utils.cmake",
+			"Userland/Shell/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 2,
+				"file" : 1,
+				"line" : 19,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 37,
+				"parent" : 1
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 3,
+				"file" : 0,
+				"line" : 38,
+				"parent" : 1
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 12
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 12
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 12
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 12
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 12
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 12
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 12
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 12
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 12
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 12
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 12
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 12
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 12
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 12
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 12
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 12
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 12
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 12
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 12
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 42,
+				"parent" : 1
+			},
+			{
+				"command" : 4,
+				"file" : 1,
+				"line" : 26,
+				"parent" : 0
+			},
+			{
+				"command" : 3,
+				"file" : 0,
+				"line" : 85,
+				"parent" : 33
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 34
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 34
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 34
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 34
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 34
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 34
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 34
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 34
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 34
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 34
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 34
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 34
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 34
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 34
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 34
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 34
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 34
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 34
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 34
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 88,
+				"parent" : 33
+			},
+			{
+				"command" : 0,
+				"file" : 1,
+				"line" : 29,
+				"parent" : 0
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 3,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibShell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/AST.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 4,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibShell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/Execution.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 5,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibShell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/Formatter.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 6,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibShell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/Forward.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 7,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibShell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/Job.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 8,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibShell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/NodeVisitor.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 9,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibShell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/Parser.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 10,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibShell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/Shell.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 11,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibShell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/SyntaxHighlighter.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 13,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/AST.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 14,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/AST.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 15,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/Builtin.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 16,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/Execution.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 17,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/Formatter.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 18,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/Formatter.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 19,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/Forward.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 20,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/ImmediateFunctions.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 21,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/Job.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 22,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/Job.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 23,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/NodeVisitor.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 24,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/NodeVisitor.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 25,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/Parser.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 26,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/Parser.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 27,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/Shell.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 28,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/Shell.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 29,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/SyntaxHighlighter.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 30,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/SyntaxHighlighter.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 31,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/main.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 32,
+			"component" : "Unspecified",
+			"destination" : "usr/lib",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/libshell.so.serenity"
+			],
+			"targetId" : "LibShell::@7a6cfe09806f0db7a64d",
+			"targetIndex" : 391,
+			"targetInstallNamelink" : "skip",
+			"type" : "target"
+		},
+		{
+			"backtrace" : 32,
+			"component" : "Unspecified",
+			"destination" : "usr/lib",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/libshell.so"
+			],
+			"targetId" : "LibShell::@7a6cfe09806f0db7a64d",
+			"targetIndex" : 391,
+			"targetInstallNamelink" : "only",
+			"type" : "target"
+		},
+		{
+			"backtrace" : 35,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/AST.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 36,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/AST.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 37,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/Builtin.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 38,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/Execution.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 39,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/Formatter.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 40,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/Formatter.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 41,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/Forward.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 42,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/ImmediateFunctions.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 43,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/Job.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 44,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/Job.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 45,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/NodeVisitor.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 46,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/NodeVisitor.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 47,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/Parser.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 48,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/Parser.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 49,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/Shell.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 50,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/Shell.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 51,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/SyntaxHighlighter.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 52,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/SyntaxHighlighter.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 53,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/main.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 54,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Shell/Shell"
+			],
+			"targetId" : "Shell::@7a6cfe09806f0db7a64d",
+			"targetIndex" : 446,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 55,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Shell",
+			"paths" : 
+			[
+				{
+					"from" : "Userland/Shell/Tests",
+					"to" : "."
+				}
+			],
+			"type" : "directory"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "Userland/Shell",
+		"source" : "Userland/Shell"
+	}
+}

@@ -1,0 +1,924 @@
+{
+	"artifacts" : 
+	[
+		{
+			"path" : "Userland/Utilities/pape"
+		}
+	],
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_executable",
+			"install",
+			"add_link_options",
+			"target_link_libraries",
+			"add_compile_options",
+			"include",
+			"add_compile_definitions",
+			"include_directories"
+		],
+		"files" : 
+		[
+			"Userland/Utilities/CMakeLists.txt",
+			"CMakeLists.txt",
+			"Meta/CMake/common_compile_options.cmake",
+			"Meta/CMake/serenity_compile_options.cmake",
+			"Userland/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 47,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 50,
+				"parent" : 0
+			},
+			{
+				"file" : 1
+			},
+			{
+				"command" : 2,
+				"file" : 1,
+				"line" : 166,
+				"parent" : 3
+			},
+			{
+				"command" : 2,
+				"file" : 1,
+				"line" : 167,
+				"parent" : 3
+			},
+			{
+				"command" : 2,
+				"file" : 1,
+				"line" : 177,
+				"parent" : 3
+			},
+			{
+				"command" : 2,
+				"file" : 1,
+				"line" : 227,
+				"parent" : 3
+			},
+			{
+				"command" : 3,
+				"file" : 0,
+				"line" : 49,
+				"parent" : 0
+			},
+			{
+				"command" : 3,
+				"file" : 0,
+				"line" : 157,
+				"parent" : 0
+			},
+			{
+				"command" : 5,
+				"file" : 1,
+				"line" : 164,
+				"parent" : 3
+			},
+			{
+				"file" : 3,
+				"parent" : 10
+			},
+			{
+				"command" : 5,
+				"file" : 3,
+				"line" : 1,
+				"parent" : 11
+			},
+			{
+				"file" : 2,
+				"parent" : 12
+			},
+			{
+				"command" : 4,
+				"file" : 2,
+				"line" : 5,
+				"parent" : 13
+			},
+			{
+				"command" : 4,
+				"file" : 2,
+				"line" : 6,
+				"parent" : 13
+			},
+			{
+				"command" : 4,
+				"file" : 2,
+				"line" : 11,
+				"parent" : 13
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 4,
+				"parent" : 11
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 5,
+				"parent" : 11
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 6,
+				"parent" : 11
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 7,
+				"parent" : 11
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 8,
+				"parent" : 11
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 9,
+				"parent" : 11
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 10,
+				"parent" : 11
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 11,
+				"parent" : 11
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 12,
+				"parent" : 11
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 13,
+				"parent" : 11
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 14,
+				"parent" : 11
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 15,
+				"parent" : 11
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 16,
+				"parent" : 11
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 17,
+				"parent" : 11
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 18,
+				"parent" : 11
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 19,
+				"parent" : 11
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 21,
+				"parent" : 11
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 22,
+				"parent" : 11
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 23,
+				"parent" : 11
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 24,
+				"parent" : 11
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 25,
+				"parent" : 11
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 26,
+				"parent" : 11
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 27,
+				"parent" : 11
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 28,
+				"parent" : 11
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 29,
+				"parent" : 11
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 32,
+				"parent" : 11
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 33,
+				"parent" : 11
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 35,
+				"parent" : 11
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 36,
+				"parent" : 11
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 37,
+				"parent" : 11
+			},
+			{
+				"file" : 4
+			},
+			{
+				"command" : 4,
+				"file" : 4,
+				"line" : 1,
+				"parent" : 47
+			},
+			{
+				"command" : 6,
+				"file" : 1,
+				"line" : 174,
+				"parent" : 3
+			},
+			{
+				"command" : 6,
+				"file" : 1,
+				"line" : 169,
+				"parent" : 3
+			},
+			{
+				"command" : 7,
+				"file" : 1,
+				"line" : 179,
+				"parent" : 3
+			},
+			{
+				"command" : 7,
+				"file" : 1,
+				"line" : 180,
+				"parent" : 3
+			},
+			{
+				"command" : 7,
+				"file" : 1,
+				"line" : 181,
+				"parent" : 3
+			},
+			{
+				"command" : 7,
+				"file" : 1,
+				"line" : 182,
+				"parent" : 3
+			},
+			{
+				"command" : 7,
+				"file" : 1,
+				"line" : 183,
+				"parent" : 3
+			},
+			{
+				"command" : 7,
+				"file" : 1,
+				"line" : 184,
+				"parent" : 3
+			},
+			{
+				"command" : 7,
+				"file" : 1,
+				"line" : 185,
+				"parent" : 3
+			},
+			{
+				"command" : 7,
+				"file" : 1,
+				"line" : 186,
+				"parent" : 3
+			},
+			{
+				"command" : 7,
+				"file" : 1,
+				"line" : 187,
+				"parent" : 3
+			},
+			{
+				"command" : 7,
+				"file" : 1,
+				"line" : 188,
+				"parent" : 3
+			},
+			{
+				"command" : 7,
+				"file" : 1,
+				"line" : 189,
+				"parent" : 3
+			},
+			{
+				"command" : 7,
+				"file" : 1,
+				"line" : 190,
+				"parent" : 3
+			},
+			{
+				"command" : 7,
+				"file" : 1,
+				"line" : 191,
+				"parent" : 3
+			}
+		]
+	},
+	"compileGroups" : 
+	[
+		{
+			"compileCommandFragments" : 
+			[
+				{
+					"fragment" : " -pie -fpic"
+				},
+				{
+					"backtrace" : 14,
+					"fragment" : "-Wall"
+				},
+				{
+					"backtrace" : 15,
+					"fragment" : "-Wextra"
+				},
+				{
+					"backtrace" : 16,
+					"fragment" : "-Werror"
+				},
+				{
+					"backtrace" : 17,
+					"fragment" : "-Wno-address-of-packed-member"
+				},
+				{
+					"backtrace" : 18,
+					"fragment" : "-Wcast-qual"
+				},
+				{
+					"backtrace" : 19,
+					"fragment" : "-Wdeprecated-copy"
+				},
+				{
+					"backtrace" : 20,
+					"fragment" : "-Wduplicated-cond"
+				},
+				{
+					"backtrace" : 21,
+					"fragment" : "-Wformat=2"
+				},
+				{
+					"backtrace" : 22,
+					"fragment" : "-Wimplicit-fallthrough"
+				},
+				{
+					"backtrace" : 23,
+					"fragment" : "-Wlogical-op"
+				},
+				{
+					"backtrace" : 24,
+					"fragment" : "-Wmisleading-indentation"
+				},
+				{
+					"backtrace" : 25,
+					"fragment" : "-Wmissing-declarations"
+				},
+				{
+					"backtrace" : 26,
+					"fragment" : "-Wnon-virtual-dtor"
+				},
+				{
+					"backtrace" : 27,
+					"fragment" : "-Wsuggest-override"
+				},
+				{
+					"backtrace" : 28,
+					"fragment" : "-Wno-unknown-warning-option"
+				},
+				{
+					"backtrace" : 29,
+					"fragment" : "-Wundef"
+				},
+				{
+					"backtrace" : 30,
+					"fragment" : "-Wunused"
+				},
+				{
+					"backtrace" : 31,
+					"fragment" : "-Wno-unused-command-line-argument"
+				},
+				{
+					"backtrace" : 32,
+					"fragment" : "-Wwrite-strings"
+				},
+				{
+					"backtrace" : 33,
+					"fragment" : "-fdiagnostics-color=always"
+				},
+				{
+					"backtrace" : 34,
+					"fragment" : "-fno-delete-null-pointer-checks"
+				},
+				{
+					"backtrace" : 35,
+					"fragment" : "-ffile-prefix-map=/Users/lee/Desktop/Computer_Systems/serenity=."
+				},
+				{
+					"backtrace" : 36,
+					"fragment" : "-fno-exceptions"
+				},
+				{
+					"backtrace" : 37,
+					"fragment" : "-fno-semantic-interposition"
+				},
+				{
+					"backtrace" : 38,
+					"fragment" : "-fsized-deallocation"
+				},
+				{
+					"backtrace" : 39,
+					"fragment" : "-fstack-clash-protection"
+				},
+				{
+					"backtrace" : 40,
+					"fragment" : "-fstack-protector-strong"
+				},
+				{
+					"backtrace" : 41,
+					"fragment" : "-g1"
+				},
+				{
+					"backtrace" : 42,
+					"fragment" : "-Wno-literal-suffix"
+				},
+				{
+					"backtrace" : 43,
+					"fragment" : "-Wno-maybe-uninitialized"
+				},
+				{
+					"backtrace" : 44,
+					"fragment" : "-Wno-expansion-to-defined"
+				},
+				{
+					"backtrace" : 45,
+					"fragment" : "-Wcast-align"
+				},
+				{
+					"backtrace" : 46,
+					"fragment" : "-Wdouble-promotion"
+				},
+				{
+					"backtrace" : 48,
+					"fragment" : "-O2"
+				},
+				{
+					"fragment" : "-std=c++20"
+				}
+			],
+			"defines" : 
+			[
+				{
+					"backtrace" : 49,
+					"define" : "ENABLE_COMPILETIME_FORMAT_CHECK"
+				},
+				{
+					"backtrace" : 50,
+					"define" : "SANITIZE_PTRS"
+				}
+			],
+			"includes" : 
+			[
+				{
+					"backtrace" : 51,
+					"path" : "/Users/lee/Desktop/Computer_Systems/serenity/."
+				},
+				{
+					"backtrace" : 52,
+					"path" : "/Users/lee/Desktop/Computer_Systems/serenity/Userland/Libraries"
+				},
+				{
+					"backtrace" : 53,
+					"path" : "/Users/lee/Desktop/Computer_Systems/serenity/Userland/Libraries/LibC"
+				},
+				{
+					"backtrace" : 54,
+					"path" : "/Users/lee/Desktop/Computer_Systems/serenity/Userland/Libraries/LibCrypt"
+				},
+				{
+					"backtrace" : 55,
+					"path" : "/Users/lee/Desktop/Computer_Systems/serenity/Userland/Libraries/LibM"
+				},
+				{
+					"backtrace" : 56,
+					"path" : "/Users/lee/Desktop/Computer_Systems/serenity/Userland/Libraries/LibPthread"
+				},
+				{
+					"backtrace" : 57,
+					"path" : "/Users/lee/Desktop/Computer_Systems/serenity/Userland/Libraries/LibSystem"
+				},
+				{
+					"backtrace" : 58,
+					"path" : "/Users/lee/Desktop/Computer_Systems/serenity/Userland/Services"
+				},
+				{
+					"backtrace" : 59,
+					"path" : "/Users/lee/Desktop/Computer_Systems/serenity/Userland"
+				},
+				{
+					"backtrace" : 60,
+					"path" : "/Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default"
+				},
+				{
+					"backtrace" : 61,
+					"path" : "/Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/Userland/Services"
+				},
+				{
+					"backtrace" : 62,
+					"path" : "/Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/Userland/Libraries"
+				},
+				{
+					"backtrace" : 63,
+					"path" : "/Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/Userland"
+				}
+			],
+			"language" : "CXX",
+			"languageStandard" : 
+			{
+				"backtraces" : 
+				[
+					1
+				],
+				"standard" : "20"
+			},
+			"sourceIndexes" : 
+			[
+				0
+			],
+			"sysroot" : 
+			{
+				"path" : "/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root"
+			}
+		}
+	],
+	"dependencies" : 
+	[
+		{
+			"backtrace" : 8,
+			"id" : "ssp::@3cca7b4a6aef5983008a"
+		},
+		{
+			"backtrace" : 8,
+			"id" : "LibC::@3cca7b4a6aef5983008a"
+		},
+		{
+			"backtrace" : 9,
+			"id" : "LibCompress::@e1d1410d7b33a92d385f"
+		},
+		{
+			"backtrace" : 9,
+			"id" : "LibConfig::@f27fe7525e7af0803d48"
+		},
+		{
+			"backtrace" : 8,
+			"id" : "LibCore::@710275218920ff104aa7"
+		},
+		{
+			"backtrace" : 8,
+			"id" : "LibCrypt::@25b9c87ea1cc7d04b10f"
+		},
+		{
+			"backtrace" : 8,
+			"id" : "LibCryptSHA2::@25b9c87ea1cc7d04b10f"
+		},
+		{
+			"backtrace" : 9,
+			"id" : "LibCrypto::@8d800b38caedeafff2c5"
+		},
+		{
+			"backtrace" : 9,
+			"id" : "LibGfx::@cec1e865e9e6fd338739"
+		},
+		{
+			"backtrace" : 9,
+			"id" : "LibGUI::@c5d20e9b2413b52cf95f"
+		},
+		{
+			"backtrace" : 9,
+			"id" : "LibIPC::@d12b44b963611a76cdc0"
+		},
+		{
+			"backtrace" : 9,
+			"id" : "LibM::@8663c4c32d4975c17890"
+		},
+		{
+			"backtrace" : 9,
+			"id" : "LibMain::@1f0f109185e66072a195"
+		},
+		{
+			"backtrace" : 9,
+			"id" : "LibPthread::@07d51313022576576223"
+		},
+		{
+			"backtrace" : 9,
+			"id" : "LibRegex::@12c806f3fb7da6a0f215"
+		},
+		{
+			"backtrace" : 9,
+			"id" : "LibSyntax::@b409d454b8b01e41a3d1"
+		},
+		{
+			"backtrace" : 9,
+			"id" : "LibSystem::@07377bf51a42f9c349e4"
+		},
+		{
+			"backtrace" : 9,
+			"id" : "LibTextCodec::@b12df9e054c091f1bafa"
+		},
+		{
+			"backtrace" : 9,
+			"id" : "LibThreading::@b87ae098fb864f367cbf"
+		},
+		{
+			"backtrace" : 8,
+			"id" : "LibTimeZone::@f65f77a2eb88f620e173"
+		},
+		{
+			"backtrace" : 9,
+			"id" : "LibUnicode::@c53deb94abbec677a6c5"
+		}
+	],
+	"id" : "pape::@bbf15b51adcdf6c35d20",
+	"install" : 
+	{
+		"destinations" : 
+		[
+			{
+				"backtrace" : 2,
+				"path" : "bin"
+			}
+		],
+		"prefix" : 
+		{
+			"path" : "/Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/Root"
+		}
+	},
+	"link" : 
+	{
+		"commandFragments" : 
+		[
+			{
+				"fragment" : "-pie -fpic",
+				"role" : "flags"
+			},
+			{
+				"fragment" : "-Wl,--hash-style=gnu,-z,relro,-z,now,-z,noexecstack,-z,max-page-size=0x1000,-z,separate-code",
+				"role" : "flags"
+			},
+			{
+				"backtrace" : 4,
+				"fragment" : "-Wl,-z,text",
+				"role" : "flags"
+			},
+			{
+				"backtrace" : 5,
+				"fragment" : "-Wl,--no-allow-shlib-undefined",
+				"role" : "flags"
+			},
+			{
+				"backtrace" : 6,
+				"fragment" : "-Wno-unused-command-line-argument",
+				"role" : "flags"
+			},
+			{
+				"backtrace" : 7,
+				"fragment" : "-Wl,-z,pack-relative-relocs",
+				"role" : "flags"
+			},
+			{
+				"backtrace" : 8,
+				"fragment" : "-L/Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/Userland/Libraries/LibC",
+				"role" : "libraryPath"
+			},
+			{
+				"backtrace" : 8,
+				"fragment" : "-L/Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/Userland/Libraries/LibCrypt",
+				"role" : "libraryPath"
+			},
+			{
+				"backtrace" : 8,
+				"fragment" : "-L/Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/Userland/Libraries/LibDl",
+				"role" : "libraryPath"
+			},
+			{
+				"backtrace" : 8,
+				"fragment" : "-L/Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/Userland/Libraries/LibM",
+				"role" : "libraryPath"
+			},
+			{
+				"backtrace" : 8,
+				"fragment" : "-L/Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/Userland/Libraries/LibPthread",
+				"role" : "libraryPath"
+			},
+			{
+				"backtrace" : 8,
+				"fragment" : "-L/Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/Userland/Libraries/LibSanitizer",
+				"role" : "libraryPath"
+			},
+			{
+				"backtrace" : 8,
+				"fragment" : "-L/Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/Userland/Libraries/LibSystem",
+				"role" : "libraryPath"
+			},
+			{
+				"backtrace" : 9,
+				"fragment" : "Userland/Libraries/LibGUI/libgui.so.serenity",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 9,
+				"fragment" : "Userland/Libraries/LibMain/libmain.a",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "Userland/Libraries/LibGfx/libgfx.so.serenity",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "Userland/Libraries/LibM/libm.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "Userland/Libraries/LibCompress/libcompress.so.serenity",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "Userland/Libraries/LibCrypto/libcrypto.so.serenity",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "Userland/Libraries/LibTextCodec/libtextcodec.so.serenity",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "Userland/Libraries/LibThreading/libthreading.so.serenity",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "Userland/Libraries/LibPthread/libpthread.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "Userland/Libraries/LibSystem/libsystem.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "Userland/Libraries/LibRegex/libregex.so.serenity",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "Userland/Libraries/LibUnicode/libunicode.so.serenity",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "Userland/Libraries/LibSyntax/libsyntax.so.serenity",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "Userland/Libraries/LibConfig/libconfig.so.serenity",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "Userland/Libraries/LibIPC/libipc.so.serenity",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 8,
+				"fragment" : "Userland/Libraries/LibCore/libcore.so.serenity",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "Userland/Libraries/LibCrypt/libcrypt.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "Userland/Libraries/LibC/libc.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "Userland/Libraries/LibC/libssp.a",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "-lsystem",
+				"role" : "libraries"
+			}
+		],
+		"language" : "CXX",
+		"sysroot" : 
+		{
+			"path" : "/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root"
+		}
+	},
+	"name" : "pape",
+	"nameOnDisk" : "pape",
+	"paths" : 
+	{
+		"build" : "Userland/Utilities",
+		"source" : "Userland/Utilities"
+	},
+	"sourceGroups" : 
+	[
+		{
+			"name" : "Source Files",
+			"sourceIndexes" : 
+			[
+				0
+			]
+		}
+	],
+	"sources" : 
+	[
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "Userland/Utilities/pape.cpp",
+			"sourceGroupIndex" : 0
+		}
+	],
+	"type" : "EXECUTABLE"
+}

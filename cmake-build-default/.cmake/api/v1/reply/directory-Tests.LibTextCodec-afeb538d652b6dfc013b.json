@@ -1,0 +1,54 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install",
+			"serenity_test"
+		],
+		"files" : 
+		[
+			"Meta/CMake/utils.cmake",
+			"Tests/LibTextCodec/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 6,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 109,
+				"parent" : 1
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 2,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/LibTextCodec",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Tests/LibTextCodec/TestTextDecoders"
+			],
+			"targetId" : "TestTextDecoders::@ffaa1f14bc0caad2cf9a",
+			"targetIndex" : 599,
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "Tests/LibTextCodec",
+		"source" : "Tests/LibTextCodec"
+	}
+}

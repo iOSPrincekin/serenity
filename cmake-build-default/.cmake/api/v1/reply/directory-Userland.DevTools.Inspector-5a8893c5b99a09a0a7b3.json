@@ -1,0 +1,238 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install",
+			"serenity_install_sources",
+			"serenity_bin",
+			"serenity_app"
+		],
+		"files" : 
+		[
+			"Meta/CMake/utils.cmake",
+			"Userland/DevTools/Inspector/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 3,
+				"file" : 1,
+				"line" : 15,
+				"parent" : 0
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 126,
+				"parent" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 85,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 88,
+				"parent" : 2
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 4,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/Inspector",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/Inspector/InspectorServerClient.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 5,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/Inspector",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/Inspector/RemoteObject.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 6,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/Inspector",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/Inspector/RemoteObject.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 7,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/Inspector",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/Inspector/RemoteObjectGraphModel.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 8,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/Inspector",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/Inspector/RemoteObjectGraphModel.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 9,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/Inspector",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/Inspector/RemoteObjectPropertyModel.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 10,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/Inspector",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/Inspector/RemoteObjectPropertyModel.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 11,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/Inspector",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/Inspector/RemoteProcess.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 12,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/Inspector",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/Inspector/RemoteProcess.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 13,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/Inspector",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/Inspector/main.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 14,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/Inspector/Inspector"
+			],
+			"targetId" : "Inspector::@e832ec5726e9eba24a86",
+			"targetIndex" : 334,
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "Userland/DevTools/Inspector",
+		"source" : "Userland/DevTools/Inspector"
+	}
+}

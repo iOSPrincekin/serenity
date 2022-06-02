@@ -1,0 +1,14 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : [],
+		"files" : [],
+		"nodes" : []
+	},
+	"installers" : [],
+	"paths" : 
+	{
+		"build" : "Userland/DevTools/HackStudio/LanguageClients",
+		"source" : "Userland/DevTools/HackStudio/LanguageClients"
+	}
+}

@@ -1,0 +1,1035 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install",
+			"serenity_install_headers",
+			"serenity_lib",
+			"serenity_install_sources"
+		],
+		"files" : 
+		[
+			"Meta/CMake/utils.cmake",
+			"Userland/Libraries/LibPDF/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 2,
+				"file" : 1,
+				"line" : 18,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 37,
+				"parent" : 1
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 3,
+				"file" : 0,
+				"line" : 38,
+				"parent" : 1
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 24
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 42,
+				"parent" : 1
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 3,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/ColorSpace.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 4,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/CommonNames.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 5,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Document.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 6,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Encoding.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 7,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Encryption.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 8,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Error.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 9,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Filter.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 10,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibPDF/Fonts",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Fonts/PDFFont.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 11,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibPDF/Fonts",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Fonts/TrueTypeFont.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 12,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibPDF/Fonts",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Fonts/Type0Font.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 13,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibPDF/Fonts",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Fonts/Type1Font.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 14,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Forward.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 15,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Object.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 16,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/ObjectDerivatives.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 17,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Operator.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 18,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Parser.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 19,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Reader.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 20,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Reference.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 21,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Renderer.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 22,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Value.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 23,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/XRefTable.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 25,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/ColorSpace.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 26,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/ColorSpace.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 27,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/CommonNames.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 28,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/CommonNames.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 29,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Document.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 30,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Document.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 31,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Encoding.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 32,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Encoding.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 33,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Encryption.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 34,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Encryption.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 35,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Error.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 36,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Filter.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 37,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Filter.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 38,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF/Fonts",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Fonts/PDFFont.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 39,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF/Fonts",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Fonts/PDFFont.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 40,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF/Fonts",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Fonts/TrueTypeFont.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 41,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF/Fonts",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Fonts/TrueTypeFont.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 42,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF/Fonts",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Fonts/Type0Font.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 43,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF/Fonts",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Fonts/Type0Font.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 44,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF/Fonts",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Fonts/Type1Font.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 45,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF/Fonts",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Fonts/Type1Font.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 46,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Forward.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 47,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Object.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 48,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/ObjectDerivatives.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 49,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/ObjectDerivatives.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 50,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Operator.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 51,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Parser.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 52,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Parser.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 53,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Reader.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 54,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Reference.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 55,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Renderer.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 56,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Renderer.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 57,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Value.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 58,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/Value.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 59,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibPDF",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/XRefTable.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 60,
+			"component" : "Unspecified",
+			"destination" : "usr/lib",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/libpdf.so.serenity"
+			],
+			"targetId" : "LibPDF::@01285f894a058d4510dc",
+			"targetIndex" : 386,
+			"targetInstallNamelink" : "skip",
+			"type" : "target"
+		},
+		{
+			"backtrace" : 60,
+			"component" : "Unspecified",
+			"destination" : "usr/lib",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibPDF/libpdf.so"
+			],
+			"targetId" : "LibPDF::@01285f894a058d4510dc",
+			"targetIndex" : 386,
+			"targetInstallNamelink" : "only",
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "Userland/Libraries/LibPDF",
+		"source" : "Userland/Libraries/LibPDF"
+	}
+}

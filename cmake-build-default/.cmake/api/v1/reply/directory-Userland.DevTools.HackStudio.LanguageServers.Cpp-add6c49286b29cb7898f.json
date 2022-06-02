@@ -1,0 +1,282 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install",
+			"serenity_install_sources",
+			"serenity_bin"
+		],
+		"files" : 
+		[
+			"Meta/CMake/utils.cmake",
+			"Userland/DevTools/HackStudio/LanguageServers/Cpp/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 2,
+				"file" : 1,
+				"line" : 16,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 85,
+				"parent" : 1
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 88,
+				"parent" : 1
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 3,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers/Cpp",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Cpp/ConnectionFromClient.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 4,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers/Cpp",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Cpp/CppComprehensionEngine.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 5,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers/Cpp",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Cpp/CppComprehensionEngine.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 6,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers/Cpp",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 7,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers/Cpp",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 8,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests/complete_includes.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 9,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests/complete_local_args.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 10,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests/complete_local_vars.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 11,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests/complete_type.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 12,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests/find_variable_declaration.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 13,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests/parameters_hint1.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 14,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests/sample_header.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 15,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers/Cpp",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Cpp/main.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 16,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Cpp/CppLanguageServer"
+			],
+			"targetId" : "CppLanguageServer::@d22dcc975efc49850118",
+			"targetIndex" : 309,
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "Userland/DevTools/HackStudio/LanguageServers/Cpp",
+		"source" : "Userland/DevTools/HackStudio/LanguageServers/Cpp"
+	}
+}

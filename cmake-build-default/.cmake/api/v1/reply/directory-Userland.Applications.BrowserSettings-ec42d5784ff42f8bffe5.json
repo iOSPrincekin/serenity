@@ -1,0 +1,153 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install",
+			"serenity_install_sources",
+			"serenity_bin",
+			"serenity_app"
+		],
+		"files" : 
+		[
+			"Meta/CMake/utils.cmake",
+			"Userland/Applications/BrowserSettings/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 3,
+				"file" : 1,
+				"line" : 18,
+				"parent" : 0
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 126,
+				"parent" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 85,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 88,
+				"parent" : 2
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 4,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/BrowserSettings",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/BrowserSettings/BrowserSettingsWidget.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 5,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/BrowserSettings",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/BrowserSettings/BrowserSettingsWidget.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 6,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/BrowserSettings",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/BrowserSettings/ContentFilterSettingsWidget.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 7,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/BrowserSettings",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/BrowserSettings/ContentFilterSettingsWidget.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 8,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/BrowserSettings",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/BrowserSettings/main.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 9,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/BrowserSettings/BrowserSettings"
+			],
+			"targetId" : "BrowserSettings::@6483d9eee92a9b139e9b",
+			"targetIndex" : 11,
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "Userland/Applications/BrowserSettings",
+		"source" : "Userland/Applications/BrowserSettings"
+	}
+}

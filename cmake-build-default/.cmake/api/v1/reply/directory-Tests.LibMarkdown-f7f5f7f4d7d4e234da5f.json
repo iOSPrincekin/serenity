@@ -1,0 +1,82 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install",
+			"include",
+			"serenity_test"
+		],
+		"files" : 
+		[
+			"Meta/CMake/commonmark_spec.cmake",
+			"Tests/LibMarkdown/CMakeLists.txt",
+			"Meta/CMake/utils.cmake"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 1,
+				"parent" : 0
+			},
+			{
+				"file" : 0,
+				"parent" : 1
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 8,
+				"parent" : 2
+			},
+			{
+				"command" : 2,
+				"file" : 1,
+				"line" : 8,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 109,
+				"parent" : 4
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 3,
+			"component" : "Unspecified",
+			"destination" : "home/anon/Tests",
+			"paths" : 
+			[
+				"cmake-build-default/commonmark.spec.json"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 5,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/LibMarkdown",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Tests/LibMarkdown/TestCommonmark"
+			],
+			"targetId" : "TestCommonmark::@11ffbe4a1be51783883a",
+			"targetIndex" : 486,
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "Tests/LibMarkdown",
+		"source" : "Tests/LibMarkdown"
+	}
+}

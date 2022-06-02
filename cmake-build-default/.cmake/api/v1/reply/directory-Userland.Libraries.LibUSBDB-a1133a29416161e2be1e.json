@@ -1,0 +1,134 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install",
+			"serenity_install_headers",
+			"serenity_lib",
+			"serenity_install_sources"
+		],
+		"files" : 
+		[
+			"Meta/CMake/utils.cmake",
+			"Userland/Libraries/LibUSBDB/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 2,
+				"file" : 1,
+				"line" : 5,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 37,
+				"parent" : 1
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 3,
+				"file" : 0,
+				"line" : 38,
+				"parent" : 1
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 4
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 4
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 42,
+				"parent" : 1
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 3,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibUSBDB",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibUSBDB/Database.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 5,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibUSBDB",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibUSBDB/Database.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 6,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibUSBDB",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibUSBDB/Database.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 7,
+			"component" : "Unspecified",
+			"destination" : "usr/lib",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibUSBDB/libusbdb.so.serenity"
+			],
+			"targetId" : "LibUSBDB::@5b2e05064165448991fc",
+			"targetIndex" : 405,
+			"targetInstallNamelink" : "skip",
+			"type" : "target"
+		},
+		{
+			"backtrace" : 7,
+			"component" : "Unspecified",
+			"destination" : "usr/lib",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibUSBDB/libusbdb.so"
+			],
+			"targetId" : "LibUSBDB::@5b2e05064165448991fc",
+			"targetIndex" : 405,
+			"targetInstallNamelink" : "only",
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "Userland/Libraries/LibUSBDB",
+		"source" : "Userland/Libraries/LibUSBDB"
+	}
+}

@@ -1,0 +1,57 @@
+{
+	"backtrace" : 2,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_custom_target",
+			"serenity_component",
+			"add_dependencies"
+		],
+		"files" : 
+		[
+			"Meta/CMake/serenity_components.cmake",
+			"Userland/Demos/LibGfxDemo/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 1,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 15,
+				"parent" : 1
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 26,
+				"parent" : 1
+			}
+		]
+	},
+	"dependencies" : 
+	[
+		{
+			"backtrace" : 3,
+			"id" : "LibGfxDemo::@56fba2d93f91bf2592f9"
+		}
+	],
+	"id" : "ComponentLibGfxDemo::@56fba2d93f91bf2592f9",
+	"name" : "ComponentLibGfxDemo",
+	"paths" : 
+	{
+		"build" : "Userland/Demos/LibGfxDemo",
+		"source" : "Userland/Demos/LibGfxDemo"
+	},
+	"sources" : [],
+	"type" : "UTILITY"
+}

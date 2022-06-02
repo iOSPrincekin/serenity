@@ -1,0 +1,57 @@
+{
+	"backtrace" : 2,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_custom_target",
+			"serenity_component",
+			"add_dependencies"
+		],
+		"files" : 
+		[
+			"Meta/CMake/serenity_components.cmake",
+			"Userland/Demos/Cube/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 1,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 15,
+				"parent" : 1
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 26,
+				"parent" : 1
+			}
+		]
+	},
+	"dependencies" : 
+	[
+		{
+			"backtrace" : 3,
+			"id" : "Cube::@288cd374af3431121a85"
+		}
+	],
+	"id" : "ComponentCube::@288cd374af3431121a85",
+	"name" : "ComponentCube",
+	"paths" : 
+	{
+		"build" : "Userland/Demos/Cube",
+		"source" : "Userland/Demos/Cube"
+	},
+	"sources" : [],
+	"type" : "UTILITY"
+}

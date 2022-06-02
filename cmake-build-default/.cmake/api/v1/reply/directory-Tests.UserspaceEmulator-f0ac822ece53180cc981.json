@@ -1,0 +1,63 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install"
+		],
+		"files" : 
+		[
+			"Tests/UserspaceEmulator/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 11,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 11,
+				"parent" : 0
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 1,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/UserEmulator",
+			"paths" : 
+			[
+				"Tests/UserspaceEmulator/test-run-ls"
+			],
+			"targetId" : "test-run-ls::@aeb70d7e06135e04439b",
+			"targetIndex" : 1998,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 2,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/UserEmulator",
+			"paths" : 
+			[
+				"Tests/UserspaceEmulator/ue-write-oob"
+			],
+			"targetId" : "ue-write-oob::@aeb70d7e06135e04439b",
+			"targetIndex" : 2014,
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "Tests/UserspaceEmulator",
+		"source" : "Tests/UserspaceEmulator"
+	}
+}

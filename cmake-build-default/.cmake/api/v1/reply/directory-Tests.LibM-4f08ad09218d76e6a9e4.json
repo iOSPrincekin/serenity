@@ -1,0 +1,54 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install",
+			"serenity_test"
+		],
+		"files" : 
+		[
+			"Meta/CMake/utils.cmake",
+			"Tests/LibM/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 7,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 109,
+				"parent" : 1
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 2,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/LibM",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Tests/LibM/test-math"
+			],
+			"targetId" : "test-math::@5ba5d1beaab3b593c31e",
+			"targetIndex" : 1996,
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "Tests/LibM",
+		"source" : "Tests/LibM"
+	}
+}

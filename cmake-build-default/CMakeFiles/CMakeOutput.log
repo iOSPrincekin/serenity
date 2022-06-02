@@ -1,0 +1,386 @@
+The target system is: SerenityOS -  - i686
+The host system is: Darwin - 21.5.0 - x86_64
+Compiling the C compiler identification source file "CMakeCCompilerId.c" succeeded.
+Compiler: /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/bin/i686-pc-serenity-gcc 
+Build flags: 
+Id flags:  
+
+The output was:
+0
+
+
+Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "a.out"
+
+The C compiler identification is GNU, found in "/Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/CMakeFiles/3.21.1/CompilerIdC/a.out"
+
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" succeeded.
+Compiler: /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/bin/i686-pc-serenity-g++ 
+Build flags: 
+Id flags:  
+
+The output was:
+0
+
+
+Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "a.out"
+
+The CXX compiler identification is GNU, found in "/Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/CMakeFiles/3.21.1/CompilerIdCXX/a.out"
+
+Checking whether the ASM compiler is GNU using "--version" matched "(GNU assembler)|(GCC)|(Free Software Foundation)":
+i686-pc-serenity-gcc (GCC) 12.1.0
+Copyright (C) 2022 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+Detecting C compiler ABI info compiled with the following output:
+Change Dir: /Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/Applications/CLion.app/Contents/bin/ninja/mac/ninja cmTC_70497 && [1/2] Building C object CMakeFiles/cmTC_70497.dir/CMakeCCompilerABI.c.o
+Using built-in specs.
+COLLECT_GCC=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/bin/i686-pc-serenity-gcc
+Target: i686-pc-serenity
+Configured with: /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Tarballs/gcc-12.1.0/configure --prefix=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686 --target=i686-pc-serenity --with-sysroot=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/../Build/i686/Root --disable-nls --enable-shared --enable-languages=c,c++ --enable-default-pie --enable-lto --enable-threads=posix --enable-initfini-array --with-linker-hash-style=gnu
+Thread model: posix
+Supported LTO compression algorithms: zlib zstd
+gcc version 12.1.0 (GCC) 
+COLLECT_GCC_OPTIONS='--sysroot=/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root' '-v' '-o' 'CMakeFiles/cmTC_70497.dir/CMakeCCompilerABI.c.o' '-c' '-mtune=generic' '-march=pentiumpro' '-dumpdir' 'CMakeFiles/cmTC_70497.dir/'
+ /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/cc1 -quiet -v -isysroot /Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root /Applications/CLion.app/Contents/bin/cmake/mac/share/cmake-3.21/Modules/CMakeCCompilerABI.c -ftls-model=initial-exec -fPIC -fno-semantic-interposition -quiet -dumpdir CMakeFiles/cmTC_70497.dir/ -dumpbase CMakeCCompilerABI.c.c -dumpbase-ext .c -mtune=generic -march=pentiumpro -version -o /var/folders/2p/7ps005zd6p73cxkcjxr6zt7c0000gn/T//cchtb1nD.s
+GNU C17 (GCC) version 12.1.0 (i686-pc-serenity)
+	compiled by GNU C version Apple LLVM 13.1.6 (clang-1316.0.21.2.3), GMP version 6.2.1, MPFR version 4.1.0, MPC version 1.2.1, isl version isl-0.24-GMP
+
+GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072
+ignoring nonexistent directory "/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/local/include"
+#include "..." search starts here:
+#include <...> search starts here:
+ /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/include
+ /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/include-fixed
+ /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/include
+ /Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/include
+End of search list.
+GNU C17 (GCC) version 12.1.0 (i686-pc-serenity)
+	compiled by GNU C version Apple LLVM 13.1.6 (clang-1316.0.21.2.3), GMP version 6.2.1, MPFR version 4.1.0, MPC version 1.2.1, isl version isl-0.24-GMP
+
+GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072
+Compiler executable checksum: 5dc4685ebf75cb9b5f3d7bb3ba6c3e6d
+COLLECT_GCC_OPTIONS='--sysroot=/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root' '-v' '-o' 'CMakeFiles/cmTC_70497.dir/CMakeCCompilerABI.c.o' '-c' '-mtune=generic' '-march=pentiumpro' '-dumpdir' 'CMakeFiles/cmTC_70497.dir/'
+ /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/bin/as -v -o CMakeFiles/cmTC_70497.dir/CMakeCCompilerABI.c.o /var/folders/2p/7ps005zd6p73cxkcjxr6zt7c0000gn/T//cchtb1nD.s
+GNU assembler version 2.38 (i686-pc-serenity) using BFD version (GNU Binutils) 2.38
+COMPILER_PATH=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/bin/
+LIBRARY_PATH=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/lib/:/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/lib/
+COLLECT_GCC_OPTIONS='--sysroot=/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root' '-v' '-o' 'CMakeFiles/cmTC_70497.dir/CMakeCCompilerABI.c.o' '-c' '-mtune=generic' '-march=pentiumpro' '-dumpdir' 'CMakeFiles/cmTC_70497.dir/CMakeCCompilerABI.c.'
+[2/2] Linking C executable cmTC_70497
+Using built-in specs.
+COLLECT_GCC=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/bin/i686-pc-serenity-gcc
+COLLECT_LTO_WRAPPER=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/lto-wrapper
+Target: i686-pc-serenity
+Configured with: /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Tarballs/gcc-12.1.0/configure --prefix=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686 --target=i686-pc-serenity --with-sysroot=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/../Build/i686/Root --disable-nls --enable-shared --enable-languages=c,c++ --enable-default-pie --enable-lto --enable-threads=posix --enable-initfini-array --with-linker-hash-style=gnu
+Thread model: posix
+Supported LTO compression algorithms: zlib zstd
+gcc version 12.1.0 (GCC) 
+COMPILER_PATH=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/bin/
+LIBRARY_PATH=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/lib/:/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/lib/
+COLLECT_GCC_OPTIONS='--sysroot=/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root' '-v' '-o' 'cmTC_70497' '-mtune=generic' '-march=pentiumpro' '-dumpdir' 'cmTC_70497.'
+ /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/collect2 -plugin /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/liblto_plugin.so -plugin-opt=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/lto-wrapper -plugin-opt=-fresolution=/var/folders/2p/7ps005zd6p73cxkcjxr6zt7c0000gn/T//cchOoNqn.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s --sysroot=/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root --eh-frame-hdr --hash-style=gnu -dynamic-linker /usr/lib/Loader.so -pie -o cmTC_70497 /Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/lib/crt0.o /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crti.o /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crtbeginS.o -L/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0 -L/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/lib -L/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/lib --hash-style=gnu -z relro -z now -z noexecstack -z max-page-size=0x1000 -z separate-code CMakeFiles/cmTC_70497.dir/CMakeCCompilerABI.c.o -lgcc --push-state --as-needed -lgcc_s --pop-state -lc -lgcc --push-state --as-needed -lgcc_s --pop-state /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crtendS.o /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crtn.o
+COLLECT_GCC_OPTIONS='--sysroot=/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root' '-v' '-o' 'cmTC_70497' '-mtune=generic' '-march=pentiumpro' '-dumpdir' 'cmTC_70497.'
+
+
+
+Parsed C implicit include dir info from above output: rv=done
+  found start of include info
+  found start of implicit include info
+    add: [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/include]
+    add: [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/include-fixed]
+    add: [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/include]
+    add: [/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/include]
+  end of search list found
+  collapse include dir [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/include] ==> [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/include]
+  collapse include dir [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/include-fixed] ==> [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/include-fixed]
+  collapse include dir [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/include] ==> [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/i686-pc-serenity/include]
+  collapse include dir [/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/include] ==> [/Users/lee/Desktop/Computer_Systems/serenity/Build/i686/Root/usr/include]
+  implicit include dirs: [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/include;/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/include-fixed;/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/i686-pc-serenity/include;/Users/lee/Desktop/Computer_Systems/serenity/Build/i686/Root/usr/include]
+
+
+Parsed C implicit link information from above output:
+  link line regex: [^( *|.*[/\])(i686-pc-serenity-ld|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\]+-)?ld|collect2)[^/\]*( |$)]
+  ignore line: [Change Dir: /Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/CMakeFiles/CMakeTmp]
+  ignore line: []
+  ignore line: [Run Build Command(s):/Applications/CLion.app/Contents/bin/ninja/mac/ninja cmTC_70497 && [1/2] Building C object CMakeFiles/cmTC_70497.dir/CMakeCCompilerABI.c.o]
+  ignore line: [Using built-in specs.]
+  ignore line: [COLLECT_GCC=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/bin/i686-pc-serenity-gcc]
+  ignore line: [Target: i686-pc-serenity]
+  ignore line: [Configured with: /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Tarballs/gcc-12.1.0/configure --prefix=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686 --target=i686-pc-serenity --with-sysroot=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/../Build/i686/Root --disable-nls --enable-shared --enable-languages=c c++ --enable-default-pie --enable-lto --enable-threads=posix --enable-initfini-array --with-linker-hash-style=gnu]
+  ignore line: [Thread model: posix]
+  ignore line: [Supported LTO compression algorithms: zlib zstd]
+  ignore line: [gcc version 12.1.0 (GCC) ]
+  ignore line: [COLLECT_GCC_OPTIONS='--sysroot=/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root' '-v' '-o' 'CMakeFiles/cmTC_70497.dir/CMakeCCompilerABI.c.o' '-c' '-mtune=generic' '-march=pentiumpro' '-dumpdir' 'CMakeFiles/cmTC_70497.dir/']
+  ignore line: [ /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/cc1 -quiet -v -isysroot /Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root /Applications/CLion.app/Contents/bin/cmake/mac/share/cmake-3.21/Modules/CMakeCCompilerABI.c -ftls-model=initial-exec -fPIC -fno-semantic-interposition -quiet -dumpdir CMakeFiles/cmTC_70497.dir/ -dumpbase CMakeCCompilerABI.c.c -dumpbase-ext .c -mtune=generic -march=pentiumpro -version -o /var/folders/2p/7ps005zd6p73cxkcjxr6zt7c0000gn/T//cchtb1nD.s]
+  ignore line: [GNU C17 (GCC) version 12.1.0 (i686-pc-serenity)]
+  ignore line: [	compiled by GNU C version Apple LLVM 13.1.6 (clang-1316.0.21.2.3)  GMP version 6.2.1  MPFR version 4.1.0  MPC version 1.2.1  isl version isl-0.24-GMP]
+  ignore line: []
+  ignore line: [GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072]
+  ignore line: [ignoring nonexistent directory "/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/local/include"]
+  ignore line: [#include "..." search starts here:]
+  ignore line: [#include <...> search starts here:]
+  ignore line: [ /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/include]
+  ignore line: [ /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/include-fixed]
+  ignore line: [ /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/include]
+  ignore line: [ /Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/include]
+  ignore line: [End of search list.]
+  ignore line: [GNU C17 (GCC) version 12.1.0 (i686-pc-serenity)]
+  ignore line: [	compiled by GNU C version Apple LLVM 13.1.6 (clang-1316.0.21.2.3)  GMP version 6.2.1  MPFR version 4.1.0  MPC version 1.2.1  isl version isl-0.24-GMP]
+  ignore line: []
+  ignore line: [GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072]
+  ignore line: [Compiler executable checksum: 5dc4685ebf75cb9b5f3d7bb3ba6c3e6d]
+  ignore line: [COLLECT_GCC_OPTIONS='--sysroot=/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root' '-v' '-o' 'CMakeFiles/cmTC_70497.dir/CMakeCCompilerABI.c.o' '-c' '-mtune=generic' '-march=pentiumpro' '-dumpdir' 'CMakeFiles/cmTC_70497.dir/']
+  ignore line: [ /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/bin/as -v -o CMakeFiles/cmTC_70497.dir/CMakeCCompilerABI.c.o /var/folders/2p/7ps005zd6p73cxkcjxr6zt7c0000gn/T//cchtb1nD.s]
+  ignore line: [GNU assembler version 2.38 (i686-pc-serenity) using BFD version (GNU Binutils) 2.38]
+  ignore line: [COMPILER_PATH=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/bin/]
+  ignore line: [LIBRARY_PATH=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/lib/:/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/lib/]
+  ignore line: [COLLECT_GCC_OPTIONS='--sysroot=/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root' '-v' '-o' 'CMakeFiles/cmTC_70497.dir/CMakeCCompilerABI.c.o' '-c' '-mtune=generic' '-march=pentiumpro' '-dumpdir' 'CMakeFiles/cmTC_70497.dir/CMakeCCompilerABI.c.']
+  ignore line: [[2/2] Linking C executable cmTC_70497]
+  ignore line: [Using built-in specs.]
+  ignore line: [COLLECT_GCC=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/bin/i686-pc-serenity-gcc]
+  ignore line: [COLLECT_LTO_WRAPPER=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/lto-wrapper]
+  ignore line: [Target: i686-pc-serenity]
+  ignore line: [Configured with: /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Tarballs/gcc-12.1.0/configure --prefix=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686 --target=i686-pc-serenity --with-sysroot=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/../Build/i686/Root --disable-nls --enable-shared --enable-languages=c c++ --enable-default-pie --enable-lto --enable-threads=posix --enable-initfini-array --with-linker-hash-style=gnu]
+  ignore line: [Thread model: posix]
+  ignore line: [Supported LTO compression algorithms: zlib zstd]
+  ignore line: [gcc version 12.1.0 (GCC) ]
+  ignore line: [COMPILER_PATH=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/bin/]
+  ignore line: [LIBRARY_PATH=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/lib/:/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/lib/]
+  ignore line: [COLLECT_GCC_OPTIONS='--sysroot=/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root' '-v' '-o' 'cmTC_70497' '-mtune=generic' '-march=pentiumpro' '-dumpdir' 'cmTC_70497.']
+  link line: [ /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/collect2 -plugin /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/liblto_plugin.so -plugin-opt=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/lto-wrapper -plugin-opt=-fresolution=/var/folders/2p/7ps005zd6p73cxkcjxr6zt7c0000gn/T//cchOoNqn.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s --sysroot=/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root --eh-frame-hdr --hash-style=gnu -dynamic-linker /usr/lib/Loader.so -pie -o cmTC_70497 /Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/lib/crt0.o /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crti.o /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crtbeginS.o -L/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0 -L/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/lib -L/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/lib --hash-style=gnu -z relro -z now -z noexecstack -z max-page-size=0x1000 -z separate-code CMakeFiles/cmTC_70497.dir/CMakeCCompilerABI.c.o -lgcc --push-state --as-needed -lgcc_s --pop-state -lc -lgcc --push-state --as-needed -lgcc_s --pop-state /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crtendS.o /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crtn.o]
+    arg [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/collect2] ==> ignore
+    arg [-plugin] ==> ignore
+    arg [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/liblto_plugin.so] ==> ignore
+    arg [-plugin-opt=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/lto-wrapper] ==> ignore
+    arg [-plugin-opt=-fresolution=/var/folders/2p/7ps005zd6p73cxkcjxr6zt7c0000gn/T//cchOoNqn.res] ==> ignore
+    arg [-plugin-opt=-pass-through=-lgcc] ==> ignore
+    arg [-plugin-opt=-pass-through=-lgcc_s] ==> ignore
+    arg [-plugin-opt=-pass-through=-lc] ==> ignore
+    arg [-plugin-opt=-pass-through=-lgcc] ==> ignore
+    arg [-plugin-opt=-pass-through=-lgcc_s] ==> ignore
+    arg [--sysroot=/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root] ==> ignore
+    arg [--eh-frame-hdr] ==> ignore
+    arg [--hash-style=gnu] ==> ignore
+    arg [-dynamic-linker] ==> ignore
+    arg [/usr/lib/Loader.so] ==> ignore
+    arg [-pie] ==> ignore
+    arg [-o] ==> ignore
+    arg [cmTC_70497] ==> ignore
+    arg [/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/lib/crt0.o] ==> obj [/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/lib/crt0.o]
+    arg [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crti.o] ==> obj [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crti.o]
+    arg [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crtbeginS.o] ==> obj [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crtbeginS.o]
+    arg [-L/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0] ==> dir [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0]
+    arg [-L/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/lib] ==> dir [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/lib]
+    arg [-L/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/lib] ==> dir [/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/lib]
+    arg [--hash-style=gnu] ==> ignore
+    arg [-zrelro] ==> ignore
+    arg [-znow] ==> ignore
+    arg [-znoexecstack] ==> ignore
+    arg [-zmax-page-size=0x1000] ==> ignore
+    arg [-zseparate-code] ==> ignore
+    arg [CMakeFiles/cmTC_70497.dir/CMakeCCompilerABI.c.o] ==> ignore
+    arg [-lgcc] ==> lib [gcc]
+    arg [--push-state] ==> ignore
+    arg [--as-needed] ==> ignore
+    arg [-lgcc_s] ==> lib [gcc_s]
+    arg [--pop-state] ==> ignore
+    arg [-lc] ==> lib [c]
+    arg [-lgcc] ==> lib [gcc]
+    arg [--push-state] ==> ignore
+    arg [--as-needed] ==> ignore
+    arg [-lgcc_s] ==> lib [gcc_s]
+    arg [--pop-state] ==> ignore
+    arg [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crtendS.o] ==> obj [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crtendS.o]
+    arg [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crtn.o] ==> obj [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crtn.o]
+  collapse obj [/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/lib/crt0.o] ==> [/Users/lee/Desktop/Computer_Systems/serenity/Build/i686/Root/usr/lib/crt0.o]
+  collapse library dir [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0] ==> [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0]
+  collapse library dir [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/lib] ==> [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/i686-pc-serenity/lib]
+  collapse library dir [/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/lib] ==> [/Users/lee/Desktop/Computer_Systems/serenity/Build/i686/Root/usr/lib]
+  implicit libs: [gcc;gcc_s;c;gcc;gcc_s]
+  implicit objs: [/Users/lee/Desktop/Computer_Systems/serenity/Build/i686/Root/usr/lib/crt0.o;/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crti.o;/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crtbeginS.o;/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crtendS.o;/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crtn.o]
+  implicit dirs: [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0;/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/i686-pc-serenity/lib;/Users/lee/Desktop/Computer_Systems/serenity/Build/i686/Root/usr/lib]
+  implicit fwks: []
+
+
+Detecting CXX compiler ABI info compiled with the following output:
+Change Dir: /Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/Applications/CLion.app/Contents/bin/ninja/mac/ninja cmTC_bf5ab && [1/2] Building CXX object CMakeFiles/cmTC_bf5ab.dir/CMakeCXXCompilerABI.cpp.o
+Using built-in specs.
+COLLECT_GCC=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/bin/i686-pc-serenity-g++
+Target: i686-pc-serenity
+Configured with: /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Tarballs/gcc-12.1.0/configure --prefix=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686 --target=i686-pc-serenity --with-sysroot=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/../Build/i686/Root --disable-nls --enable-shared --enable-languages=c,c++ --enable-default-pie --enable-lto --enable-threads=posix --enable-initfini-array --with-linker-hash-style=gnu
+Thread model: posix
+Supported LTO compression algorithms: zlib zstd
+gcc version 12.1.0 (GCC) 
+COLLECT_GCC_OPTIONS='--sysroot=/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root' '-v' '-o' 'CMakeFiles/cmTC_bf5ab.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-shared-libgcc' '-mtune=generic' '-march=pentiumpro' '-dumpdir' 'CMakeFiles/cmTC_bf5ab.dir/'
+ /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/cc1plus -quiet -v -isysroot /Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root /Applications/CLion.app/Contents/bin/cmake/mac/share/cmake-3.21/Modules/CMakeCXXCompilerABI.cpp -ftls-model=initial-exec -fPIC -fno-semantic-interposition -quiet -dumpdir CMakeFiles/cmTC_bf5ab.dir/ -dumpbase CMakeCXXCompilerABI.cpp.cpp -dumpbase-ext .cpp -mtune=generic -march=pentiumpro -version -ftls-model=initial-exec -o /var/folders/2p/7ps005zd6p73cxkcjxr6zt7c0000gn/T//ccScxqZ4.s
+GNU C++17 (GCC) version 12.1.0 (i686-pc-serenity)
+	compiled by GNU C version Apple LLVM 13.1.6 (clang-1316.0.21.2.3), GMP version 6.2.1, MPFR version 4.1.0, MPC version 1.2.1, isl version isl-0.24-GMP
+
+GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072
+ignoring nonexistent directory "/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/local/include"
+#include "..." search starts here:
+#include <...> search starts here:
+ /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/include/c++/12.1.0
+ /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/include/c++/12.1.0/i686-pc-serenity
+ /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/include/c++/12.1.0/backward
+ /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/include
+ /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/include-fixed
+ /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/include
+ /Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/include
+End of search list.
+GNU C++17 (GCC) version 12.1.0 (i686-pc-serenity)
+	compiled by GNU C version Apple LLVM 13.1.6 (clang-1316.0.21.2.3), GMP version 6.2.1, MPFR version 4.1.0, MPC version 1.2.1, isl version isl-0.24-GMP
+
+GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072
+Compiler executable checksum: 5da1a8f19a4c7d85e58e6b798e40ecbc
+COLLECT_GCC_OPTIONS='--sysroot=/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root' '-v' '-o' 'CMakeFiles/cmTC_bf5ab.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-shared-libgcc' '-mtune=generic' '-march=pentiumpro' '-dumpdir' 'CMakeFiles/cmTC_bf5ab.dir/'
+ /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/bin/as -v -o CMakeFiles/cmTC_bf5ab.dir/CMakeCXXCompilerABI.cpp.o /var/folders/2p/7ps005zd6p73cxkcjxr6zt7c0000gn/T//ccScxqZ4.s
+GNU assembler version 2.38 (i686-pc-serenity) using BFD version (GNU Binutils) 2.38
+COMPILER_PATH=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/bin/
+LIBRARY_PATH=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/lib/:/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/lib/
+COLLECT_GCC_OPTIONS='--sysroot=/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root' '-v' '-o' 'CMakeFiles/cmTC_bf5ab.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-shared-libgcc' '-mtune=generic' '-march=pentiumpro' '-dumpdir' 'CMakeFiles/cmTC_bf5ab.dir/CMakeCXXCompilerABI.cpp.'
+[2/2] Linking CXX executable cmTC_bf5ab
+Using built-in specs.
+COLLECT_GCC=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/bin/i686-pc-serenity-g++
+COLLECT_LTO_WRAPPER=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/lto-wrapper
+Target: i686-pc-serenity
+Configured with: /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Tarballs/gcc-12.1.0/configure --prefix=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686 --target=i686-pc-serenity --with-sysroot=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/../Build/i686/Root --disable-nls --enable-shared --enable-languages=c,c++ --enable-default-pie --enable-lto --enable-threads=posix --enable-initfini-array --with-linker-hash-style=gnu
+Thread model: posix
+Supported LTO compression algorithms: zlib zstd
+gcc version 12.1.0 (GCC) 
+COMPILER_PATH=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/bin/
+LIBRARY_PATH=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/lib/:/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/lib/
+COLLECT_GCC_OPTIONS='--sysroot=/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root' '-v' '-o' 'cmTC_bf5ab' '-shared-libgcc' '-mtune=generic' '-march=pentiumpro' '-dumpdir' 'cmTC_bf5ab.'
+ /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/collect2 -plugin /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/liblto_plugin.so -plugin-opt=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/lto-wrapper -plugin-opt=-fresolution=/var/folders/2p/7ps005zd6p73cxkcjxr6zt7c0000gn/T//ccQPvon8.res -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc --sysroot=/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root --eh-frame-hdr --hash-style=gnu -dynamic-linker /usr/lib/Loader.so -pie -o cmTC_bf5ab /Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/lib/crt0.o /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crti.o /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crtbeginS.o -L/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0 -L/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/lib -L/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/lib --hash-style=gnu -z relro -z now -z noexecstack -z max-page-size=0x1000 -z separate-code CMakeFiles/cmTC_bf5ab.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crtendS.o /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crtn.o
+COLLECT_GCC_OPTIONS='--sysroot=/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root' '-v' '-o' 'cmTC_bf5ab' '-shared-libgcc' '-mtune=generic' '-march=pentiumpro' '-dumpdir' 'cmTC_bf5ab.'
+
+
+
+Parsed CXX implicit include dir info from above output: rv=done
+  found start of include info
+  found start of implicit include info
+    add: [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/include/c++/12.1.0]
+    add: [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/include/c++/12.1.0/i686-pc-serenity]
+    add: [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/include/c++/12.1.0/backward]
+    add: [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/include]
+    add: [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/include-fixed]
+    add: [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/include]
+    add: [/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/include]
+  end of search list found
+  collapse include dir [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/include/c++/12.1.0] ==> [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/i686-pc-serenity/include/c++/12.1.0]
+  collapse include dir [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/include/c++/12.1.0/i686-pc-serenity] ==> [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/i686-pc-serenity/include/c++/12.1.0/i686-pc-serenity]
+  collapse include dir [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/include/c++/12.1.0/backward] ==> [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/i686-pc-serenity/include/c++/12.1.0/backward]
+  collapse include dir [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/include] ==> [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/include]
+  collapse include dir [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/include-fixed] ==> [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/include-fixed]
+  collapse include dir [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/include] ==> [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/i686-pc-serenity/include]
+  collapse include dir [/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/include] ==> [/Users/lee/Desktop/Computer_Systems/serenity/Build/i686/Root/usr/include]
+  implicit include dirs: [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/i686-pc-serenity/include/c++/12.1.0;/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/i686-pc-serenity/include/c++/12.1.0/i686-pc-serenity;/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/i686-pc-serenity/include/c++/12.1.0/backward;/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/include;/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/include-fixed;/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/i686-pc-serenity/include;/Users/lee/Desktop/Computer_Systems/serenity/Build/i686/Root/usr/include]
+
+
+Parsed CXX implicit link information from above output:
+  link line regex: [^( *|.*[/\])(i686-pc-serenity-ld|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\]+-)?ld|collect2)[^/\]*( |$)]
+  ignore line: [Change Dir: /Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/CMakeFiles/CMakeTmp]
+  ignore line: []
+  ignore line: [Run Build Command(s):/Applications/CLion.app/Contents/bin/ninja/mac/ninja cmTC_bf5ab && [1/2] Building CXX object CMakeFiles/cmTC_bf5ab.dir/CMakeCXXCompilerABI.cpp.o]
+  ignore line: [Using built-in specs.]
+  ignore line: [COLLECT_GCC=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/bin/i686-pc-serenity-g++]
+  ignore line: [Target: i686-pc-serenity]
+  ignore line: [Configured with: /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Tarballs/gcc-12.1.0/configure --prefix=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686 --target=i686-pc-serenity --with-sysroot=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/../Build/i686/Root --disable-nls --enable-shared --enable-languages=c c++ --enable-default-pie --enable-lto --enable-threads=posix --enable-initfini-array --with-linker-hash-style=gnu]
+  ignore line: [Thread model: posix]
+  ignore line: [Supported LTO compression algorithms: zlib zstd]
+  ignore line: [gcc version 12.1.0 (GCC) ]
+  ignore line: [COLLECT_GCC_OPTIONS='--sysroot=/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root' '-v' '-o' 'CMakeFiles/cmTC_bf5ab.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-shared-libgcc' '-mtune=generic' '-march=pentiumpro' '-dumpdir' 'CMakeFiles/cmTC_bf5ab.dir/']
+  ignore line: [ /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/cc1plus -quiet -v -isysroot /Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root /Applications/CLion.app/Contents/bin/cmake/mac/share/cmake-3.21/Modules/CMakeCXXCompilerABI.cpp -ftls-model=initial-exec -fPIC -fno-semantic-interposition -quiet -dumpdir CMakeFiles/cmTC_bf5ab.dir/ -dumpbase CMakeCXXCompilerABI.cpp.cpp -dumpbase-ext .cpp -mtune=generic -march=pentiumpro -version -ftls-model=initial-exec -o /var/folders/2p/7ps005zd6p73cxkcjxr6zt7c0000gn/T//ccScxqZ4.s]
+  ignore line: [GNU C++17 (GCC) version 12.1.0 (i686-pc-serenity)]
+  ignore line: [	compiled by GNU C version Apple LLVM 13.1.6 (clang-1316.0.21.2.3)  GMP version 6.2.1  MPFR version 4.1.0  MPC version 1.2.1  isl version isl-0.24-GMP]
+  ignore line: []
+  ignore line: [GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072]
+  ignore line: [ignoring nonexistent directory "/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/local/include"]
+  ignore line: [#include "..." search starts here:]
+  ignore line: [#include <...> search starts here:]
+  ignore line: [ /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/include/c++/12.1.0]
+  ignore line: [ /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/include/c++/12.1.0/i686-pc-serenity]
+  ignore line: [ /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/include/c++/12.1.0/backward]
+  ignore line: [ /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/include]
+  ignore line: [ /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/include-fixed]
+  ignore line: [ /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/include]
+  ignore line: [ /Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/include]
+  ignore line: [End of search list.]
+  ignore line: [GNU C++17 (GCC) version 12.1.0 (i686-pc-serenity)]
+  ignore line: [	compiled by GNU C version Apple LLVM 13.1.6 (clang-1316.0.21.2.3)  GMP version 6.2.1  MPFR version 4.1.0  MPC version 1.2.1  isl version isl-0.24-GMP]
+  ignore line: []
+  ignore line: [GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072]
+  ignore line: [Compiler executable checksum: 5da1a8f19a4c7d85e58e6b798e40ecbc]
+  ignore line: [COLLECT_GCC_OPTIONS='--sysroot=/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root' '-v' '-o' 'CMakeFiles/cmTC_bf5ab.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-shared-libgcc' '-mtune=generic' '-march=pentiumpro' '-dumpdir' 'CMakeFiles/cmTC_bf5ab.dir/']
+  ignore line: [ /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/bin/as -v -o CMakeFiles/cmTC_bf5ab.dir/CMakeCXXCompilerABI.cpp.o /var/folders/2p/7ps005zd6p73cxkcjxr6zt7c0000gn/T//ccScxqZ4.s]
+  ignore line: [GNU assembler version 2.38 (i686-pc-serenity) using BFD version (GNU Binutils) 2.38]
+  ignore line: [COMPILER_PATH=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/bin/]
+  ignore line: [LIBRARY_PATH=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/lib/:/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/lib/]
+  ignore line: [COLLECT_GCC_OPTIONS='--sysroot=/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root' '-v' '-o' 'CMakeFiles/cmTC_bf5ab.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-shared-libgcc' '-mtune=generic' '-march=pentiumpro' '-dumpdir' 'CMakeFiles/cmTC_bf5ab.dir/CMakeCXXCompilerABI.cpp.']
+  ignore line: [[2/2] Linking CXX executable cmTC_bf5ab]
+  ignore line: [Using built-in specs.]
+  ignore line: [COLLECT_GCC=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/bin/i686-pc-serenity-g++]
+  ignore line: [COLLECT_LTO_WRAPPER=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/lto-wrapper]
+  ignore line: [Target: i686-pc-serenity]
+  ignore line: [Configured with: /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Tarballs/gcc-12.1.0/configure --prefix=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686 --target=i686-pc-serenity --with-sysroot=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/../Build/i686/Root --disable-nls --enable-shared --enable-languages=c c++ --enable-default-pie --enable-lto --enable-threads=posix --enable-initfini-array --with-linker-hash-style=gnu]
+  ignore line: [Thread model: posix]
+  ignore line: [Supported LTO compression algorithms: zlib zstd]
+  ignore line: [gcc version 12.1.0 (GCC) ]
+  ignore line: [COMPILER_PATH=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/bin/]
+  ignore line: [LIBRARY_PATH=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/:/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/lib/:/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/lib/]
+  ignore line: [COLLECT_GCC_OPTIONS='--sysroot=/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root' '-v' '-o' 'cmTC_bf5ab' '-shared-libgcc' '-mtune=generic' '-march=pentiumpro' '-dumpdir' 'cmTC_bf5ab.']
+  link line: [ /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/collect2 -plugin /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/liblto_plugin.so -plugin-opt=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/lto-wrapper -plugin-opt=-fresolution=/var/folders/2p/7ps005zd6p73cxkcjxr6zt7c0000gn/T//ccQPvon8.res -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc --sysroot=/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root --eh-frame-hdr --hash-style=gnu -dynamic-linker /usr/lib/Loader.so -pie -o cmTC_bf5ab /Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/lib/crt0.o /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crti.o /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crtbeginS.o -L/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0 -L/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/lib -L/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/lib --hash-style=gnu -z relro -z now -z noexecstack -z max-page-size=0x1000 -z separate-code CMakeFiles/cmTC_bf5ab.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crtendS.o /Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crtn.o]
+    arg [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/collect2] ==> ignore
+    arg [-plugin] ==> ignore
+    arg [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/liblto_plugin.so] ==> ignore
+    arg [-plugin-opt=/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/libexec/gcc/i686-pc-serenity/12.1.0/lto-wrapper] ==> ignore
+    arg [-plugin-opt=-fresolution=/var/folders/2p/7ps005zd6p73cxkcjxr6zt7c0000gn/T//ccQPvon8.res] ==> ignore
+    arg [-plugin-opt=-pass-through=-lgcc_s] ==> ignore
+    arg [-plugin-opt=-pass-through=-lgcc] ==> ignore
+    arg [-plugin-opt=-pass-through=-lc] ==> ignore
+    arg [-plugin-opt=-pass-through=-lgcc_s] ==> ignore
+    arg [-plugin-opt=-pass-through=-lgcc] ==> ignore
+    arg [--sysroot=/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root] ==> ignore
+    arg [--eh-frame-hdr] ==> ignore
+    arg [--hash-style=gnu] ==> ignore
+    arg [-dynamic-linker] ==> ignore
+    arg [/usr/lib/Loader.so] ==> ignore
+    arg [-pie] ==> ignore
+    arg [-o] ==> ignore
+    arg [cmTC_bf5ab] ==> ignore
+    arg [/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/lib/crt0.o] ==> obj [/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/lib/crt0.o]
+    arg [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crti.o] ==> obj [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crti.o]
+    arg [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crtbeginS.o] ==> obj [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crtbeginS.o]
+    arg [-L/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0] ==> dir [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0]
+    arg [-L/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/lib] ==> dir [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/lib]
+    arg [-L/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/lib] ==> dir [/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/lib]
+    arg [--hash-style=gnu] ==> ignore
+    arg [-zrelro] ==> ignore
+    arg [-znow] ==> ignore
+    arg [-znoexecstack] ==> ignore
+    arg [-zmax-page-size=0x1000] ==> ignore
+    arg [-zseparate-code] ==> ignore
+    arg [CMakeFiles/cmTC_bf5ab.dir/CMakeCXXCompilerABI.cpp.o] ==> ignore
+    arg [-lstdc++] ==> lib [stdc++]
+    arg [-lm] ==> lib [m]
+    arg [-lgcc_s] ==> lib [gcc_s]
+    arg [-lgcc] ==> lib [gcc]
+    arg [-lc] ==> lib [c]
+    arg [-lgcc_s] ==> lib [gcc_s]
+    arg [-lgcc] ==> lib [gcc]
+    arg [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crtendS.o] ==> obj [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crtendS.o]
+    arg [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crtn.o] ==> obj [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crtn.o]
+  collapse obj [/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/lib/crt0.o] ==> [/Users/lee/Desktop/Computer_Systems/serenity/Build/i686/Root/usr/lib/crt0.o]
+  collapse library dir [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0] ==> [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0]
+  collapse library dir [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/../../../../i686-pc-serenity/lib] ==> [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/i686-pc-serenity/lib]
+  collapse library dir [/Users/lee/Desktop/Computer_Systems/serenity/Build/superbuild-i686/../i686/Root/usr/lib] ==> [/Users/lee/Desktop/Computer_Systems/serenity/Build/i686/Root/usr/lib]
+  implicit libs: [stdc++;m;gcc_s;gcc;c;gcc_s;gcc]
+  implicit objs: [/Users/lee/Desktop/Computer_Systems/serenity/Build/i686/Root/usr/lib/crt0.o;/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crti.o;/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crtbeginS.o;/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crtendS.o;/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0/crtn.o]
+  implicit dirs: [/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/lib/gcc/i686-pc-serenity/12.1.0;/Users/lee/Desktop/Computer_Systems/serenity/Toolchain/Local/i686/i686-pc-serenity/lib;/Users/lee/Desktop/Computer_Systems/serenity/Build/i686/Root/usr/lib]
+  implicit fwks: []
+
+

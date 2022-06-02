@@ -1,0 +1,93 @@
+{
+	"backtrace" : 4,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_custom_target",
+			"invoke_generator",
+			"include"
+		],
+		"files" : 
+		[
+			"Meta/CMake/utils.cmake",
+			"Meta/CMake/unicode_data.cmake",
+			"Userland/Libraries/LibUnicode/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 2
+			},
+			{
+				"command" : 2,
+				"file" : 2,
+				"line" : 1,
+				"parent" : 0
+			},
+			{
+				"file" : 1,
+				"parent" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 177,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 199,
+				"parent" : 3
+			}
+		]
+	},
+	"id" : "generate_UnicodeDateTimeFormat::@c53deb94abbec677a6c5",
+	"name" : "generate_UnicodeDateTimeFormat",
+	"paths" : 
+	{
+		"build" : "Userland/Libraries/LibUnicode",
+		"source" : "Userland/Libraries/LibUnicode"
+	},
+	"sourceGroups" : 
+	[
+		{
+			"name" : "",
+			"sourceIndexes" : 
+			[
+				0
+			]
+		},
+		{
+			"name" : "CMake Rules",
+			"sourceIndexes" : 
+			[
+				1,
+				2
+			]
+		}
+	],
+	"sources" : 
+	[
+		{
+			"backtrace" : 4,
+			"isGenerated" : true,
+			"path" : "cmake-build-default/Userland/Libraries/LibUnicode/CMakeFiles/generate_UnicodeDateTimeFormat",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 0,
+			"isGenerated" : true,
+			"path" : "cmake-build-default/Userland/Libraries/LibUnicode/CMakeFiles/generate_UnicodeDateTimeFormat.rule",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 0,
+			"isGenerated" : true,
+			"path" : "cmake-build-default/Userland/Libraries/LibUnicode/UnicodeDateTimeFormat.h.rule",
+			"sourceGroupIndex" : 1
+		}
+	],
+	"type" : "UTILITY"
+}

@@ -1,0 +1,627 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install",
+			"serenity_install_headers",
+			"serenity_lib",
+			"serenity_install_sources"
+		],
+		"files" : 
+		[
+			"Meta/CMake/utils.cmake",
+			"Userland/Libraries/LibGL/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 2,
+				"file" : 1,
+				"line" : 16,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 37,
+				"parent" : 1
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 2
+			},
+			{
+				"command" : 3,
+				"file" : 0,
+				"line" : 38,
+				"parent" : 1
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 13
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 13
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 13
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 13
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 13
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 13
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 13
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 13
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 13
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 13
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 13
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 13
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 13
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 13
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 13
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 13
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 13
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 13
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 13
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 13
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 13
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 13
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 42,
+				"parent" : 1
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 3,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibGL/GL",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/GL/gl.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 4,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibGL/GL",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/GL/glext.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 5,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibGL/GL",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/GL/glplatform.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 6,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibGL",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/GLContext.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 7,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibGL/Tex",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/Tex/MipMap.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 8,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibGL/Tex",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/Tex/NameAllocator.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 9,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibGL/Tex",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/Tex/Sampler2D.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 10,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibGL/Tex",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/Tex/Texture.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 11,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibGL/Tex",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/Tex/Texture2D.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 12,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibGL/Tex",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/Tex/TextureUnit.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 14,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibGL",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/ClipPlanes.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 15,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibGL",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/ContextParameter.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 16,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibGL/GL",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/GL/gl.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 17,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibGL/GL",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/GL/glext.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 18,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibGL/GL",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/GL/glplatform.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 19,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibGL",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/GLAPI.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 20,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibGL",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/GLContext.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 21,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibGL",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/GLContext.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 22,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibGL",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/Lighting.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 23,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibGL",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/Lists.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 24,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibGL",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/Matrix.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 25,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibGL",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/Stencil.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 26,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibGL/Tex",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/Tex/MipMap.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 27,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibGL/Tex",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/Tex/NameAllocator.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 28,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibGL/Tex",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/Tex/NameAllocator.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 29,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibGL/Tex",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/Tex/Sampler2D.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 30,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibGL/Tex",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/Tex/Texture.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 31,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibGL/Tex",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/Tex/Texture2D.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 32,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibGL/Tex",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/Tex/Texture2D.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 33,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibGL/Tex",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/Tex/TextureUnit.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 34,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibGL",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/Textures.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 35,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Libraries/LibGL",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/Vertex.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 36,
+			"component" : "Unspecified",
+			"destination" : "usr/lib",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/libgl.so.serenity"
+			],
+			"targetId" : "LibGL::@facd79b1caab059ff0a0",
+			"targetIndex" : 367,
+			"targetInstallNamelink" : "skip",
+			"type" : "target"
+		},
+		{
+			"backtrace" : 36,
+			"component" : "Unspecified",
+			"destination" : "usr/lib",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Libraries/LibGL/libgl.so"
+			],
+			"targetId" : "LibGL::@facd79b1caab059ff0a0",
+			"targetIndex" : 367,
+			"targetInstallNamelink" : "only",
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "Userland/Libraries/LibGL",
+		"source" : "Userland/Libraries/LibGL"
+	}
+}

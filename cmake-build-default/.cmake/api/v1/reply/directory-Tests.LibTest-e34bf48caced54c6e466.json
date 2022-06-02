@@ -1,0 +1,54 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install",
+			"serenity_test"
+		],
+		"files" : 
+		[
+			"Meta/CMake/utils.cmake",
+			"Tests/LibTest/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 6,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 109,
+				"parent" : 1
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 2,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/LibSQL",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Tests/LibTest/TestNoCrash"
+			],
+			"targetId" : "TestNoCrash::@21bd099956c6d8104392",
+			"targetIndex" : 554,
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "Tests/LibTest",
+		"source" : "Tests/LibTest"
+	}
+}

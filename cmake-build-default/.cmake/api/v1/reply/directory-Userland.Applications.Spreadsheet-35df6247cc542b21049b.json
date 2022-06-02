@@ -1,0 +1,918 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install",
+			"serenity_install_sources",
+			"serenity_bin",
+			"serenity_app",
+			"serenity_test"
+		],
+		"files" : 
+		[
+			"Meta/CMake/utils.cmake",
+			"Userland/Applications/Spreadsheet/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 3,
+				"file" : 1,
+				"line" : 43,
+				"parent" : 0
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 126,
+				"parent" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 85,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 88,
+				"parent" : 2
+			},
+			{
+				"command" : 4,
+				"file" : 1,
+				"line" : 47,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 109,
+				"parent" : 52
+			},
+			{
+				"command" : 4,
+				"file" : 1,
+				"line" : 49,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 109,
+				"parent" : 54
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 4,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/Cell.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 5,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/Cell.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 6,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/CellSyntaxHighlighter.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 7,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/CellSyntaxHighlighter.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 8,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet/CellType",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/CellType/Date.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 9,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet/CellType",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/CellType/Date.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 10,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet/CellType",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/CellType/Format.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 11,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet/CellType",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/CellType/Format.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 12,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet/CellType",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/CellType/Identity.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 13,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet/CellType",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/CellType/Identity.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 14,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet/CellType",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/CellType/Numeric.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 15,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet/CellType",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/CellType/Numeric.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 16,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet/CellType",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/CellType/String.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 17,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet/CellType",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/CellType/String.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 18,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet/CellType",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/CellType/Type.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 19,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet/CellType",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/CellType/Type.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 20,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/CellTypeDialog.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 21,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/CellTypeDialog.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 22,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/ConditionalFormatting.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 23,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/ExportDialog.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 24,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/ExportDialog.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 25,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/Forward.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 26,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/HelpWindow.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 27,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/HelpWindow.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 28,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/ImportDialog.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 29,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/ImportDialog.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 30,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/JSIntegration.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 31,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/JSIntegration.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 32,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/Position.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 33,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet/Readers",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/Readers/CSV.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 34,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet/Readers/Test",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/Readers/Test/TestXSV.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 35,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet/Readers",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/Readers/XSV.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 36,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet/Readers",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/Readers/XSV.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 37,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/Spreadsheet.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 38,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/Spreadsheet.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 39,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/SpreadsheetModel.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 40,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/SpreadsheetModel.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 41,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/SpreadsheetView.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 42,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/SpreadsheetView.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 43,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/SpreadsheetWidget.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 44,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/SpreadsheetWidget.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 45,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/Workbook.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 46,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/Workbook.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 47,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet/Writers",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/Writers/CSV.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 48,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet/Writers/Test",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/Writers/Test/TestXSVWriter.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 49,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet/Writers",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/Writers/XSV.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 50,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/Spreadsheet",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/main.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 51,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/Spreadsheet"
+			],
+			"targetId" : "Spreadsheet::@6dbedd93f2c62cc2c1b6",
+			"targetIndex" : 454,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 53,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Spreadsheet",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/TestXSVWriter"
+			],
+			"targetId" : "TestXSVWriter::@6dbedd93f2c62cc2c1b6",
+			"targetIndex" : 620,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 55,
+			"component" : "Unspecified",
+			"destination" : "usr/Tests/Spreadsheet",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/Spreadsheet/TestXSV"
+			],
+			"targetId" : "TestXSV::@6dbedd93f2c62cc2c1b6",
+			"targetIndex" : 619,
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "Userland/Applications/Spreadsheet",
+		"source" : "Userland/Applications/Spreadsheet"
+	}
+}

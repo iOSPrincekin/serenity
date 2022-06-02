@@ -1,0 +1,15 @@
+/Applications/CLion.app/Contents/bin/cmake/mac/bin/cmake -DCMAKE_MAKE_PROGRAM=/Applications/CLion.app/Contents/bin/ninja/mac/ninja -GNinja -DCMAKE_TOOLCHAIN_FILE=/Users/lee/Desktop/Computer_Systems/serenity/Build/i686/CMakeToolchain.txt -DCMAKE_PREFIX_PATH=/Users/lee/Desktop/Computer_Systems/serenity/Build/lagom-install -DSERENITY_ARCH=i686 /Users/lee/Desktop/Computer_Systems/serenity
+-- Extracting cldr-bcp47/** from /Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/CLDR/cldr.zip
+-- Extracting cldr-core/** from /Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/CLDR/cldr.zip
+-- Extracting cldr-dates-modern/** from /Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/CLDR/cldr.zip
+-- Extracting cldr-localenames-modern/** from /Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/CLDR/cldr.zip
+-- Extracting cldr-misc-modern/** from /Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/CLDR/cldr.zip
+-- Extracting cldr-numbers-modern/** from /Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/CLDR/cldr.zip
+-- Extracting cldr-units-modern/** from /Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/CLDR/cldr.zip
+-- Downloading path /Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/pci.ids.gz, file pci.ids.gz from https://pci-ids.ucw.cz/v2.2/pci.ids.gz
+-- Extracting PCI ID database from /Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/pci.ids.gz...
+-- Downloading path /Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/usb.ids.gz, file usb.ids.gz from http://www.linux-usb.org/usb.ids.gz
+-- Extracting USB ID database from /Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/usb.ids.gz...
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default

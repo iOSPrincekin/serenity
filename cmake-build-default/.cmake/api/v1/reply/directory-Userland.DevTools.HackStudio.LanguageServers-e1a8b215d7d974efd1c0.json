@@ -1,0 +1,675 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install",
+			"compile_ipc",
+			"serenity_install_headers",
+			"serenity_lib",
+			"serenity_install_sources"
+		],
+		"files" : 
+		[
+			"Meta/CMake/code_generators.cmake",
+			"Userland/DevTools/HackStudio/LanguageServers/CMakeLists.txt",
+			"Meta/CMake/utils.cmake"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 1,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 40,
+				"parent" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 2,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 40,
+				"parent" : 3
+			},
+			{
+				"command" : 3,
+				"file" : 1,
+				"line" : 12,
+				"parent" : 0
+			},
+			{
+				"command" : 2,
+				"file" : 2,
+				"line" : 37,
+				"parent" : 5
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 9,
+				"parent" : 6
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 9,
+				"parent" : 6
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 9,
+				"parent" : 6
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 9,
+				"parent" : 6
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 9,
+				"parent" : 6
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 9,
+				"parent" : 6
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 9,
+				"parent" : 6
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 9,
+				"parent" : 6
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 9,
+				"parent" : 6
+			},
+			{
+				"command" : 4,
+				"file" : 2,
+				"line" : 38,
+				"parent" : 5
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 21,
+				"parent" : 16
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 21,
+				"parent" : 16
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 21,
+				"parent" : 16
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 21,
+				"parent" : 16
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 21,
+				"parent" : 16
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 21,
+				"parent" : 16
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 21,
+				"parent" : 16
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 21,
+				"parent" : 16
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 21,
+				"parent" : 16
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 21,
+				"parent" : 16
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 21,
+				"parent" : 16
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 21,
+				"parent" : 16
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 21,
+				"parent" : 16
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 21,
+				"parent" : 16
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 21,
+				"parent" : 16
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 21,
+				"parent" : 16
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 21,
+				"parent" : 16
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 21,
+				"parent" : 16
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 21,
+				"parent" : 16
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 21,
+				"parent" : 16
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 21,
+				"parent" : 16
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 21,
+				"parent" : 16
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 21,
+				"parent" : 16
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 42,
+				"parent" : 5
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 2,
+			"component" : "Unspecified",
+			"destination" : "usr/include/Userland/DevTools/HackStudio/LanguageServers",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"cmake-build-default/Userland/DevTools/HackStudio/LanguageServers/LanguageServerEndpoint.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 4,
+			"component" : "Unspecified",
+			"destination" : "usr/include/Userland/DevTools/HackStudio/LanguageServers",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"cmake-build-default/Userland/DevTools/HackStudio/LanguageServers/LanguageClientEndpoint.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 7,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibLanguageServer",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/CodeComprehensionEngine.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 8,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibLanguageServer",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/ConnectionFromClient.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 9,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibLanguageServer/Cpp",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Cpp/ConnectionFromClient.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 10,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibLanguageServer/Cpp",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Cpp/CppComprehensionEngine.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 11,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibLanguageServer/Cpp",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 12,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibLanguageServer/Cpp/Tests",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests/sample_header.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 13,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibLanguageServer",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/FileDB.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 14,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibLanguageServer/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Shell/ConnectionFromClient.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 15,
+			"component" : "Unspecified",
+			"destination" : "usr/include/LibLanguageServer/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Shell/ShellComprehensionEngine.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 17,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/CodeComprehensionEngine.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 18,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/CodeComprehensionEngine.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 19,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/ConnectionFromClient.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 20,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/ConnectionFromClient.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 21,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers/Cpp",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Cpp/ConnectionFromClient.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 22,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers/Cpp",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Cpp/CppComprehensionEngine.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 23,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers/Cpp",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Cpp/CppComprehensionEngine.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 24,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers/Cpp",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 25,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers/Cpp",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 26,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests/complete_includes.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 27,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests/complete_local_args.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 28,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests/complete_local_vars.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 29,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests/complete_type.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 30,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests/find_variable_declaration.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 31,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests/parameters_hint1.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 32,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests/sample_header.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 33,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers/Cpp",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Cpp/main.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 34,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/FileDB.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 35,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/FileDB.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 36,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Shell/ConnectionFromClient.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 37,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Shell/ShellComprehensionEngine.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 38,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Shell/ShellComprehensionEngine.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 39,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/DevTools/HackStudio/LanguageServers/Shell",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/Shell/main.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 40,
+			"component" : "Unspecified",
+			"destination" : "usr/lib",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/liblanguage_server.so.serenity"
+			],
+			"targetId" : "LibLanguageServer::@f6451b171de59d5124ad",
+			"targetIndex" : 380,
+			"targetInstallNamelink" : "skip",
+			"type" : "target"
+		},
+		{
+			"backtrace" : 40,
+			"component" : "Unspecified",
+			"destination" : "usr/lib",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/DevTools/HackStudio/LanguageServers/liblanguage_server.so"
+			],
+			"targetId" : "LibLanguageServer::@f6451b171de59d5124ad",
+			"targetIndex" : 380,
+			"targetInstallNamelink" : "only",
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "Userland/DevTools/HackStudio/LanguageServers",
+		"source" : "Userland/DevTools/HackStudio/LanguageServers"
+	}
+}

@@ -1,0 +1,425 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install",
+			"serenity_install_sources",
+			"serenity_bin",
+			"serenity_app"
+		],
+		"files" : 
+		[
+			"Meta/CMake/utils.cmake",
+			"Userland/Applications/SoundPlayer/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 3,
+				"file" : 1,
+				"line" : 21,
+				"parent" : 0
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 126,
+				"parent" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 85,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 88,
+				"parent" : 2
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 4,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/SoundPlayer",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/SoundPlayer/AlbumCoverVisualizationWidget.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 5,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/SoundPlayer",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/SoundPlayer/AlbumCoverVisualizationWidget.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 6,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/SoundPlayer",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/SoundPlayer/BarsVisualizationWidget.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 7,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/SoundPlayer",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/SoundPlayer/BarsVisualizationWidget.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 8,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/SoundPlayer",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/SoundPlayer/Common.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 9,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/SoundPlayer",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/SoundPlayer/M3UParser.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 10,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/SoundPlayer",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/SoundPlayer/M3UParser.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 11,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/SoundPlayer",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/SoundPlayer/PlaybackManager.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 12,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/SoundPlayer",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/SoundPlayer/PlaybackManager.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 13,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/SoundPlayer",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/SoundPlayer/Player.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 14,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/SoundPlayer",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/SoundPlayer/Player.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 15,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/SoundPlayer",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/SoundPlayer/Playlist.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 16,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/SoundPlayer",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/SoundPlayer/Playlist.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 17,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/SoundPlayer",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/SoundPlayer/PlaylistWidget.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 18,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/SoundPlayer",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/SoundPlayer/PlaylistWidget.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 19,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/SoundPlayer",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/SoundPlayer/SampleWidget.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 20,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/SoundPlayer",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/SoundPlayer/SampleWidget.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 21,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/SoundPlayer",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/SoundPlayer/SoundPlayerWidgetAdvancedView.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 22,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/SoundPlayer",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/SoundPlayer/SoundPlayerWidgetAdvancedView.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 23,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/SoundPlayer",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/SoundPlayer/VisualizationWidget.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 24,
+			"component" : "Unspecified",
+			"destination" : "usr/src/serenity/Userland/Applications/SoundPlayer",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/SoundPlayer/main.cpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 25,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"isOptional" : true,
+			"paths" : 
+			[
+				"Userland/Applications/SoundPlayer/SoundPlayer"
+			],
+			"targetId" : "SoundPlayer::@4e5c750a1901deead2d4",
+			"targetIndex" : 450,
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "Userland/Applications/SoundPlayer",
+		"source" : "Userland/Applications/SoundPlayer"
+	}
+}
