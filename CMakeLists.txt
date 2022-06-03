@@ -4,12 +4,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/Meta/CMake")
 
 project(SerenityOS C CXX ASM)
 
-if(NOT "${CMAKE_BUILD_TYPE}" STREQUAL "")
-  message(FATAL_ERROR
-    ": Don't use CMAKE_BUILD_TYPE when building serenity.\n"
-    "The default build type is optimized with debug info and asserts enabled,\n"
-    "and that's all there is.")
-endif()
+
 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "SerenityOS")
     message(FATAL_ERROR "System name is not SerenityOS, this is unsupported.\n"
