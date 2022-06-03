@@ -228,7 +228,8 @@ if [ -z "$SERENITY_HOST_IP" ]; then
 fi
 
 if [ -z "$SERENITY_DISABLE_GDB_SOCKET" ]; then
-    SERENITY_EXTRA_QEMU_ARGS="$SERENITY_EXTRA_QEMU_ARGS -gdb tcp:${SERENITY_HOST_IP}:1234"
+#    SERENITY_EXTRA_QEMU_ARGS="$SERENITY_EXTRA_QEMU_ARGS -gdb tcp:${SERENITY_HOST_IP}:1234"
+     SERENITY_EXTRA_QEMU_ARGS="$SERENITY_EXTRA_QEMU_ARGS -s -S"
 fi
 
 if [ -z "$SERENITY_ETHERNET_DEVICE_TYPE" ]; then
@@ -385,7 +386,7 @@ export SDL_VIDEO_X11_DGAMOUSE=0
 
 : "${SERENITY_BUILD:=.}"
 cd -P -- "$SERENITY_BUILD" || die "Could not cd to \"$SERENITY_BUILD\""
-
+echo "SERENITY_RUN-------::$SERENITY_RUN"
 if [ "$SERENITY_RUN" = "b" ]; then
     # Meta/run.sh b: bochs
     [ -z "$SERENITY_BOCHSRC" ] && {
@@ -479,6 +480,13 @@ elif [ "$SERENITY_RUN" = "ci" ]; then
         $SERENITY_KERNEL_AND_INITRD \
         -append "${SERENITY_KERNEL_CMDLINE}"
 else
+echo "qemu command---:: \"$SERENITY_QEMU_BIN\" \
+                                $SERENITY_COMMON_QEMU_ARGS \
+                                $SERENITY_VIRT_TECH_ARG \
+                                $SERENITY_PACKET_LOGGING_ARG \
+                                $SERENITY_NETFLAGS_WITH_DEFAULT_DEVICE \
+                                $SERENITY_KERNEL_AND_INITRD \
+                                -append \"${SERENITY_KERNEL_CMDLINE}\" "
     # Meta/run.sh: qemu with user networking
     "$SERENITY_QEMU_BIN" \
         $SERENITY_COMMON_QEMU_ARGS \
