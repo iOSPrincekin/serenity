@@ -4,6 +4,7 @@ if (ENABLE_EXTRA_KERNEL_DEBUG_SYMBOLS)
 else()
     add_compile_options(-O2)
 endif()
+message(STATUS "SERENITY_ARCH---::${SERENITY_ARCH}")
 
 if ("${SERENITY_ARCH}" STREQUAL "aarch64")
     set(KERNEL_ARCH aarch64)
@@ -468,6 +469,7 @@ add_compile_options(-fstack-protector-strong)
 add_compile_options(-fno-exceptions)
 # FIXME: remove -nodefaultlibs after the next toolchain update
 add_compile_options(-nodefaultlibs -nostdlib)
+message(STATUS "CMAKE_CXX_COMPILER_ID---::${CMAKE_CXX_COMPILER_ID}")
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     # Apply any flags that are only available on >= GCC 11.1
@@ -503,6 +505,7 @@ macro (set_new_alignment alignment)
         add_compile_options(-fnew-alignment=${alignment})
     endif()
 endmacro()
+message(STATUS "SERENITY_ARCH---::${SERENITY_ARCH}")
 
 if ("${SERENITY_ARCH}" STREQUAL "x86_64")
     add_compile_options(-mcmodel=large -mno-red-zone)
@@ -511,7 +514,7 @@ else()
     set_new_alignment(4)
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-pie")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-pie -g")
 
 # Kernel Coverage (KCOV) is an API to collect and expose program counters of
 # kernel code that has been run to user space. It's rather slow and likely not
@@ -577,6 +580,8 @@ if (NOT "${SERENITY_ARCH}" STREQUAL "aarch64")
         COMMENT "Preprocessing linker.ld"
         VERBATIM
     )
+
+    message(STATUS "CMAKE_CURRENT_BINARY_DIR/linker.ld---::${CMAKE_CURRENT_BINARY_DIR}/linker.ld")
 
     add_custom_target(generate_kernel_linker_script DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/linker.ld)
     target_link_options(Kernel PRIVATE LINKER:-T ${CMAKE_CURRENT_BINARY_DIR}/linker.ld -nostdlib -nodefaultlibs)

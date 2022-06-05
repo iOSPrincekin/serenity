@@ -48,6 +48,20 @@ else
     gdb_host=${SERENITY_HOST_IP:-127.0.0.1}
 fi
 
+$SERENITY_KERNEL_DEBUGGER -v
+echo "$SERENITY_KERNEL_DEBUGGER \
+    -ex \"file $SCRIPT_DIR/../Build/${SERENITY_ARCH:-i686}$toolchain_suffix/Kernel/Prekernel/$prekernel_image\" \
+    -ex \"set confirm off\" \
+    -ex \"directory $SCRIPT_DIR/../Build/${SERENITY_ARCH:-i686}$toolchain_suffix/\" \
+    -ex \"add-symbol-file $SCRIPT_DIR/../Build/${SERENITY_ARCH:-i686}$toolchain_suffix/Kernel/Kernel -o $kernel_base\" \
+    -ex \"set confirm on\" \
+    -ex \"set arch $gdb_arch\" \
+    -ex \"set print frame-arguments none\" \
+    -ex \"target remote ${gdb_host}:1234\" \
+    -ex \"source $SCRIPT_DIR/serenity_gdb.py\" \
+    -ex \"layout asm\" \
+    -ex \"fs next\" \
+    \"$@\"" > /Users/lee/Desktop/TEST/1.txt
 
 exec $SERENITY_KERNEL_DEBUGGER \
     -ex "file $SCRIPT_DIR/../Build/${SERENITY_ARCH:-i686}$toolchain_suffix/Kernel/Prekernel/$prekernel_image" \
@@ -55,7 +69,7 @@ exec $SERENITY_KERNEL_DEBUGGER \
     -ex "directory $SCRIPT_DIR/../Build/${SERENITY_ARCH:-i686}$toolchain_suffix/" \
     -ex "add-symbol-file $SCRIPT_DIR/../Build/${SERENITY_ARCH:-i686}$toolchain_suffix/Kernel/Kernel -o $kernel_base" \
     -ex "set confirm on" \
-    -ex "set arch $gdb_arch" \
+    -ex "set arch i386:x86-64" \
     -ex "set print frame-arguments none" \
     -ex "target remote ${gdb_host}:1234" \
     -ex "source $SCRIPT_DIR/serenity_gdb.py" \
