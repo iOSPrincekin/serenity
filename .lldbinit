@@ -1,0 +1,3 @@
+file /Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/Kernel/Prekernel/Prekernel32
+settings set target.exec-search-paths /Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default
+target modules load --file /Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/Kernel/Kernel  0xc0200000

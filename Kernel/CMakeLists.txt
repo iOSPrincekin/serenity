@@ -4,7 +4,7 @@ if (ENABLE_EXTRA_KERNEL_DEBUG_SYMBOLS)
 else()
     add_compile_options(-O2)
 endif()
-message(STATUS "SERENITY_ARCH---::${SERENITY_ARCH}")
+message(STATUS "SERENITY_ARCH---::${SERENITY_ARCH}-ENABLE_EXTRA_KERNEL_DEBUG_SYMBOLS:${ENABLE_EXTRA_KERNEL_DEBUG_SYMBOLS}")
 
 if ("${SERENITY_ARCH}" STREQUAL "aarch64")
     set(KERNEL_ARCH aarch64)
@@ -514,7 +514,7 @@ else()
     set_new_alignment(4)
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-pie -g")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-pie ")
 
 # Kernel Coverage (KCOV) is an API to collect and expose program counters of
 # kernel code that has been run to user space. It's rather slow and likely not
