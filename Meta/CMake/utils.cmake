@@ -202,16 +202,28 @@ endfunction()
 
 function(download_file url path)
     if (NOT EXISTS "${path}")
-        get_filename_component(file "${path}" NAME)
-        message(STATUS "Downloading path ${path}, file ${file} from ${url}")
+        ## 首先从 /Toolchain/Tarballs/ 中查找，如果找到则进行复制
+        get_filename_component(fileName ${path} NAME)
+        get_filename_component(urlFileName ${url} NAME)
+        set(Tarballs_File "${PROJECT_SOURCE_DIR}/Toolchain/Tarballs/${urlFileName}")
+        message(STATUS "Tarballs_File: ${Tarballs_File}")
+        if(EXISTS "${Tarballs_File}")
+            get_filename_component(fileDirectory ${path} DIRECTORY)
+            message(STATUS "COPY_FILE ${Tarballs_File}
+      ${fileDirectory}/${fileName}")
+            file(COPY_FILE ${Tarballs_File}
+      ${fileDirectory}/${fileName})
 
-        file(DOWNLOAD "${url}" "${path}" INACTIVITY_TIMEOUT 1000 STATUS download_result)
-        list(GET download_result 0 status_code)
-        list(GET download_result 1 error_message)
-
-        if (NOT status_code EQUAL 0)
-            file(REMOVE "${path}")
-            message(FATAL_ERROR "Failed to download ${url}: ${error_message}")
+        else()
+            message(STATUS "Downloading path ${path}, file ${fileName} from ${url}")
+            file(DOWNLOAD "${url}" "${path}" INACTIVITY_TIMEOUT 1000 STATUS download_result)
+            list(GET download_result 0 status_code)
+            list(GET download_result 1 error_message)
+        
+            if (NOT status_code EQUAL 0)
+                file(REMOVE "${path}")
+                message(FATAL_ERROR "Failed to download ${url}: ${error_message}")
+            endif()
         endif()
     endif()
 endfunction()
