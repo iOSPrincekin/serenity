@@ -136,6 +136,7 @@ is_valid_target() {
 
 create_build_dir() {
     if [ "$TARGET" != "lagom" ]; then
+        echo "create_build_dir,cmake -GNinja ${CMAKE_ARGS[@]} -S $SERENITY_SOURCE_DIR/Meta/CMake/Superbuild -B $SUPER_BUILD_DIR"
         cmake -GNinja "${CMAKE_ARGS[@]}" -S "$SERENITY_SOURCE_DIR/Meta/CMake/Superbuild" -B "$SUPER_BUILD_DIR"
     else
         cmake -GNinja "${CMAKE_ARGS[@]}" -S "$SERENITY_SOURCE_DIR/Meta/Lagom" -B "$SUPER_BUILD_DIR"
@@ -254,6 +255,7 @@ run_tests() {
 }
 
 build_target() {
+    echo "build_target,$TARGET"
     if [ "$TARGET" = "lagom" ]; then
         # Ensure that all lagom binaries get built, in case user first
         # invoked superbuild for serenity target that doesn't set -DBUILD_LAGOM=ON
@@ -266,6 +268,7 @@ build_target() {
     # With zero args, we are doing a standard "build"
     # With multiple args, we are doing an install/image/run
     if [ $# -eq 0 ]; then
+        echo "build_target,CMAKE_BUILD_PARALLEL_LEVEL="$MAKEJOBS" cmake --build "$SUPER_BUILD_DIR""
         CMAKE_BUILD_PARALLEL_LEVEL="$MAKEJOBS" cmake --build "$SUPER_BUILD_DIR"
     else
         ninja -j "$MAKEJOBS" -C "$BUILD_DIR" -- "$@"
@@ -379,6 +382,7 @@ if [[ "$CMD" =~ ^(build|install|image|copy-src|run|gdb|test|rebuild|recreate|kad
     ensure_target
     case "$CMD" in
         build)
+            echo "build_target $@...."
             build_target "$@"
             ;;
         install)

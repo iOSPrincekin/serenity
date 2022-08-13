@@ -118,3 +118,23 @@ And many more! [See here](https://github.com/SerenityOS/serenity/graphs/contribu
 ## License
 
 SerenityOS is licensed under a 2-clause BSD license.
+
+
+
+## Usage:
+
+### 1.ninja setup-and-run
+
+this use for build image and run,
+
+in clion configurations select application and show all ninja list
+
+
+```
+
+osascript -e 'tell application "Terminal" to activate'  -e 'tell application "Terminal" to do script "cd /Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default \n echo lh1992524 | sudo -S ninja setup-and-run  " in selected tab of the front window'
+
+```
+
+
+### 2.使用  `qemu-system-i386 -s -S -kernel Prekernel` +  `lldb Prekernel` 进行调试
