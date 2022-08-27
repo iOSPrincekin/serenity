@@ -41,6 +41,14 @@ extern "C" char const kernel_cmdline[4096];
 
 extern "C" void reload_cr3();
 
+extern "C" void print_no_halt(const char *s);
+
+extern "C" void init_test();
+extern "C" void init_test()
+{
+    print_no_halt((const char*)"zzzzzzzzzz");
+}
+
 extern "C" {
 multiboot_info_t* multiboot_info_ptr;
 }
@@ -66,16 +74,17 @@ namespace Kernel {
 // boot.S expects these functions to exactly have the following signatures.
 // We declare them here to ensure their signatures don't accidentally change.
 extern "C" [[noreturn]] void init();
-
 // SerenityOS Pre-Kernel Environment C++ entry point :^)
 //
 // This is where C++ execution begins, after boot.S transfers control here.
 //
 
 u64 generate_secure_seed();
-
 extern "C" [[noreturn]] void init()
 {
+    print_no_halt((const char*)"x");
+    print_no_halt((const char*)"c");
+
     if (multiboot_info_ptr->mods_count < 1)
         halt();
 

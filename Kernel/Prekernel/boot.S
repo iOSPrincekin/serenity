@@ -48,6 +48,8 @@ boot_pd_kernel_pt1023:
 
 .extern init
 .type init, @function
+.extern init_test
+.type init_test, @function
 
 .global reload_cr3
 .type reload_cr3, @function
@@ -102,6 +104,7 @@ start:
     param 1: pointer to C string
     returns: Length of string (including null byte)
 */
+.global print_no_halt
 print_no_halt:
     pushl %ebp
     movl %esp, %ebp
@@ -547,6 +550,7 @@ pae_supported:
 #endif
 
     call reload_cr3
+    call init_test
     call init
 
     cli
