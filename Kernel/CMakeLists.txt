@@ -2,7 +2,7 @@ if (ENABLE_EXTRA_KERNEL_DEBUG_SYMBOLS)
     add_compile_options(-Og)
     add_compile_options(-ggdb3)
 else()
-   # add_compile_options(-O2)
+    add_compile_options(-O2)
 endif()
 message(STATUS "SERENITY_ARCH---::${SERENITY_ARCH}-ENABLE_EXTRA_KERNEL_DEBUG_SYMBOLS:${ENABLE_EXTRA_KERNEL_DEBUG_SYMBOLS}")
 
