@@ -43,12 +43,6 @@ extern "C" void reload_cr3();
 
 extern "C" void print_no_halt(const char *s);
 
-extern "C" void init_test();
-extern "C" void init_test()
-{
-    print_no_halt((const char*)"zzzzzzzzzz");
-}
-
 extern "C" {
 multiboot_info_t* multiboot_info_ptr;
 }
@@ -92,8 +86,13 @@ extern "C" [[noreturn]] void init()
 
     u8* kernel_image = (u8*)(FlatPtr)kernel_module->start;
     // copy the ELF header and program headers because we might end up overwriting them
+#if 0
     ElfW(Ehdr) kernel_elf_header = *(ElfW(Ehdr)*)kernel_image;
     ElfW(Phdr) kernel_program_headers[16];
+#else
+    Elf32_Ehdr kernel_elf_header = *(Elf32_Ehdr*)kernel_image;
+    Elf32_Phdr kernel_program_headers[16];
+#endif
     if (kernel_elf_header.e_phnum > array_size(kernel_program_headers))
         halt();
     __builtin_memcpy(kernel_program_headers, kernel_image + kernel_elf_header.e_phoff, sizeof(ElfW(Phdr)) * kernel_elf_header.e_phnum);

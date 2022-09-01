@@ -48,8 +48,6 @@ boot_pd_kernel_pt1023:
 
 .extern init
 .type init, @function
-.extern init_test
-.type init_test, @function
 
 .global reload_cr3
 .type reload_cr3, @function
@@ -550,7 +548,6 @@ pae_supported:
 #endif
 
     call reload_cr3
-    call init_test
     call init
 
     cli

@@ -514,7 +514,7 @@ else()
     set_new_alignment(4)
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-pie ")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-pie -g")
 
 # Kernel Coverage (KCOV) is an API to collect and expose program counters of
 # kernel code that has been run to user space. It's rather slow and likely not
