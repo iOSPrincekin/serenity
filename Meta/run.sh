@@ -34,7 +34,7 @@ fi
 if [ "$(uname)" = "Darwin" ]; then
 
     if [ "$SERENITY_ARCH" != "aarch64" ]; then
-        [ -z "$SERENITY_QEMU_BIN" ] && SERENITY_QEMU_BIN="qemu-system-x86_64"
+        [ -z "$SERENITY_QEMU_BIN" ] && SERENITY_QEMU_BIN="qemu-system-i386"
     else
         [ -z "$SERENITY_QEMU_BIN" ] && SERENITY_QEMU_BIN="qemu-system-aarch64"
     fi
@@ -228,7 +228,7 @@ if [ -z "$SERENITY_HOST_IP" ]; then
 fi
 
 if [ -z "$SERENITY_DISABLE_GDB_SOCKET" ]; then
-      SERENITY_EXTRA_QEMU_ARGS="$SERENITY_EXTRA_QEMU_ARGS -gdb tcp:${SERENITY_HOST_IP}:1234"
+      SERENITY_EXTRA_QEMU_ARGS="$SERENITY_EXTRA_QEMU_ARGS -gdb tcp:${SERENITY_HOST_IP}:1235"
 #     SERENITY_EXTRA_QEMU_ARGS="$SERENITY_EXTRA_QEMU_ARGS -s -S"
 fi
 
@@ -486,7 +486,7 @@ echo "qemu command---:: \"$SERENITY_QEMU_BIN\" \
                                 $SERENITY_PACKET_LOGGING_ARG \
                                 $SERENITY_NETFLAGS_WITH_DEFAULT_DEVICE \
                                 $SERENITY_KERNEL_AND_INITRD \
-                                -append \"${SERENITY_KERNEL_CMDLINE}\" "
+                                -append disable_kaslr "
     # Meta/run.sh: qemu with user networking
     "$SERENITY_QEMU_BIN" \
         $SERENITY_COMMON_QEMU_ARGS \
@@ -494,5 +494,5 @@ echo "qemu command---:: \"$SERENITY_QEMU_BIN\" \
         $SERENITY_PACKET_LOGGING_ARG \
         $SERENITY_NETFLAGS_WITH_DEFAULT_DEVICE \
         $SERENITY_KERNEL_AND_INITRD \
-        -append "${SERENITY_KERNEL_CMDLINE}"
+        -append disable_kaslr
 fi
