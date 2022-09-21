@@ -24,7 +24,7 @@ if [ "$SERENITY_TOOLCHAIN" = "Clang" ]; then
 fi
 
 # The QEMU -s option (enabled by default in ./run) sets up a debugger
-# remote on localhost:1234. So point our debugger there, and inform
+# remote on localhost:1235. So point our debugger there, and inform
 # the debugger which binary to load symbols, etc from.
 #
 if [ "$SERENITY_ARCH" = "x86_64" ]; then
@@ -57,7 +57,7 @@ echo "$SERENITY_KERNEL_DEBUGGER \
     -ex \"set confirm on\" \
     -ex \"set arch $gdb_arch\" \
     -ex \"set print frame-arguments none\" \
-    -ex \"target remote ${gdb_host}:1234\" \
+    -ex \"target remote ${gdb_host}:1235\" \
     -ex \"source $SCRIPT_DIR/serenity_gdb.py\" \
     -ex \"layout asm\" \
     -ex \"fs next\" \
@@ -71,7 +71,7 @@ exec $SERENITY_KERNEL_DEBUGGER \
     -ex "set confirm on" \
     -ex "set arch i386:x86-64" \
     -ex "set print frame-arguments none" \
-    -ex "target remote ${gdb_host}:1234" \
+    -ex "target remote ${gdb_host}:1235" \
     -ex "source $SCRIPT_DIR/serenity_gdb.py" \
     -ex "layout asm" \
     -ex "fs next" \

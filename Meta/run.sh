@@ -228,7 +228,7 @@ if [ -z "$SERENITY_HOST_IP" ]; then
 fi
 
 if [ -z "$SERENITY_DISABLE_GDB_SOCKET" ]; then
-      SERENITY_EXTRA_QEMU_ARGS="$SERENITY_EXTRA_QEMU_ARGS -gdb tcp:${SERENITY_HOST_IP}:1234"
+      SERENITY_EXTRA_QEMU_ARGS="$SERENITY_EXTRA_QEMU_ARGS -gdb tcp:${SERENITY_HOST_IP}:1235"
 #     SERENITY_EXTRA_QEMU_ARGS="$SERENITY_EXTRA_QEMU_ARGS -s -S"
 fi
 
@@ -480,6 +480,7 @@ elif [ "$SERENITY_RUN" = "ci" ]; then
         $SERENITY_KERNEL_AND_INITRD \
         -append "${SERENITY_KERNEL_CMDLINE}"
 else
+SERENITY_KERNEL_CMDLINE=disable_kaslr
 echo "qemu command---:: \"$SERENITY_QEMU_BIN\" \
                                 $SERENITY_COMMON_QEMU_ARGS \
                                 $SERENITY_VIRT_TECH_ARG \

@@ -76,6 +76,7 @@ add_custom_target(image
 )
 
 add_custom_target(qemu-image
+        COMMAND echo "lh1992524" | sudo -S echo "hello!"
     COMMAND "${CMAKE_COMMAND}" -E env "SERENITY_SOURCE_DIR=${SerenityOS_SOURCE_DIR}" "SERENITY_ARCH=${SERENITY_ARCH}" "SERENITY_TOOLCHAIN=${CMAKE_CXX_COMPILER_ID}" "LLVM_VERSION=${CMAKE_CXX_COMPILER_VERSION}" "${SerenityOS_SOURCE_DIR}/Meta/build-image-qemu.sh"
     BYPRODUCTS "${CMAKE_BINARY_DIR}/_disk_image"
     USES_TERMINAL
