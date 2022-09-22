@@ -22,17 +22,15 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 
     TRY(Core::System::unveil("/res", "r"));
     TRY(Core::System::unveil("/home", "r"));
-    TRY(Core::System::unveil("/tmp/portal/webcontent", "rw"));
+    TRY(Core::System::unveil("/tmp/user/%uid/portal/webcontent", "rw"));
     TRY(Core::System::unveil("/bin/Help", "x"));
     TRY(Core::System::unveil(nullptr, nullptr));
-    auto app_icon = GUI::Icon::default_icon("app-welcome");
+    auto app_icon = GUI::Icon::default_icon("app-welcome"sv);
 
     auto window = TRY(GUI::Window::try_create());
     window->resize(480, 250);
     window->center_on_screen();
-
     window->set_title("Welcome");
-    window->set_minimum_size(480, 250);
     window->set_icon(app_icon.bitmap_for_size(16));
     auto welcome_widget = TRY(window->try_set_main_widget<WelcomeWidget>());
 

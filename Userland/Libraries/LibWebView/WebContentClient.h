@@ -19,7 +19,7 @@ class OutOfProcessWebView;
 class WebContentClient final
     : public IPC::ConnectionToServer<WebContentClientEndpoint, WebContentServerEndpoint>
     , public WebContentClientEndpoint {
-    IPC_CLIENT_CONNECTION(WebContentClient, "/tmp/portal/webcontent");
+    IPC_CLIENT_CONNECTION(WebContentClient, "/tmp/user/%uid/portal/webcontent"sv);
 
 public:
     Function<void()> on_web_content_process_crash;
@@ -61,6 +61,7 @@ private:
     virtual Messages::WebContentClient::DidRequestCookieResponse did_request_cookie(AK::URL const&, u8) override;
     virtual void did_set_cookie(AK::URL const&, Web::Cookie::ParsedCookie const&, u8) override;
     virtual void did_update_resource_count(i32 count_waiting) override;
+    virtual void did_request_file(String const& path, i32) override;
 
     OutOfProcessWebView& m_view;
 };

@@ -17,9 +17,9 @@ class CharacterData
     : public Node
     , public ChildNode<CharacterData>
     , public NonDocumentTypeChildNode<CharacterData> {
-public:
-    using WrapperType = Bindings::CharacterDataWrapper;
+    WEB_PLATFORM_OBJECT(CharacterData, Node);
 
+public:
     virtual ~CharacterData() override = default;
 
     String const& data() const { return m_data; }
@@ -28,6 +28,9 @@ public:
     unsigned length() const { return m_data.length(); }
 
     ExceptionOr<String> substring_data(size_t offset, size_t count) const;
+    ExceptionOr<void> append_data(String const&);
+    ExceptionOr<void> insert_data(size_t offset, String const&);
+    ExceptionOr<void> delete_data(size_t offset, size_t count);
     ExceptionOr<void> replace_data(size_t offset, size_t count, String const&);
 
 protected:

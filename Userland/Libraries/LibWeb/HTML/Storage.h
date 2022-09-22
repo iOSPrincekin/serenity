@@ -7,20 +7,16 @@
 #pragma once
 
 #include <AK/HashMap.h>
-#include <AK/RefCounted.h>
-#include <LibWeb/Bindings/Wrappable.h>
+#include <LibWeb/Bindings/PlatformObject.h>
 #include <LibWeb/DOM/ExceptionOr.h>
-#include <LibWeb/Forward.h>
 
 namespace Web::HTML {
 
-class Storage
-    : public RefCounted<Storage>
-    , public Bindings::Wrappable {
-public:
-    using WrapperType = Bindings::StorageWrapper;
+class Storage : public Bindings::PlatformObject {
+    WEB_PLATFORM_OBJECT(Storage, Bindings::PlatformObject);
 
-    static NonnullRefPtr<Storage> create();
+public:
+    static JS::NonnullGCPtr<Storage> create(HTML::Window&);
     ~Storage();
 
     size_t length() const;
@@ -37,18 +33,12 @@ public:
     void dump() const;
 
 private:
-    Storage();
+    explicit Storage(HTML::Window&);
 
     void reorder();
     void broadcast(String const& key, String const& old_value, String const& new_value);
 
     OrderedHashMap<String, String> m_map;
 };
-
-}
-
-namespace Web::Bindings {
-
-StorageWrapper* wrap(JS::GlobalObject&, HTML::Storage&);
 
 }

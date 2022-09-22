@@ -17,8 +17,8 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL "SerenityOS")
 endif()
 
 # Check for toolchain mismatch, user might need to rebuild toolchain
-set(GCC_VERSION "12.1.0")
-set(LLVM_VERSION "14.0.1")
+set(GCC_VERSION "12.2.0")
+set(LLVM_VERSION "15.0.0")
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     set(EXPECTED_COMPILER_VERSION "${GCC_VERSION}")
 else()
@@ -54,6 +54,12 @@ if (NOT HACKSTUDIO_BUILD)
     # Host tools, required to generate files for the build
     find_package(Lagom CONFIG REQUIRED)
 
+    if (ENABLE_JAKT)
+        find_package(Jakt CONFIG REQUIRED
+            HINTS "${Lagom_DIR}/.."
+        )
+    endif()
+
 endif()
 
 # Meta target to run all code-gen steps in the build.
@@ -86,12 +92,12 @@ add_custom_target(qemu-image
     USES_TERMINAL
 )
 add_custom_target(grub-image
-    COMMAND ${CMAKE_COMMAND} -E env "SERENITY_SOURCE_DIR=${SerenityOS_SOURCE_DIR}" "SERENITY_ARCH=${SERENITY_ARCH}" "SERENITY_TOOLCHAIN=${CMAKE_CXX_COMPILER_ID}" "LLVM_VERSION=${CMAKE_CXX_COMPILER_VERSION}" "${SerenityOS_SOURCE_DIR}/Meta/build-image-grub.sh"
+    COMMAND "${CMAKE_COMMAND}" -E env "SERENITY_SOURCE_DIR=${SerenityOS_SOURCE_DIR}" "SERENITY_ARCH=${SERENITY_ARCH}" "SERENITY_TOOLCHAIN=${CMAKE_CXX_COMPILER_ID}" "LLVM_VERSION=${CMAKE_CXX_COMPILER_VERSION}" "${SerenityOS_SOURCE_DIR}/Meta/build-image-grub.sh"
     BYPRODUCTS ${CMAKE_BINARY_DIR}/grub_disk_image
     USES_TERMINAL
 )
 add_custom_target(limine-image
-    COMMAND ${CMAKE_COMMAND} -E env "SERENITY_SOURCE_DIR=${SerenityOS_SOURCE_DIR}" "SERENITY_ARCH=${SERENITY_ARCH}" "SERENITY_TOOLCHAIN=${CMAKE_CXX_COMPILER_ID}" "LLVM_VERSION=${CMAKE_CXX_COMPILER_VERSION}" "${SerenityOS_SOURCE_DIR}/Meta/build-image-limine.sh"
+    COMMAND "${CMAKE_COMMAND}" -E env "SERENITY_SOURCE_DIR=${SerenityOS_SOURCE_DIR}" "SERENITY_ARCH=${SERENITY_ARCH}" "SERENITY_TOOLCHAIN=${CMAKE_CXX_COMPILER_ID}" "LLVM_VERSION=${CMAKE_CXX_COMPILER_VERSION}" "${SerenityOS_SOURCE_DIR}/Meta/build-image-limine.sh"
     BYPRODUCTS ${CMAKE_BINARY_DIR}/limine_disk_image
     USES_TERMINAL
 )
@@ -149,13 +155,15 @@ if (ENABLE_ALL_THE_DEBUG_MACROS)
     include(all_the_debug_macros)
 endif(ENABLE_ALL_THE_DEBUG_MACROS)
 
+set(CMAKE_STAGING_PREFIX "${CMAKE_BINARY_DIR}/Root")
+set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/Root")
+set(CMAKE_INSTALL_DATAROOTDIR res)
+set(CMAKE_INSTALL_INCLUDEDIR usr/include)
+set(CMAKE_INSTALL_LIBDIR usr/lib)
+
 configure_file(AK/Debug.h.in AK/Debug.h @ONLY)
 configure_file(Kernel/Debug.h.in Kernel/Debug.h @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/AK/Debug.h DESTINATION usr/include/AK)
-
-set(CMAKE_STAGING_PREFIX ${CMAKE_BINARY_DIR}/Root)
-set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/Root)
-set(CMAKE_INSTALL_DATAROOTDIR ${CMAKE_BINARY_DIR}/Root/res)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/AK/Debug.h" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/AK")
 
 # We disable it completely because it makes cmake very spammy.
 # This will need to be revisited when the Loader supports RPATH/RUN_PATH.
@@ -180,8 +188,6 @@ include_directories(.)
 include_directories(Userland/Libraries)
 include_directories(Userland/Libraries/LibC)
 include_directories(Userland/Libraries/LibCrypt)
-include_directories(Userland/Libraries/LibM)
-include_directories(Userland/Libraries/LibPthread)
 include_directories(Userland/Libraries/LibSystem)
 include_directories(Userland/Services)
 include_directories(Userland)
@@ -202,6 +208,7 @@ option(BUILD_EVERYTHING "Build all optional components" ON)
 
 include(utils)
 include(wasm_spec_tests)
+include(flac_spec_tests)
 
 serenity_component(
     Tests
@@ -236,34 +243,24 @@ endif()
 
 export_components("${CMAKE_BINARY_DIR}/components.ini")
 
+# it seems like cmake cannot uncompress *.gz files... only ZIP/tar.gz.
+# Lets download the uncompressed versions. 
+# https://gitlab.kitware.com/cmake/cmake/-/issues/23054
+
 set(PCI_IDS_FILE pci.ids)
-set(PCI_IDS_GZ_URL https://pci-ids.ucw.cz/v2.2/${PCI_IDS_FILE}.gz)
-set(PCI_IDS_GZ_PATH ${CMAKE_BINARY_DIR}/${PCI_IDS_FILE}.gz)
+set(PCI_IDS_URL https://pci-ids.ucw.cz/v2.2/${PCI_IDS_FILE})
 set(PCI_IDS_PATH ${CMAKE_BINARY_DIR}/${PCI_IDS_FILE})
 set(PCI_IDS_INSTALL_PATH ${CMAKE_INSTALL_DATAROOTDIR}/${PCI_IDS_FILE})
 
-if(ENABLE_PCI_IDS_DOWNLOAD AND NOT EXISTS ${PCI_IDS_GZ_PATH})
-    download_file("${PCI_IDS_GZ_URL}" "${PCI_IDS_GZ_PATH}")
-endif()
-
-if(EXISTS ${PCI_IDS_GZ_PATH} AND NOT EXISTS ${PCI_IDS_INSTALL_PATH})
-    message(STATUS "Extracting PCI ID database from ${PCI_IDS_GZ_PATH}...")
-    file(MAKE_DIRECTORY ${CMAKE_INSTALL_DATAROOTDIR})
-    execute_process(COMMAND "${GZIP_TOOL}" -d -c "${PCI_IDS_GZ_PATH}" OUTPUT_FILE "${PCI_IDS_INSTALL_PATH}")
+if(ENABLE_PCI_IDS_DOWNLOAD AND NOT EXISTS ${CMAKE_STAGING_PREFIX}/${PCI_IDS_INSTALL_PATH} )
+    download_file("${PCI_IDS_URL}" "${CMAKE_STAGING_PREFIX}/${PCI_IDS_INSTALL_PATH}")
 endif()
 
 set(USB_IDS_FILE usb.ids)
-set(USB_IDS_GZ_URL http://www.linux-usb.org/${USB_IDS_FILE}.gz)
-set(USB_IDS_GZ_PATH ${CMAKE_BINARY_DIR}/${USB_IDS_FILE}.gz)
+set(USB_IDS_URL http://www.linux-usb.org/${USB_IDS_FILE})
 set(USB_IDS_PATH ${CMAKE_BINARY_DIR}/${USB_IDS_FILE})
 set(USB_IDS_INSTALL_PATH ${CMAKE_INSTALL_DATAROOTDIR}/${USB_IDS_FILE})
 
-if(ENABLE_USB_IDS_DOWNLOAD AND NOT EXISTS ${USB_IDS_GZ_PATH})
-    download_file("${USB_IDS_GZ_URL}" "${USB_IDS_GZ_PATH}")
-endif()
-
-if(EXISTS ${USB_IDS_GZ_PATH} AND NOT EXISTS ${USB_IDS_INSTALL_PATH})
-    message(STATUS "Extracting USB ID database from ${USB_IDS_GZ_PATH}...")
-    file(MAKE_DIRECTORY ${CMAKE_INSTALL_DATAROOTDIR})
-    execute_process(COMMAND "${GZIP_TOOL}" -d -c "${USB_IDS_GZ_PATH}" OUTPUT_FILE "${USB_IDS_INSTALL_PATH}")
+if(ENABLE_USB_IDS_DOWNLOAD AND NOT EXISTS "${CMAKE_STAGING_PREFIX}/${USB_IDS_PATH}")
+    download_file("${USB_IDS_URL}" "${CMAKE_STAGING_PREFIX}/${USB_IDS_PATH}")
 endif()

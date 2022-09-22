@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <Kernel/Arch/InterruptDisabler.h>
 #include <Kernel/Arch/x86/IO.h>
-#include <Kernel/Arch/x86/InterruptDisabler.h>
 #include <Kernel/Interrupts/GenericInterruptHandler.h>
 #include <Kernel/Scheduler.h>
 #include <Kernel/Sections.h>
@@ -16,9 +16,9 @@
 #define IRQ_TIMER 0
 namespace Kernel {
 
-UNMAP_AFTER_INIT NonnullRefPtr<PIT> PIT::initialize(Function<void(RegisterState const&)> callback)
+UNMAP_AFTER_INIT NonnullLockRefPtr<PIT> PIT::initialize(Function<void(RegisterState const&)> callback)
 {
-    return adopt_ref(*new PIT(move(callback)));
+    return adopt_lock_ref(*new PIT(move(callback)));
 }
 
 [[maybe_unused]] inline static void reset_countdown(u16 timer_reload)

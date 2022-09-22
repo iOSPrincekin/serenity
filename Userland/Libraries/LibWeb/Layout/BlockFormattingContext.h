@@ -18,17 +18,18 @@ class LineBuilder;
 // https://www.w3.org/TR/css-display/#block-formatting-context
 class BlockFormattingContext : public FormattingContext {
 public:
-    explicit BlockFormattingContext(FormattingState&, BlockContainer const&, FormattingContext* parent);
+    explicit BlockFormattingContext(LayoutState&, BlockContainer const&, FormattingContext* parent);
     ~BlockFormattingContext();
 
     virtual void run(Box const&, LayoutMode) override;
+    virtual void run_intrinsic_sizing(Box const&) override;
 
     bool is_initial() const;
 
     auto const& left_side_floats() const { return m_left_floats; }
     auto const& right_side_floats() const { return m_right_floats; }
 
-    static float compute_theoretical_height(FormattingState const&, Box const&);
+    static float compute_theoretical_height(LayoutState const&, Box const&);
     void compute_width(Box const&, LayoutMode = LayoutMode::Normal);
 
     // https://www.w3.org/TR/css-display/#block-formatting-context-root
@@ -36,7 +37,7 @@ public:
 
     virtual void parent_context_did_dimension_child_root_box() override;
 
-    static void compute_height(Box const&, FormattingState&);
+    static void compute_height(Box const&, LayoutState&);
 
     void add_absolutely_positioned_box(Box const& box) { m_absolutely_positioned_boxes.append(box); }
 
@@ -45,6 +46,21 @@ public:
     virtual float greatest_child_width(Box const&) override;
 
     void layout_floating_box(Box const& child, BlockContainer const& containing_block, LayoutMode, LineBuilder* = nullptr);
+
+    void layout_block_level_box(Box const&, BlockContainer const&, LayoutMode, float& bottom_of_lowest_margin_box);
+
+    static bool should_treat_width_as_auto(Box const&, LayoutState const&);
+    static bool should_treat_height_as_auto(Box const&, LayoutState const&);
+
+    bool should_treat_width_as_auto(Box const& box) const
+    {
+        return should_treat_width_as_auto(box, m_state);
+    }
+
+    bool should_treat_height_as_auto(Box const& box) const
+    {
+        return should_treat_height_as_auto(box, m_state);
+    }
 
 private:
     virtual bool is_block_formatting_context() const final { return true; }
@@ -58,7 +74,7 @@ private:
     void layout_block_level_children(BlockContainer const&, LayoutMode);
     void layout_inline_children(BlockContainer const&, LayoutMode);
 
-    void compute_vertical_box_model_metrics(Box const& box, BlockContainer const& containing_block);
+    static void resolve_vertical_box_model_metrics(Box const& box, BlockContainer const& containing_block, LayoutState&);
     void place_block_level_element_in_normal_flow_horizontally(Box const& child_box, BlockContainer const&);
     void place_block_level_element_in_normal_flow_vertically(Box const& child_box, BlockContainer const&);
 

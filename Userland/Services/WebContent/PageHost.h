@@ -57,6 +57,7 @@ private:
     virtual void page_did_request_context_menu(Gfx::IntPoint const&) override;
     virtual void page_did_request_link_context_menu(Gfx::IntPoint const&, const URL&, String const& target, unsigned modifiers) override;
     virtual void page_did_start_loading(const URL&) override;
+    virtual void page_did_create_main_document() override;
     virtual void page_did_finish_loading(const URL&) override;
     virtual void page_did_request_alert(String const&) override;
     virtual bool page_did_request_confirm(String const&) override;
@@ -66,6 +67,7 @@ private:
     virtual String page_did_request_cookie(const URL&, Web::Cookie::Source) override;
     virtual void page_did_set_cookie(const URL&, Web::Cookie::ParsedCookie const&, Web::Cookie::Source) override;
     virtual void page_did_update_resource_count(i32) override;
+    virtual void request_file(NonnullRefPtr<Web::FileRequest>&) override;
 
     explicit PageHost(ConnectionFromClient&);
 

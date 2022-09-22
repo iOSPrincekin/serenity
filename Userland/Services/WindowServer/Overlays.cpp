@@ -292,7 +292,7 @@ void DndOverlay::update_rect()
     auto& font = this->font();
     int width = font.width(m_text) + bitmap_width;
     int height = max((int)font.glyph_height(), bitmap_height);
-    auto location = Compositor::the().current_cursor_rect().center().translated(8, 8);
+    auto location = ScreenInput::the().cursor_location().translated(8, 8);
     set_rect(Gfx::IntRect(location, { width, height }).inflated(16, 8));
 }
 
@@ -323,8 +323,8 @@ void WindowStackSwitchOverlay::render_overlay_bitmap(Gfx::Painter& painter)
 {
     // We should come up with a more elegant way to get the content rectangle
     auto content_rect = Gfx::IntRect({}, m_content_size).centered_within({ {}, rect().size() });
-    auto active_color = WindowManager::the().palette().active_window_border1();
-    auto inactive_color = WindowManager::the().palette().inactive_window_border1();
+    auto active_color = WindowManager::the().palette().selection();
+    auto inactive_color = WindowManager::the().palette().window().darkened(0.9f);
     for (int y = 0; y < m_rows; y++) {
         for (int x = 0; x < m_columns; x++) {
             Gfx::IntRect rect {

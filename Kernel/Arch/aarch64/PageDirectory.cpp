@@ -5,6 +5,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <Kernel/Arch/aarch64/ASM_wrapper.h>
 #include <Kernel/Memory/PageDirectory.h>
 
 namespace Kernel::Memory {
@@ -19,7 +20,7 @@ void PageDirectory::deregister_page_directory(PageDirectory*)
     VERIFY_NOT_REACHED();
 }
 
-RefPtr<PageDirectory> PageDirectory::find_current()
+LockRefPtr<PageDirectory> PageDirectory::find_current()
 {
     VERIFY_NOT_REACHED();
     return nullptr;
@@ -27,7 +28,7 @@ RefPtr<PageDirectory> PageDirectory::find_current()
 
 void activate_kernel_page_directory(PageDirectory const&)
 {
-    VERIFY_NOT_REACHED();
+    // FIXME: Implement this
 }
 
 void activate_page_directory(PageDirectory const&, Thread*)

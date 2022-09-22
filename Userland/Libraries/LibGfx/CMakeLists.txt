@@ -1,10 +1,10 @@
 set(SOURCES
     AffineTransform.cpp
     AntiAliasingPainter.cpp
-    Bitmap.cpp
-    BitmapMixer.cpp
     BMPLoader.cpp
     BMPWriter.cpp
+    Bitmap.cpp
+    BitmapMixer.cpp
     ClassicStylePainter.cpp
     ClassicWindowTheme.cpp
     Color.cpp
@@ -14,27 +14,28 @@ set(SOURCES
     Filters/ColorBlindnessFilter.cpp
     Filters/FastBoxBlurFilter.cpp
     Filters/LumaFilter.cpp
+    Filters/StackBlurFilter.cpp
     Font/BitmapFont.cpp
     Font/Emoji.cpp
     Font/FontDatabase.cpp
     Font/ScaledFont.cpp
+    Font/TrueType/Cmap.cpp
     Font/TrueType/Font.cpp
     Font/TrueType/Glyf.cpp
-    Font/TrueType/Cmap.cpp
     Font/Typeface.cpp
     Font/WOFF/Font.cpp
     GIFLoader.cpp
     ICOLoader.cpp
     ImageDecoder.cpp
     JPGLoader.cpp
-    Painter.cpp
-    Palette.cpp
-    Path.cpp
     PBMLoader.cpp
     PGMLoader.cpp
     PNGLoader.cpp
     PNGWriter.cpp
     PPMLoader.cpp
+    Painter.cpp
+    Palette.cpp
+    Path.cpp
     Point.cpp
     QOILoader.cpp
     QOIWriter.cpp
@@ -50,4 +51,4 @@ set(SOURCES
 )
 
 serenity_lib(LibGfx gfx)
-target_link_libraries(LibGfx LibM LibCompress LibCore LibTextCodec LibIPC)
+target_link_libraries(LibGfx LibCompress LibCore LibTextCodec LibIPC)

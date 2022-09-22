@@ -7,11 +7,12 @@
 
 #include <AK/TypeCasts.h>
 #include <LibCore/DirIterator.h>
-#include <LibGfx/Font/FontDatabase.h>
+#include <LibWeb/CSS/Clip.h>
 #include <LibWeb/CSS/StyleProperties.h>
 #include <LibWeb/FontCache.h>
 #include <LibWeb/Layout/BlockContainer.h>
 #include <LibWeb/Layout/Node.h>
+#include <LibWeb/Platform/FontPlugin.h>
 
 namespace Web::CSS {
 
@@ -80,10 +81,10 @@ Optional<LengthPercentage> StyleProperties::length_percentage(CSS::PropertyID id
 LengthBox StyleProperties::length_box(CSS::PropertyID left_id, CSS::PropertyID top_id, CSS::PropertyID right_id, CSS::PropertyID bottom_id, const CSS::Length& default_value) const
 {
     LengthBox box;
-    box.left = length_percentage_or_fallback(left_id, default_value);
-    box.top = length_percentage_or_fallback(top_id, default_value);
-    box.right = length_percentage_or_fallback(right_id, default_value);
-    box.bottom = length_percentage_or_fallback(bottom_id, default_value);
+    box.left() = length_percentage_or_fallback(left_id, default_value);
+    box.top() = length_percentage_or_fallback(top_id, default_value);
+    box.right() = length_percentage_or_fallback(right_id, default_value);
+    box.bottom() = length_percentage_or_fallback(bottom_id, default_value);
     return box;
 }
 
@@ -98,15 +99,15 @@ Color StyleProperties::color_or_fallback(CSS::PropertyID id, Layout::NodeWithSty
 NonnullRefPtr<Gfx::Font> StyleProperties::font_fallback(bool monospace, bool bold)
 {
     if (monospace && bold)
-        return Gfx::FontDatabase::default_fixed_width_font().bold_variant();
+        return Platform::FontPlugin::the().default_fixed_width_font().bold_variant();
 
     if (monospace)
-        return Gfx::FontDatabase::default_fixed_width_font();
+        return Platform::FontPlugin::the().default_fixed_width_font();
 
     if (bold)
-        return Gfx::FontDatabase::default_font().bold_variant();
+        return Platform::FontPlugin::the().default_font().bold_variant();
 
-    return Gfx::FontDatabase::default_font();
+    return Platform::FontPlugin::the().default_font();
 }
 
 float StyleProperties::line_height(Layout::Node const& layout_node) const
@@ -235,6 +236,14 @@ Optional<CSS::ImageRendering> StyleProperties::image_rendering() const
     return value_id_to_image_rendering(value->to_identifier());
 }
 
+CSS::Clip StyleProperties::clip() const
+{
+    auto value = property(CSS::PropertyID::Clip);
+    if (!value->has_rect())
+        return CSS::Clip::make_auto();
+    return CSS::Clip(value->as_rect().rect());
+}
+
 Optional<CSS::JustifyContent> StyleProperties::justify_content() const
 {
     auto value = property(CSS::PropertyID::JustifyContent);
@@ -261,7 +270,7 @@ Vector<CSS::Transformation> StyleProperties::transformations() const
         auto& transformation_style_value = it.as_transformation();
         CSS::Transformation transformation;
         transformation.function = transformation_style_value.transform_function();
-        Vector<Variant<CSS::LengthPercentage, float>> values;
+        Vector<TransformValue> values;
         for (auto& transformation_value : transformation_style_value.values()) {
             if (transformation_value.is_length()) {
                 values.append({ transformation_value.to_length() });
@@ -270,7 +279,7 @@ Vector<CSS::Transformation> StyleProperties::transformations() const
             } else if (transformation_value.is_numeric()) {
                 values.append({ transformation_value.to_number() });
             } else if (transformation_value.is_angle()) {
-                values.append({ transformation_value.as_angle().angle().to_degrees() });
+                values.append({ transformation_value.as_angle().angle() });
             } else {
                 dbgln("FIXME: Unsupported value in transform!");
             }
@@ -308,6 +317,50 @@ Optional<CSS::AlignItems> StyleProperties::align_items() const
 {
     auto value = property(CSS::PropertyID::AlignItems);
     return value_id_to_align_items(value->to_identifier());
+}
+
+Optional<CSS::AlignSelf> StyleProperties::align_self() const
+{
+    auto value = property(CSS::PropertyID::AlignSelf);
+    return value_id_to_align_self(value->to_identifier());
+}
+
+Optional<CSS::Appearance> StyleProperties::appearance() const
+{
+    auto value = property(CSS::PropertyID::Appearance);
+    auto appearance = value_id_to_appearance(value->to_identifier());
+    if (appearance.has_value()) {
+        switch (*appearance) {
+        // Note: All these compatibility values can be treated as 'auto'
+        case CSS::Appearance::Textfield:
+        case CSS::Appearance::MenulistButton:
+        case CSS::Appearance::Searchfield:
+        case CSS::Appearance::Textarea:
+        case CSS::Appearance::PushButton:
+        case CSS::Appearance::SliderHorizontal:
+        case CSS::Appearance::Checkbox:
+        case CSS::Appearance::Radio:
+        case CSS::Appearance::SquareButton:
+        case CSS::Appearance::Menulist:
+        case CSS::Appearance::Listbox:
+        case CSS::Appearance::Meter:
+        case CSS::Appearance::ProgressBar:
+        case CSS::Appearance::Button:
+            appearance = CSS::Appearance::Auto;
+            break;
+        default:
+            break;
+        }
+    }
+    return appearance;
+}
+
+CSS::BackdropFilter StyleProperties::backdrop_filter() const
+{
+    auto value = property(CSS::PropertyID::BackdropFilter);
+    if (value->is_filter_value_list())
+        return BackdropFilter(value->as_filter_value_list());
+    return BackdropFilter::make_none();
 }
 
 Optional<CSS::Position> StyleProperties::position() const
@@ -485,6 +538,8 @@ CSS::Display StyleProperties::display() const
         return CSS::Display::from_short(CSS::Display::Short::Flex);
     case CSS::ValueID::InlineFlex:
         return CSS::Display::from_short(CSS::Display::Short::InlineFlex);
+    case CSS::ValueID::Grid:
+        return CSS::Display::from_short(CSS::Display::Short::Grid);
     default:
         return CSS::Display::from_short(CSS::Display::Short::Block);
     }
@@ -606,6 +661,42 @@ Optional<CSS::FontVariant> StyleProperties::font_variant() const
 {
     auto value = property(CSS::PropertyID::FontVariant);
     return value_id_to_font_variant(value->to_identifier());
+}
+
+Vector<CSS::GridTrackSize> StyleProperties::grid_template_columns() const
+{
+    auto value = property(CSS::PropertyID::GridTemplateColumns);
+    return value->as_grid_track_size().grid_track_size();
+}
+
+Vector<CSS::GridTrackSize> StyleProperties::grid_template_rows() const
+{
+    auto value = property(CSS::PropertyID::GridTemplateRows);
+    return value->as_grid_track_size().grid_track_size();
+}
+
+CSS::GridTrackPlacement StyleProperties::grid_column_end() const
+{
+    auto value = property(CSS::PropertyID::GridColumnEnd);
+    return value->as_grid_track_placement().grid_track_placement();
+}
+
+CSS::GridTrackPlacement StyleProperties::grid_column_start() const
+{
+    auto value = property(CSS::PropertyID::GridColumnStart);
+    return value->as_grid_track_placement().grid_track_placement();
+}
+
+CSS::GridTrackPlacement StyleProperties::grid_row_end() const
+{
+    auto value = property(CSS::PropertyID::GridRowEnd);
+    return value->as_grid_track_placement().grid_track_placement();
+}
+
+CSS::GridTrackPlacement StyleProperties::grid_row_start() const
+{
+    auto value = property(CSS::PropertyID::GridRowStart);
+    return value->as_grid_track_placement().grid_track_placement();
 }
 
 }

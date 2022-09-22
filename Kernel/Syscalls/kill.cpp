@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
-#include <Kernel/Arch/x86/InterruptDisabler.h>
+#include <Kernel/Arch/InterruptDisabler.h>
 #include <Kernel/Process.h>
 
 namespace Kernel {
@@ -13,7 +13,9 @@ ErrorOr<void> Process::do_kill(Process& process, int signal)
 {
     // FIXME: Allow sending SIGCONT to everyone in the process group.
     // FIXME: Should setuid processes have some special treatment here?
-    if (!is_superuser() && euid() != process.uid() && uid() != process.uid())
+    auto credentials = this->credentials();
+    auto kill_process_credentials = process.credentials();
+    if (!credentials->is_superuser() && credentials->euid() != kill_process_credentials->uid() && credentials->uid() != kill_process_credentials->uid())
         return EPERM;
     if (process.is_kernel_process()) {
         dbgln("Attempted to send signal {} to kernel process {} ({})", signal, process.name(), process.pid());
@@ -97,7 +99,7 @@ ErrorOr<void> Process::do_killself(int signal)
 
 ErrorOr<FlatPtr> Process::sys$kill(pid_t pid_or_pgid, int signal)
 {
-    VERIFY_PROCESS_BIG_LOCK_ACQUIRED(this)
+    VERIFY_PROCESS_BIG_LOCK_ACQUIRED(this);
     if (pid_or_pgid == pid().value())
         TRY(require_promise(Pledge::stdio));
     else
@@ -129,7 +131,7 @@ ErrorOr<FlatPtr> Process::sys$kill(pid_t pid_or_pgid, int signal)
 
 ErrorOr<FlatPtr> Process::sys$killpg(pid_t pgrp, int signum)
 {
-    VERIFY_PROCESS_BIG_LOCK_ACQUIRED(this)
+    VERIFY_PROCESS_BIG_LOCK_ACQUIRED(this);
     TRY(require_promise(Pledge::proc));
     if (signum < 1 || signum >= 32)
         return EINVAL;

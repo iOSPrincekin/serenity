@@ -26,7 +26,11 @@ public:
     virtual GUI::Widget* get_properties_widget() override;
     virtual Variant<Gfx::StandardCursor, NonnullRefPtr<Gfx::Bitmap>> cursor() override { return Gfx::StandardCursor::Crosshair; }
 
+    void draw_using(GUI::Painter&, Gfx::IntPoint const& start_position, Gfx::IntPoint const& end_position, Color color, int thickness);
+
 private:
+    virtual StringView tool_name() const override { return "Line Tool"sv; }
+
     RefPtr<GUI::Widget> m_properties_widget;
 
     GUI::MouseButton m_drawing_button { GUI::MouseButton::None };
@@ -34,6 +38,7 @@ private:
     Gfx::IntPoint m_line_start_position;
     Gfx::IntPoint m_line_end_position;
     int m_thickness { 1 };
+    bool m_antialias_enabled { false };
 };
 
 }

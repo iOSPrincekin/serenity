@@ -5,20 +5,24 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <bits/pthread_cancel.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <stdarg.h>
 #include <string.h>
 #include <syscall.h>
+#include <time.h>
 
 extern "C" {
 
 int fcntl(int fd, int cmd, ...)
 {
+    __pthread_maybe_cancel();
+
     va_list ap;
     va_start(ap, cmd);
-    u32 extra_arg = va_arg(ap, u32);
+    uintptr_t extra_arg = va_arg(ap, uintptr_t);
     int rc = syscall(SC_fcntl, fd, cmd, extra_arg);
     va_end(ap);
     __RETURN_WITH_ERRNO(rc, rc, -1);
@@ -45,11 +49,15 @@ int inode_watcher_remove_watch(int fd, int wd)
 
 int creat(char const* path, mode_t mode)
 {
+    __pthread_maybe_cancel();
+
     return open(path, O_CREAT | O_WRONLY | O_TRUNC, mode);
 }
 
 int open(char const* path, int options, ...)
 {
+    __pthread_maybe_cancel();
+
     if (!path) {
         errno = EFAULT;
         return -1;
@@ -70,6 +78,8 @@ int open(char const* path, int options, ...)
 
 int openat(int dirfd, char const* path, int options, ...)
 {
+    __pthread_maybe_cancel();
+
     if (!path) {
         errno = EFAULT;
         return -1;
@@ -101,5 +111,58 @@ int posix_fadvise(int fd, off_t offset, off_t len, int advice)
     (void)len;
     (void)advice;
     return 0;
+}
+
+// https://pubs.opengroup.org/onlinepubs/9699919799/functions/posix_fallocate.html
+int posix_fallocate(int fd, off_t offset, off_t len)
+{
+    // posix_fallocate does not set errno.
+    return static_cast<int>(syscall(SC_posix_fallocate, fd, &offset, &len));
+}
+
+// https://pubs.opengroup.org/onlinepubs/9699919799/functions/utimensat.html
+int utimensat(int dirfd, char const* path, struct timespec const times[2], int flag)
+{
+    if (!path) {
+        errno = EFAULT;
+        return -1;
+    }
+
+    size_t path_length = strlen(path);
+    if (path_length > INT32_MAX) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    // POSIX allows AT_SYMLINK_NOFOLLOW flag or no flags.
+    if (flag & ~AT_SYMLINK_NOFOLLOW) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    // Return early without error since both changes are to be omitted.
+    if (times && times[0].tv_nsec == UTIME_OMIT && times[1].tv_nsec == UTIME_OMIT)
+        return 0;
+
+    // According to POSIX, when times is a nullptr, it's equivalent to setting
+    // both last access time and last modification time to the current time.
+    // Setting the times argument to nullptr if it matches this case prevents
+    // the need to copy it in the kernel.
+    if (times && times[0].tv_nsec == UTIME_NOW && times[1].tv_nsec == UTIME_NOW)
+        times = nullptr;
+
+    if (times) {
+        for (int i = 0; i < 2; ++i) {
+            if ((times[i].tv_nsec != UTIME_NOW && times[i].tv_nsec != UTIME_OMIT)
+                && (times[i].tv_nsec < 0 || times[i].tv_nsec >= 1'000'000'000L)) {
+                errno = EINVAL;
+                return -1;
+            }
+        }
+    }
+
+    Syscall::SC_utimensat_params params { dirfd, { path, path_length }, times, flag };
+    int rc = syscall(SC_utimensat, &params);
+    __RETURN_WITH_ERRNO(rc, rc, -1);
 }
 }

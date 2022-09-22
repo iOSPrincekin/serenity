@@ -29,8 +29,8 @@ String Color::to_string_without_alpha() const
 
 static Optional<Color> parse_rgb_color(StringView string)
 {
-    VERIFY(string.starts_with("rgb(", CaseSensitivity::CaseInsensitive));
-    VERIFY(string.ends_with(")"));
+    VERIFY(string.starts_with("rgb("sv, CaseSensitivity::CaseInsensitive));
+    VERIFY(string.ends_with(')'));
 
     auto substring = string.substring_view(4, string.length() - 5);
     auto parts = substring.split_view(',');
@@ -50,8 +50,8 @@ static Optional<Color> parse_rgb_color(StringView string)
 
 static Optional<Color> parse_rgba_color(StringView string)
 {
-    VERIFY(string.starts_with("rgba(", CaseSensitivity::CaseInsensitive));
-    VERIFY(string.ends_with(")"));
+    VERIFY(string.starts_with("rgba("sv, CaseSensitivity::CaseInsensitive));
+    VERIFY(string.ends_with(')'));
 
     auto substring = string.substring_view(5, string.length() - 6);
     auto parts = substring.split_view(',');
@@ -80,7 +80,7 @@ Optional<Color> Color::from_string(StringView string)
     struct ColorAndWebName {
         constexpr ColorAndWebName(ARGB32 c, char const* n)
             : color(c)
-            , name(n)
+            , name(n != nullptr ? StringView { n, __builtin_strlen(n) } : StringView {})
         {
         }
         ARGB32 color;
@@ -244,7 +244,7 @@ Optional<Color> Color::from_string(StringView string)
         { 0x000000, nullptr }
     };
 
-    if (string.equals_ignoring_case("transparent"))
+    if (string.equals_ignoring_case("transparent"sv))
         return Color::from_argb(0x00000000);
 
     for (size_t i = 0; !web_colors[i].name.is_null(); ++i) {
@@ -252,10 +252,10 @@ Optional<Color> Color::from_string(StringView string)
             return Color::from_rgb(web_colors[i].color);
     }
 
-    if (string.starts_with("rgb(", CaseSensitivity::CaseInsensitive) && string.ends_with(")"))
+    if (string.starts_with("rgb("sv, CaseSensitivity::CaseInsensitive) && string.ends_with(')'))
         return parse_rgb_color(string);
 
-    if (string.starts_with("rgba(", CaseSensitivity::CaseInsensitive) && string.ends_with(")"))
+    if (string.starts_with("rgba("sv, CaseSensitivity::CaseInsensitive) && string.ends_with(')'))
         return parse_rgba_color(string);
 
     if (string[0] != '#')
@@ -308,6 +308,30 @@ Optional<Color> Color::from_string(StringView string)
         return {};
 
     return Color(r.value(), g.value(), b.value(), a.value());
+}
+
+Color Color::mixed_with(Color const& other, float weight) const
+{
+    if (alpha() == other.alpha() || with_alpha(0) == other.with_alpha(0)) {
+        return Gfx::Color {
+            round_to<u8>(mix<float>(red(), other.red(), weight)),
+            round_to<u8>(mix<float>(green(), other.green(), weight)),
+            round_to<u8>(mix<float>(blue(), other.blue(), weight)),
+            round_to<u8>(mix<float>(alpha(), other.alpha(), weight)),
+        };
+    }
+    // Fallback to slower, but more visually pleasing premultiplied alpha mix.
+    // This is needed for linear-gradient()s in LibWeb.
+    auto mixed_alpha = mix<float>(alpha(), other.alpha(), weight);
+    auto premultiplied_mix_channel = [&](float channel, float other_channel, float weight) {
+        return round_to<u8>(mix<float>(channel * (alpha() / 255.0f), other_channel * (other.alpha() / 255.0f), weight) / (mixed_alpha / 255.0f));
+    };
+    return Gfx::Color {
+        premultiplied_mix_channel(red(), other.red(), weight),
+        premultiplied_mix_channel(green(), other.green(), weight),
+        premultiplied_mix_channel(blue(), other.blue(), weight),
+        round_to<u8>(mixed_alpha),
+    };
 }
 
 Vector<Color> Color::shades(u32 steps, float max) const

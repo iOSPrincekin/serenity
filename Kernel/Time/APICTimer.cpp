@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
-#include <Kernel/Interrupts/APIC.h>
+#include <Kernel/Arch/x86/common/Interrupts/APIC.h>
 #include <Kernel/Panic.h>
 #include <Kernel/Sections.h>
 #include <Kernel/Time/APICTimer.h>
@@ -16,7 +16,7 @@ namespace Kernel {
 
 UNMAP_AFTER_INIT APICTimer* APICTimer::initialize(u8 interrupt_number, HardwareTimerBase& calibration_source)
 {
-    auto timer = adopt_ref(*new APICTimer(interrupt_number, nullptr));
+    auto timer = adopt_lock_ref(*new APICTimer(interrupt_number, nullptr));
     timer->register_interrupt_handler();
     if (!timer->calibrate(calibration_source)) {
         return nullptr;

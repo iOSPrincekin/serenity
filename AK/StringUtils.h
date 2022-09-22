@@ -22,6 +22,11 @@ enum class CaseSensitivity {
     CaseSensitive,
 };
 
+enum class ReplaceMode {
+    All,
+    FirstOnly,
+};
+
 enum class TrimMode {
     Left,
     Right,
@@ -78,8 +83,9 @@ Optional<size_t> find_any_of(StringView haystack, StringView needles, SearchDire
 
 String to_snakecase(StringView);
 String to_titlecase(StringView);
+String invert_case(StringView);
 
-String replace(StringView, StringView needle, StringView replacement, bool all_occurrences = false);
+String replace(StringView, StringView needle, StringView replacement, ReplaceMode);
 size_t count(StringView, StringView needle);
 
 }
@@ -87,5 +93,6 @@ size_t count(StringView, StringView needle);
 }
 
 using AK::CaseSensitivity;
+using AK::ReplaceMode;
 using AK::TrimMode;
 using AK::TrimWhitespace;

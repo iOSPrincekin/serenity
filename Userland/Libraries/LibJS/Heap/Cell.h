@@ -14,12 +14,21 @@
 
 namespace JS {
 
+#define JS_CELL(class_, base_class)                \
+public:                                            \
+    using Base = base_class;                       \
+    virtual StringView class_name() const override \
+    {                                              \
+        return #class_##sv;                        \
+    }                                              \
+    friend class JS::Heap;
+
 class Cell {
     AK_MAKE_NONCOPYABLE(Cell);
     AK_MAKE_NONMOVABLE(Cell);
 
 public:
-    virtual void initialize(GlobalObject&) { }
+    virtual void initialize(Realm&) { }
     virtual ~Cell() = default;
 
     bool is_marked() const { return m_mark; }
@@ -41,6 +50,10 @@ public:
         {
             if (cell)
                 visit_impl(*cell);
+        }
+        void visit(Cell& cell)
+        {
+            visit_impl(cell);
         }
         void visit(Value);
 
@@ -70,8 +83,7 @@ struct AK::Formatter<JS::Cell> : AK::Formatter<FormatString> {
     ErrorOr<void> format(FormatBuilder& builder, JS::Cell const* cell)
     {
         if (!cell)
-            return Formatter<FormatString>::format(builder, "Cell{nullptr}");
-        else
-            return Formatter<FormatString>::format(builder, "{}({})", cell->class_name(), cell);
+            return builder.put_string("Cell{nullptr}"sv);
+        return Formatter<FormatString>::format(builder, "{}({})"sv, cell->class_name(), cell);
     }
 };

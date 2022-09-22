@@ -33,11 +33,11 @@ if ! command -v rsync >/dev/null; then
 fi
 
 if rsync --chown 2>&1 | grep "missing argument" >/dev/null; then
-    rsync -aH --chown=0:0 --inplace "$SERENITY_SOURCE_DIR"/Base/ mnt/
-    rsync -aH --chown=0:0 --inplace Root/ mnt/
+    rsync -aH --chown=0:0 --inplace --update "$SERENITY_SOURCE_DIR"/Base/ mnt/
+    rsync -aH --chown=0:0 --inplace --update Root/ mnt/
 else
-    rsync -aH --inplace "$SERENITY_SOURCE_DIR"/Base/ mnt/
-    rsync -aH --inplace Root/ mnt/
+    rsync -aH --inplace --update "$SERENITY_SOURCE_DIR"/Base/ mnt/
+    rsync -aH --inplace --update Root/ mnt/
     chown -R 0:0 mnt/
 fi
 
@@ -131,7 +131,7 @@ chmod 1777 mnt/tmp
 echo "done"
 
 printf "creating utmp file... "
-touch mnt/var/run/utmp
+echo "{}" > mnt/var/run/utmp
 chown 0:$utmp_gid mnt/var/run/utmp
 chmod 664 mnt/var/run/utmp
 echo "done"
@@ -160,7 +160,7 @@ mkdir -p mnt/home/anon/Tests/cpp-tests/
 cp "$SERENITY_SOURCE_DIR"/README.md mnt/home/anon/
 cp -r "$SERENITY_SOURCE_DIR"/Userland/Libraries/LibJS/Tests mnt/home/anon/Tests/js-tests
 cp -r "$SERENITY_SOURCE_DIR"/Userland/Libraries/LibWeb/Tests mnt/home/anon/Tests/web-tests
-cp -r "$SERENITY_SOURCE_DIR"/Userland/DevTools/HackStudio/LanguageServers/Cpp/Tests mnt/home/anon/Tests/cpp-tests/comprehension
+cp -r "$SERENITY_SOURCE_DIR"/Userland/Libraries/LibCodeComprehension/Cpp/Tests mnt/home/anon/Tests/cpp-tests/comprehension
 cp -r "$SERENITY_SOURCE_DIR"/Userland/Libraries/LibCpp/Tests/parser mnt/home/anon/Tests/cpp-tests/parser
 cp -r "$SERENITY_SOURCE_DIR"/Userland/Libraries/LibCpp/Tests/preprocessor mnt/home/anon/Tests/cpp-tests/preprocessor
 cp -r "$SERENITY_SOURCE_DIR"/Userland/Libraries/LibWasm/Tests mnt/home/anon/Tests/wasm-tests

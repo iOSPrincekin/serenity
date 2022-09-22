@@ -65,6 +65,8 @@ namespace std { // NOLINT(cert-dcl58-cpp) nullptr_t must be in ::std:: for some 
 using nullptr_t = decltype(nullptr);
 }
 
+using nullptr_t = std::nullptr_t;
+
 static constexpr FlatPtr explode_byte(u8 b)
 {
     FlatPtr value = b;
@@ -82,6 +84,11 @@ static_assert(explode_byte(0) == 0);
 constexpr size_t align_up_to(const size_t value, const size_t alignment)
 {
     return (value + (alignment - 1)) & ~(alignment - 1);
+}
+
+constexpr size_t align_down_to(const size_t value, const size_t alignment)
+{
+    return value & ~(alignment - 1);
 }
 
 enum class [[nodiscard]] TriState : u8 {

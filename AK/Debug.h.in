@@ -18,6 +18,10 @@
 #cmakedefine01 BMP_DEBUG
 #endif
 
+#ifndef BINDINGS_GENERATOR_DEBUG
+#cmakedefine01 BINDINGS_GENERATOR_DEBUG
+#endif
+
 #ifndef CACHE_DEBUG
 #cmakedefine01 CACHE_DEBUG
 #endif
@@ -174,6 +178,10 @@
 #cmakedefine01 GLOBAL_DTORS_DEBUG
 #endif
 
+#ifndef GPT_DEBUG
+#cmakedefine01 GPT_DEBUG
+#endif
+
 #ifndef GZIP_DEBUG
 #cmakedefine01 GZIP_DEBUG
 #endif
@@ -284,6 +292,10 @@
 
 #ifndef MATROSKA_TRACE_DEBUG
 #cmakedefine01 MATROSKA_TRACE_DEBUG
+#endif
+
+#ifndef MBR_DEBUG
+#cmakedefine01 MBR_DEBUG
 #endif
 
 #ifndef MEMORY_DEBUG
@@ -478,6 +490,10 @@
 #cmakedefine01 WASM_VALIDATOR_DEBUG
 #endif
 
+#ifndef WEBGL_CONTEXT_DEBUG
+#cmakedefine01 WEBGL_CONTEXT_DEBUG
+#endif
+
 #ifndef WEBSERVER_DEBUG
 #cmakedefine01 WEBSERVER_DEBUG
 #endif
@@ -488,10 +504,6 @@
 
 #ifndef WINDOWMANAGER_DEBUG
 #cmakedefine01 WINDOWMANAGER_DEBUG
-#endif
-
-#ifndef WRAPPER_GENERATOR_DEBUG
-#cmakedefine01 WRAPPER_GENERATOR_DEBUG
 #endif
 
 #ifndef WSMESSAGELOOP_DEBUG

@@ -142,7 +142,7 @@ static void build_identity_map(PageBumpAllocator& allocator)
     u64 device_memory_flags = ACCESS_FLAG | PAGE_DESCRIPTOR | OUTER_SHAREABLE | DEVICE_MEMORY;
 
     insert_identity_entries_for_physical_memory_range(allocator, level1_table, START_OF_NORMAL_MEMORY, END_OF_NORMAL_MEMORY, normal_memory_flags);
-    insert_identity_entries_for_physical_memory_range(allocator, level1_table, MMIO::the().peripheral_base_address(), MMIO::the().peripheral_end_address(), device_memory_flags);
+    insert_identity_entries_for_physical_memory_range(allocator, level1_table, RPi::MMIO::the().peripheral_base_address(), RPi::MMIO::the().peripheral_end_address(), device_memory_flags);
 }
 
 static void switch_to_page_table(u8* page_table)
@@ -164,10 +164,12 @@ static void activate_mmu()
     tcr_el1.SH1 = Aarch64::TCR_EL1::InnerShareable;
     tcr_el1.ORGN1 = Aarch64::TCR_EL1::NormalMemory_Outer_WriteBack_ReadAllocate_WriteAllocateCacheable;
     tcr_el1.IRGN1 = Aarch64::TCR_EL1::NormalMemory_Inner_WriteBack_ReadAllocate_WriteAllocateCacheable;
+    tcr_el1.T1SZ = 16;
 
     tcr_el1.SH0 = Aarch64::TCR_EL1::InnerShareable;
     tcr_el1.ORGN0 = Aarch64::TCR_EL1::NormalMemory_Outer_WriteBack_ReadAllocate_WriteAllocateCacheable;
     tcr_el1.IRGN0 = Aarch64::TCR_EL1::NormalMemory_Inner_WriteBack_ReadAllocate_WriteAllocateCacheable;
+    tcr_el1.T0SZ = 16;
 
     tcr_el1.TG1 = Aarch64::TCR_EL1::TG1GranuleSize::Size_4KB;
     tcr_el1.TG0 = Aarch64::TCR_EL1::TG0GranuleSize::Size_4KB;
@@ -186,7 +188,7 @@ static void activate_mmu()
     Aarch64::Asm::flush();
 }
 
-void init_prekernel_page_tables()
+void init_page_tables()
 {
     PageBumpAllocator allocator((u64*)page_tables_phys_start, (u64*)page_tables_phys_end);
     build_identity_map(allocator);

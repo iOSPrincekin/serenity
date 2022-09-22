@@ -1,6 +1,7 @@
 set(LIBC_SOURCES
     arpa/inet.cpp
     assert.cpp
+    complex.cpp
     ctype.cpp
     cxxabi.cpp
     dirent.cpp
@@ -10,6 +11,8 @@ set(LIBC_SOURCES
     fnmatch.cpp
     ifaddrs.cpp
     getopt.cpp
+    getsubopt.cpp
+    glob.cpp
     grp.cpp
     inttypes.cpp
     ioctl.cpp
@@ -19,13 +22,16 @@ set(LIBC_SOURCES
     link.cpp
     locale.cpp
     malloc.cpp
+    math.cpp
     mntent.cpp
     net.cpp
     netdb.cpp
     poll.cpp
     priority.cpp
-    pthread_forward.cpp
+    pthread.cpp
+    pthread_cond.cpp
     pthread_integration.cpp
+    pthread_once.cpp
     pthread_tls.cpp
     pty.cpp
     pwd.cpp
@@ -35,6 +41,7 @@ set(LIBC_SOURCES
     scanf.cpp
     sched.cpp
     search.cpp
+    semaphore.cpp
     serenity.cpp
     shadow.cpp
     signal.cpp
@@ -101,27 +108,27 @@ add_library(crt0 STATIC crt0.cpp)
 target_link_libraries(crt0 PRIVATE NoCoverage)
 add_custom_command(
     TARGET crt0
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_OBJECTS:crt0> ${CMAKE_INSTALL_PREFIX}/usr/lib/crt0.o
+    COMMAND "${CMAKE_COMMAND}" -E copy $<TARGET_OBJECTS:crt0> ${CMAKE_INSTALL_PREFIX}/usr/lib/crt0.o
 )
 add_library(crt0_shared STATIC crt0_shared.cpp)
 target_link_libraries(crt0_shared PRIVATE NoCoverage)
 add_custom_command(
     TARGET crt0_shared
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_OBJECTS:crt0_shared> ${CMAKE_INSTALL_PREFIX}/usr/lib/crt0_shared.o
+    COMMAND "${CMAKE_COMMAND}" -E copy $<TARGET_OBJECTS:crt0_shared> ${CMAKE_INSTALL_PREFIX}/usr/lib/crt0_shared.o
 )
 
 add_library(crti STATIC ${CRTI_SOURCE})
 target_link_libraries(crti PRIVATE NoCoverage)
 add_custom_command(
     TARGET crti
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_OBJECTS:crti> ${CMAKE_INSTALL_PREFIX}/usr/lib/crti.o
+    COMMAND "${CMAKE_COMMAND}" -E copy $<TARGET_OBJECTS:crti> ${CMAKE_INSTALL_PREFIX}/usr/lib/crti.o
 )
 
 add_library(crtn STATIC ${CRTN_SOURCE})
 target_link_libraries(crtn PRIVATE NoCoverage)
 add_custom_command(
     TARGET crtn
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_OBJECTS:crtn> ${CMAKE_INSTALL_PREFIX}/usr/lib/crtn.o
+    COMMAND "${CMAKE_COMMAND}" -E copy $<TARGET_OBJECTS:crtn> ${CMAKE_INSTALL_PREFIX}/usr/lib/crtn.o
 )
 
 set_source_files_properties (ssp.cpp PROPERTIES COMPILE_FLAGS
@@ -130,7 +137,7 @@ add_library(ssp STATIC ssp.cpp)
 target_link_libraries(ssp PRIVATE NoCoverage)
 add_custom_command(
     TARGET ssp
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_OBJECTS:ssp> ${CMAKE_INSTALL_PREFIX}/usr/lib/ssp.o
+    COMMAND "${CMAKE_COMMAND}" -E copy $<TARGET_OBJECTS:ssp> ${CMAKE_INSTALL_PREFIX}/usr/lib/ssp.o
 )
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libssp.a DESTINATION ${CMAKE_INSTALL_PREFIX}/usr/lib/)
 
@@ -139,9 +146,6 @@ set(SOURCES ${LIBC_SOURCES} ${AK_SOURCES} ${ELF_SOURCES} ${ASM_SOURCES})
 # Prevent GCC from removing null checks by marking the `FILE*` argument non-null
 set_source_files_properties(stdio.cpp PROPERTIES COMPILE_FLAGS "-fno-builtin-fputc -fno-builtin-fputs -fno-builtin-fwrite")
 
-# Add in the `posix_memalign` symbol to avoid breaking existing binaries.
-set_source_files_properties(stdlib.cpp PROPERTIES COMPILE_FLAGS "-DSERENITY_LIBC_SHOW_POSIX_MEMALIGN")
-
 # Prevent naively implemented string functions (like strlen) from being "optimized" into a call to themselves.
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     set_source_files_properties(string.cpp wchar.cpp PROPERTIES COMPILE_FLAGS "-fno-tree-loop-distribution -fno-tree-loop-distribute-patterns")
@@ -149,7 +153,7 @@ endif()
 
 add_library(LibCStaticWithoutDeps STATIC ${SOURCES})
 target_link_libraries(LibCStaticWithoutDeps PUBLIC ssp LibTimeZone PRIVATE NoCoverage)
-add_dependencies(LibCStaticWithoutDeps LibM LibSystem LibUBSanitizer)
+add_dependencies(LibCStaticWithoutDeps LibSystem LibUBSanitizer)
 
 add_custom_target(LibCStatic
         COMMAND ${CMAKE_AR} -x $<TARGET_FILE:LibCStaticWithoutDeps>
@@ -175,4 +179,9 @@ add_dependencies(LibC crti crt0 crt0_shared crtn)
 target_link_libraries(LibC ssp system LibTimeZone)
 
 # We mark LibCStatic as a dependency of LibC because this triggers the build of the LibCStatic target
-add_dependencies(LibC LibM LibSystem LibCStatic)
+add_dependencies(LibC LibSystem LibCStatic)
+
+# Provide a linker script instead of various other libraries that tells everything to link against LibC.
+file(WRITE "${CMAKE_STAGING_PREFIX}/${CMAKE_INSTALL_LIBDIR}/libpthread.so" "INPUT(libc.so)")
+file(WRITE "${CMAKE_STAGING_PREFIX}/${CMAKE_INSTALL_LIBDIR}/libdl.so" "INPUT(libc.so)")
+file(WRITE "${CMAKE_STAGING_PREFIX}/${CMAKE_INSTALL_LIBDIR}/libm.so" "INPUT(libc.so)")

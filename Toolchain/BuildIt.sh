@@ -71,22 +71,22 @@ echo SYSROOT is "$SYSROOT"
 
 mkdir -p "$DIR/Tarballs"
 
-BINUTILS_VERSION="2.38"
-BINUTILS_MD5SUM="f430dff91bdc8772fcef06ffdc0656ab"
+BINUTILS_VERSION="2.39"
+BINUTILS_MD5SUM="ab6825df57514ec172331e988f55fc10"
 BINUTILS_NAME="binutils-$BINUTILS_VERSION"
 BINUTILS_PKG="${BINUTILS_NAME}.tar.gz"
 BINUTILS_BASE_URL="https://ftp.gnu.org/gnu/binutils"
 
-GDB_VERSION="11.2"
-GDB_MD5SUM="b5674bef1fbd6beead889f80afa6f269"
+GDB_VERSION="12.1"
+GDB_MD5SUM="0c7339e33fa347ce4d7df222d8ce86af"
 GDB_NAME="gdb-$GDB_VERSION"
 GDB_PKG="${GDB_NAME}.tar.gz"
 GDB_BASE_URL="https://ftp.gnu.org/gnu/gdb"
 
 # Note: If you bump the gcc version, you also have to update the matching
 #       GCC_VERSION variable in the project's root CMakeLists.txt
-GCC_VERSION="12.1.0"
-GCC_MD5SUM="7854cdccc3a7988aa37fb0d0038b8096"
+GCC_VERSION="12.2.0"
+GCC_MD5SUM="d7644b494246450468464ffc2c2b19c3"
 GCC_NAME="gcc-$GCC_VERSION"
 GCC_PKG="${GCC_NAME}.tar.gz"
 GCC_BASE_URL="https://ftp.gnu.org/gnu/gcc"
@@ -184,7 +184,7 @@ pushd "$DIR/Tarballs"
         md5=""
         if [ -e "$GDB_PKG" ]; then
             md5="$($MD5SUM $GDB_PKG | cut -f1 -d' ')"
-            echo "bu md5='$md5'"
+            echo "gdb md5='$md5'"
         fi
         if [ "$md5" != ${GDB_MD5SUM} ] ; then
             rm -f $GDB_PKG
@@ -197,7 +197,7 @@ pushd "$DIR/Tarballs"
     md5=""
     if [ -e "$BINUTILS_PKG" ]; then
         md5="$($MD5SUM $BINUTILS_PKG | cut -f1 -d' ')"
-        echo "bu md5='$md5'"
+        echo "binutils md5='$md5'"
     fi
     if [ "$md5" != ${BINUTILS_MD5SUM} ] ; then
         rm -f $BINUTILS_PKG
@@ -209,7 +209,7 @@ pushd "$DIR/Tarballs"
     md5=""
     if [ -e "$GCC_PKG" ]; then
         md5="$($MD5SUM ${GCC_PKG} | cut -f1 -d' ')"
-        echo "gc md5='$md5'"
+        echo "gcc md5='$md5'"
     fi
     if [ "$md5" != ${GCC_MD5SUM} ] ; then
         rm -f $GCC_PKG
@@ -271,11 +271,13 @@ pushd "$DIR/Tarballs"
             git init > /dev/null
             git add . > /dev/null
             git commit -am "BASE" > /dev/null
-            git apply "$DIR"/Patches/gcc.patch > /dev/null
+            git am --keep-non-patch "$DIR"/Patches/gcc/*.patch > /dev/null
         else
-            patch -p1 < "$DIR/Patches/gcc.patch" > /dev/null
+            for patch in "$DIR"/Patches/gcc/*.patch; do
+                patch -p1 < "$patch" > /dev/null
+            done
         fi
-        $MD5SUM "$DIR/Patches/gcc.patch" > .patch.applied
+        $MD5SUM "$DIR"/Patches/gcc/*.patch > .patch.applied
     popd
 
     if [ "$SYSTEM_NAME" = "Darwin" ]; then
@@ -361,7 +363,7 @@ pushd "$DIR/Build/$ARCH"
         buildstep "binutils/install" "$MAKE" install || exit 1
     popd
 
-    echo "XXX serenity libc, libdl, libm and libpthread headers"
+    echo "XXX serenity libc headers"
     mkdir -p "$BUILD"
     pushd "$BUILD"
         mkdir -p Root/usr/include/
@@ -371,17 +373,11 @@ pushd "$DIR/Build/$ARCH"
             "$SRC_ROOT"/Kernel/API \
             "$SRC_ROOT"/Kernel/Arch \
             "$SRC_ROOT"/Userland/Libraries/LibC \
-            "$SRC_ROOT"/Userland/Libraries/LibDl \
-            "$SRC_ROOT"/Userland/Libraries/LibM \
-            "$SRC_ROOT"/Userland/Libraries/LibPthread \
             -name '*.h' -print)
         for header in $FILES; do
             target=$(echo "$header" | sed \
                 -e "s@$SRC_ROOT/AK/@AK/@" \
                 -e "s@$SRC_ROOT/Userland/Libraries/LibC@@" \
-                -e "s@$SRC_ROOT/Userland/Libraries/LibDl@@" \
-                -e "s@$SRC_ROOT/Userland/Libraries/LibM@@" \
-                -e "s@$SRC_ROOT/Userland/Libraries/LibPthread@@" \
                 -e "s@$SRC_ROOT/Kernel/@Kernel/@")
             buildstep "system_headers" $INSTALL -D "$header" "Root/usr/include/$target"
         done
@@ -390,10 +386,6 @@ pushd "$DIR/Build/$ARCH"
 
     if [ "$SYSTEM_NAME" = "OpenBSD" ]; then
         perl -pi -e 's/-no-pie/-nopie/g' "$DIR/Tarballs/gcc-$GCC_VERSION/gcc/configure"
-    fi
-
-    if [ ! -f "$DIR/Tarballs/gcc-$GCC_VERSION/gcc/config/serenity-userland.h" ]; then
-        cp "$DIR/Tarballs/gcc-$GCC_VERSION/gcc/config/serenity.h" "$DIR/Tarballs/gcc-$GCC_VERSION/gcc/config/serenity-kernel.h"
     fi
 
     rm -rf gcc

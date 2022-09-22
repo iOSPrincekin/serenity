@@ -1,10 +1,15 @@
 /*
  * Copyright (c) 2020-2022, the SerenityOS developers.
+ * Copyright (c) 2022, MacDue <macdue@dueutil.tech>
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <LibWeb/DOM/Document.h>
+#include <LibWeb/DOM/ShadowRoot.h>
 #include <LibWeb/HTML/HTMLProgressElement.h>
+#include <LibWeb/Layout/BlockContainer.h>
+#include <LibWeb/Layout/Node.h>
 #include <LibWeb/Layout/Progress.h>
 #include <stdlib.h>
 
@@ -13,13 +18,36 @@ namespace Web::HTML {
 HTMLProgressElement::HTMLProgressElement(DOM::Document& document, DOM::QualifiedName qualified_name)
     : HTMLElement(document, move(qualified_name))
 {
+    set_prototype(&window().cached_web_prototype("HTMLProgressElement"));
 }
 
 HTMLProgressElement::~HTMLProgressElement() = default;
 
 RefPtr<Layout::Node> HTMLProgressElement::create_layout_node(NonnullRefPtr<CSS::StyleProperties> style)
 {
-    return adopt_ref(*new Layout::Progress(document(), *this, move(style)));
+    RefPtr<Layout::Node> layout_node;
+    if (style->appearance().value_or(CSS::Appearance::Auto) == CSS::Appearance::None) {
+        layout_node = adopt_ref(*new Layout::BlockContainer(document(), this, move(style)));
+        layout_node->set_inline(true);
+    } else {
+        layout_node = adopt_ref(*new Layout::Progress(document(), *this, move(style)));
+    }
+    return layout_node;
+}
+
+bool HTMLProgressElement::using_system_appearance() const
+{
+    if (layout_node())
+        return is<Layout::Progress>(*layout_node());
+    return false;
+}
+
+void HTMLProgressElement::progress_position_updated()
+{
+    if (using_system_appearance())
+        layout_node()->set_needs_display();
+    else
+        document().invalidate_layout();
 }
 
 double HTMLProgressElement::value() const
@@ -41,9 +69,7 @@ void HTMLProgressElement::set_value(double value)
         return;
 
     set_attribute(HTML::AttributeNames::value, String::number(value));
-
-    if (layout_node())
-        layout_node()->set_needs_display();
+    progress_position_updated();
 }
 
 double HTMLProgressElement::max() const
@@ -65,9 +91,7 @@ void HTMLProgressElement::set_max(double value)
         return;
 
     set_attribute(HTML::AttributeNames::max, String::number(value));
-
-    if (layout_node())
-        layout_node()->set_needs_display();
+    progress_position_updated();
 }
 
 double HTMLProgressElement::position() const

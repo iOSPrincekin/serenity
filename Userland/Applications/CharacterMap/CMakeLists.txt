@@ -1,6 +1,6 @@
 serenity_component(
     CharacterMap
-    REQUIRED
+    RECOMMENDED
     TARGETS CharacterMap
 )
 
@@ -16,5 +16,4 @@ set(SOURCES
 )
 
 serenity_app(CharacterMap ICON app-character-map)
-target_link_libraries(CharacterMap LibDesktop LibGUI LibMain)
-link_with_unicode_data(CharacterMap)
+target_link_libraries(CharacterMap LibDesktop LibGUI LibMain LibUnicode)

@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2020-2021, Andreas Kling <kling@serenityos.org>
+ * Copyright (c) 2020-2022, Linus Groh <linusg@serenityos.org>
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
@@ -9,10 +10,10 @@
 #include <AK/Types.h>
 
 #define JS_DECLARE_NATIVE_FUNCTION(name) \
-    static JS::ThrowCompletionOr<JS::Value> name(JS::VM&, JS::GlobalObject&)
+    static JS::ThrowCompletionOr<JS::Value> name(JS::VM&)
 
 #define JS_DEFINE_NATIVE_FUNCTION(name) \
-    JS::ThrowCompletionOr<JS::Value> name([[maybe_unused]] JS::VM& vm, [[maybe_unused]] JS::GlobalObject& global_object)
+    JS::ThrowCompletionOr<JS::Value> name([[maybe_unused]] JS::VM& vm)
 
 // NOTE: Proxy is not included here as it doesn't have a prototype - m_proxy_constructor is initialized separately.
 #define JS_ENUMERATE_NATIVE_OBJECTS_EXCLUDING_TEMPLATES                                                                                        \
@@ -46,14 +47,13 @@
     JS_ENUMERATE_NATIVE_OBJECTS_EXCLUDING_TEMPLATES \
     __JS_ENUMERATE(TypedArray, typed_array, TypedArrayPrototype, TypedArrayConstructor, void)
 
-#define JS_ENUMERATE_NATIVE_ERRORS                                                                                                         \
-    __JS_ENUMERATE(EvalError, eval_error, EvalErrorPrototype, EvalErrorConstructor, void)                                                  \
-    __JS_ENUMERATE(InternalError, internal_error, InternalErrorPrototype, InternalErrorConstructor, void)                                  \
-    __JS_ENUMERATE(InvalidCharacterError, invalid_character_error, InvalidCharacterErrorPrototype, InvalidCharacterErrorConstructor, void) \
-    __JS_ENUMERATE(RangeError, range_error, RangeErrorPrototype, RangeErrorConstructor, void)                                              \
-    __JS_ENUMERATE(ReferenceError, reference_error, ReferenceErrorPrototype, ReferenceErrorConstructor, void)                              \
-    __JS_ENUMERATE(SyntaxError, syntax_error, SyntaxErrorPrototype, SyntaxErrorConstructor, void)                                          \
-    __JS_ENUMERATE(TypeError, type_error, TypeErrorPrototype, TypeErrorConstructor, void)                                                  \
+#define JS_ENUMERATE_NATIVE_ERRORS                                                                            \
+    __JS_ENUMERATE(EvalError, eval_error, EvalErrorPrototype, EvalErrorConstructor, void)                     \
+    __JS_ENUMERATE(InternalError, internal_error, InternalErrorPrototype, InternalErrorConstructor, void)     \
+    __JS_ENUMERATE(RangeError, range_error, RangeErrorPrototype, RangeErrorConstructor, void)                 \
+    __JS_ENUMERATE(ReferenceError, reference_error, ReferenceErrorPrototype, ReferenceErrorConstructor, void) \
+    __JS_ENUMERATE(SyntaxError, syntax_error, SyntaxErrorPrototype, SyntaxErrorConstructor, void)             \
+    __JS_ENUMERATE(TypeError, type_error, TypeErrorPrototype, TypeErrorConstructor, void)                     \
     __JS_ENUMERATE(URIError, uri_error, URIErrorPrototype, URIErrorConstructor, void)
 
 #define JS_ENUMERATE_TYPED_ARRAYS                                                                                               \
@@ -73,6 +73,7 @@
     __JS_ENUMERATE(Collator, collator, CollatorPrototype, CollatorConstructor)                                           \
     __JS_ENUMERATE(DateTimeFormat, date_time_format, DateTimeFormatPrototype, DateTimeFormatConstructor)                 \
     __JS_ENUMERATE(DisplayNames, display_names, DisplayNamesPrototype, DisplayNamesConstructor)                          \
+    __JS_ENUMERATE(DurationFormat, duration_format, DurationFormatPrototype, DurationFormatConstructor)                  \
     __JS_ENUMERATE(ListFormat, list_format, ListFormatPrototype, ListFormatConstructor)                                  \
     __JS_ENUMERATE(Locale, locale, LocalePrototype, LocaleConstructor)                                                   \
     __JS_ENUMERATE(NumberFormat, number_format, NumberFormatPrototype, NumberFormatConstructor)                          \
@@ -91,6 +92,15 @@
     __JS_ENUMERATE(PlainYearMonth, plain_year_month, PlainYearMonthPrototype, PlainYearMonthConstructor) \
     __JS_ENUMERATE(TimeZone, time_zone, TimeZonePrototype, TimeZoneConstructor)                          \
     __JS_ENUMERATE(ZonedDateTime, zoned_date_time, ZonedDateTimePrototype, ZonedDateTimeConstructor)
+
+#define JS_ENUMERATE_BUILTIN_NAMESPACE_OBJECTS \
+    __JS_ENUMERATE(AtomicsObject, atomics)     \
+    __JS_ENUMERATE(ConsoleObject, console)     \
+    __JS_ENUMERATE(Intl::Intl, intl)           \
+    __JS_ENUMERATE(JSONObject, json)           \
+    __JS_ENUMERATE(MathObject, math)           \
+    __JS_ENUMERATE(ReflectObject, reflect)     \
+    __JS_ENUMERATE(Temporal::Temporal, temporal)
 
 #define JS_ENUMERATE_ITERATOR_PROTOTYPES                         \
     __JS_ENUMERATE(Iterator, iterator)                           \
@@ -123,13 +133,14 @@
     __JS_ENUMERATE(toPrimitive, to_primitive)                \
     __JS_ENUMERATE(toStringTag, to_string_tag)
 
-#define JS_ENUMERATE_REGEXP_FLAGS              \
-    __JS_ENUMERATE(hasIndices, has_indices, d) \
-    __JS_ENUMERATE(global, global, g)          \
-    __JS_ENUMERATE(ignoreCase, ignore_case, i) \
-    __JS_ENUMERATE(multiline, multiline, m)    \
-    __JS_ENUMERATE(dotAll, dot_all, s)         \
-    __JS_ENUMERATE(unicode, unicode, u)        \
+#define JS_ENUMERATE_REGEXP_FLAGS                \
+    __JS_ENUMERATE(hasIndices, has_indices, d)   \
+    __JS_ENUMERATE(global, global, g)            \
+    __JS_ENUMERATE(ignoreCase, ignore_case, i)   \
+    __JS_ENUMERATE(multiline, multiline, m)      \
+    __JS_ENUMERATE(dotAll, dot_all, s)           \
+    __JS_ENUMERATE(unicodeSets, unicode_sets, v) \
+    __JS_ENUMERATE(unicode, unicode, u)          \
     __JS_ENUMERATE(sticky, sticky, y)
 
 namespace JS {
@@ -160,6 +171,7 @@ class HandleImpl;
 class Heap;
 class HeapBlock;
 class Interpreter;
+class Intrinsics;
 class Module;
 class NativeFunction;
 class ObjectEnvironment;
@@ -204,6 +216,12 @@ class GeneratorPrototype;
 class TypedArrayConstructor;
 class TypedArrayPrototype;
 
+class AtomicsObject;
+class ConsoleObject;
+class JSONObject;
+class MathObject;
+class ReflectObject;
+
 // Tag type used to differentiate between u8 as used by Uint8Array and u8 as used by Uint8ClampedArray.
 struct ClampedU8;
 
@@ -216,6 +234,11 @@ JS_ENUMERATE_NATIVE_ERRORS
 JS_ENUMERATE_TYPED_ARRAYS
 #undef __JS_ENUMERATE
 
+#define __JS_ENUMERATE(ClassName, snake_name) \
+    class ClassName;                          \
+    JS_ENUMERATE_BUILTIN_NAMESPACE_OBJECTS
+#undef __JS_ENUMERATE
+
 namespace Intl {
 #define __JS_ENUMERATE(ClassName, snake_name, ConstructorName, PrototypeName) \
     class ClassName;                                                          \
@@ -223,6 +246,9 @@ namespace Intl {
     class PrototypeName;
 JS_ENUMERATE_INTL_OBJECTS
 #undef __JS_ENUMERATE
+
+class Intl;
+class MathematicalValue;
 
 // Not included in JS_ENUMERATE_INTL_OBJECTS due to missing distinct constructor
 class Segments;
@@ -236,6 +262,7 @@ namespace Temporal {
     class PrototypeName;
 JS_ENUMERATE_TEMPORAL_OBJECTS
 #undef __JS_ENUMERATE
+class Temporal;
 struct DurationRecord;
 struct DateDurationRecord;
 struct TimeDurationRecord;

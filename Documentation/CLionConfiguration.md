@@ -34,7 +34,7 @@ If you already have the project open, you can go to `File -> Settings -> Build, 
 Source files are copied to the `Build` directory during the build, if you do not exclude them from CLion indexing they will show up
 in search results. This is often confusing, unintuitive, and can result in you losing changes you have made to files. To exclude
 these files navigate to the `Project` tool window, right-click the `Build` folder and select `Mark Directory as | Excluded`. If you
-want exclude Toolchain files as well, follow the same procedure with the following paths:
+want to exclude Toolchain files as well, follow the same procedure with the following paths:
 - `Toolchain/Local`
 - `Toolchain/Tarballs`
 - `Toolchain/Build`
@@ -78,6 +78,13 @@ Then press the `+` button to add a new configuration, select `CMake Application`
 Finally, to quickly switch between the two different contexts, simply click the `Kernel | Default` / `Userland | Default` button to switch.
 
 ## Notes for WSL Users
+
+### Toolchain
+
+If the serenity directory is on the WSL filesystem you need to configure the CLion toolchain to be WSL.
+To set that up go to `File->Settings->Build, Execution, Deployment->Toolchains` and click on the `+` icon, then select WSL. In `Toolset` select the distribution you have the serenity directory on.
+
+### Terminal
 
 It is possible to set the embedded terminal in CLion to the one that your WSL distribution provides.
 This way you can build and run serenity without leaving the IDE.

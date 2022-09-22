@@ -26,8 +26,8 @@ struct Option {
 
 static constexpr Array<Option, 2> options = {
     {
-        { "ASCII String", OPTION_ASCII_STRING, true, true },
-        { "Hex value", OPTION_HEX_VALUE, true, false },
+        { "ASCII String"sv, OPTION_ASCII_STRING, true, true },
+        { "Hex value"sv, OPTION_HEX_VALUE, true, false },
     }
 };
 
@@ -79,7 +79,7 @@ Result<ByteBuffer, String> FindDialog::process_input(String text_value, OptionId
     }
 
     case OPTION_HEX_VALUE: {
-        auto decoded = decode_hex(text_value.replace(" ", "", true));
+        auto decoded = decode_hex(text_value.replace(" "sv, ""sv, ReplaceMode::All));
         if (decoded.is_error())
             return String::formatted("Input is invalid: {}", decoded.error().string_literal());
 
@@ -130,10 +130,6 @@ FindDialog::FindDialog()
         m_find_all_button->set_enabled(!m_text_editor->text().is_empty());
     };
 
-    m_text_editor->on_return_pressed = [this] {
-        m_find_button->click();
-    };
-
     m_find_button->on_click = [this](auto) {
         auto text = m_text_editor->text();
         if (!text.is_empty()) {
@@ -141,6 +137,7 @@ FindDialog::FindDialog()
             done(ExecResult::OK);
         }
     };
+    m_find_button->set_default(true);
 
     m_find_all_button->on_click = [this](auto) {
         m_find_all = true;

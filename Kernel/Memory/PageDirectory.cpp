@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2021, Andreas Kling <kling@serenityos.org>
+ * Copyright (c) 2018-2022, Andreas Kling <kling@serenityos.org>
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
@@ -7,6 +7,7 @@
 #include <AK/Memory.h>
 #include <AK/Singleton.h>
 #include <Kernel/Arch/CPU.h>
+#include <Kernel/Arch/InterruptDisabler.h>
 #include <Kernel/Arch/PageDirectory.h>
 #include <Kernel/Memory/MemoryManager.h>
 #include <Kernel/Memory/PageDirectory.h>
@@ -20,26 +21,23 @@ extern u8 end_of_kernel_image[];
 
 namespace Kernel::Memory {
 
-UNMAP_AFTER_INIT NonnullRefPtr<PageDirectory> PageDirectory::must_create_kernel_page_directory()
+UNMAP_AFTER_INIT NonnullLockRefPtr<PageDirectory> PageDirectory::must_create_kernel_page_directory()
 {
-    return adopt_ref_if_nonnull(new (nothrow) PageDirectory).release_nonnull();
+    return adopt_lock_ref_if_nonnull(new (nothrow) PageDirectory).release_nonnull();
 }
 
-ErrorOr<NonnullRefPtr<PageDirectory>> PageDirectory::try_create_for_userspace()
+ErrorOr<NonnullLockRefPtr<PageDirectory>> PageDirectory::try_create_for_userspace()
 {
-    auto directory = TRY(adopt_nonnull_ref_or_enomem(new (nothrow) PageDirectory));
-
-    // NOTE: Take the MM lock since we need it for quickmap.
-    SpinlockLocker lock(s_mm_lock);
+    auto directory = TRY(adopt_nonnull_lock_ref_or_enomem(new (nothrow) PageDirectory));
 
 #if ARCH(X86_64)
-    directory->m_pml4t = TRY(MM.allocate_user_physical_page());
+    directory->m_pml4t = TRY(MM.allocate_physical_page());
 #endif
 
-    directory->m_directory_table = TRY(MM.allocate_user_physical_page());
+    directory->m_directory_table = TRY(MM.allocate_physical_page());
     auto kernel_pd_index = (kernel_mapping_base >> 30) & 0x1ffu;
     for (size_t i = 0; i < kernel_pd_index; i++) {
-        directory->m_directory_pages[i] = TRY(MM.allocate_user_physical_page());
+        directory->m_directory_pages[i] = TRY(MM.allocate_physical_page());
     }
 
     // Share the top 1 GiB of kernel-only mappings (>=kernel_mapping_base)
@@ -47,6 +45,7 @@ ErrorOr<NonnullRefPtr<PageDirectory>> PageDirectory::try_create_for_userspace()
 
 #if ARCH(X86_64)
     {
+        InterruptDisabler disabler;
         auto& table = *(PageDirectoryPointerTable*)MM.quickmap_page(*directory->m_pml4t);
         table.raw[0] = (FlatPtr)directory->m_directory_table->paddr().as_ptr() | 7;
         MM.unquickmap_page();
@@ -54,6 +53,7 @@ ErrorOr<NonnullRefPtr<PageDirectory>> PageDirectory::try_create_for_userspace()
 #endif
 
     {
+        InterruptDisabler disabler;
         auto& table = *(PageDirectoryPointerTable*)MM.quickmap_page(*directory->m_directory_table);
         for (size_t i = 0; i < sizeof(m_directory_pages) / sizeof(m_directory_pages[0]); i++) {
             if (directory->m_directory_pages[i]) {
@@ -115,7 +115,6 @@ UNMAP_AFTER_INIT void PageDirectory::allocate_kernel_directory()
 PageDirectory::~PageDirectory()
 {
     if (is_cr3_initialized()) {
-        SpinlockLocker lock(s_mm_lock);
         deregister_page_directory(this);
     }
 }

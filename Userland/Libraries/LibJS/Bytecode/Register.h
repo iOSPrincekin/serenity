@@ -13,18 +13,11 @@ namespace JS::Bytecode {
 class Register {
 public:
     constexpr static u32 accumulator_index = 0;
-    constexpr static u32 global_object_index = 1;
 
     static Register accumulator()
     {
         static Register accumulator(accumulator_index);
         return accumulator;
-    }
-
-    static Register global_object()
-    {
-        static Register global_object(global_object_index);
-        return global_object;
     }
 
     explicit Register(u32 index)
@@ -45,7 +38,7 @@ struct AK::Formatter<JS::Bytecode::Register> : AK::Formatter<FormatString> {
     ErrorOr<void> format(FormatBuilder& builder, JS::Bytecode::Register const& value)
     {
         if (value.index() == JS::Bytecode::Register::accumulator_index)
-            return AK::Formatter<FormatString>::format(builder, "acc");
-        return AK::Formatter<FormatString>::format(builder, "${}", value.index());
+            return builder.put_string("acc"sv);
+        return AK::Formatter<FormatString>::format(builder, "${}"sv, value.index());
     }
 };

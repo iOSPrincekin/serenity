@@ -5,15 +5,15 @@
  */
 
 #include <AK/OwnPtr.h>
-#include <AK/RefPtr.h>
 #include <AK/Types.h>
+#include <Kernel/Library/LockRefPtr.h>
 #include <Kernel/Storage/Ramdisk/Controller.h>
 
 namespace Kernel {
 
-NonnullRefPtr<RamdiskController> RamdiskController::initialize()
+NonnullLockRefPtr<RamdiskController> RamdiskController::initialize()
 {
-    return adopt_ref(*new RamdiskController());
+    return adopt_lock_ref(*new RamdiskController());
 }
 
 bool RamdiskController::reset()
@@ -37,14 +37,14 @@ void RamdiskController::complete_current_request(AsyncDeviceRequest::RequestResu
 }
 
 RamdiskController::RamdiskController()
-    : StorageController()
+    : StorageController(0)
 {
     // Populate ramdisk controllers from Multiboot boot modules, if any.
     size_t count = 0;
-    for (auto& used_memory_range : MM.used_memory_ranges()) {
+    MM.for_each_used_memory_range([&](auto& used_memory_range) {
         if (used_memory_range.type == Memory::UsedMemoryRangeType::BootModule) {
             size_t length = Memory::page_round_up(used_memory_range.end.get()).release_value_but_fixme_should_propagate_errors() - used_memory_range.start.get();
-            auto region_or_error = MM.allocate_kernel_region(used_memory_range.start, length, "Ramdisk", Memory::Region::Access::ReadWrite);
+            auto region_or_error = MM.allocate_kernel_region(used_memory_range.start, length, "Ramdisk"sv, Memory::Region::Access::ReadWrite);
             if (region_or_error.is_error()) {
                 dmesgln("RamdiskController: Failed to allocate kernel region of size {}", length);
             } else {
@@ -52,12 +52,12 @@ RamdiskController::RamdiskController()
             }
             count++;
         }
-    }
+    });
 }
 
 RamdiskController::~RamdiskController() = default;
 
-RefPtr<StorageDevice> RamdiskController::device(u32 index) const
+LockRefPtr<StorageDevice> RamdiskController::device(u32 index) const
 {
     if (index >= m_devices.size())
         return nullptr;

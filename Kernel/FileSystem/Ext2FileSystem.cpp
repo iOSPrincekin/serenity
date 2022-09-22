@@ -49,9 +49,9 @@ static u8 to_ext2_file_type(mode_t mode)
     return EXT2_FT_UNKNOWN;
 }
 
-ErrorOr<NonnullRefPtr<Ext2FS>> Ext2FS::try_create(OpenFileDescription& file_description)
+ErrorOr<NonnullLockRefPtr<FileSystem>> Ext2FS::try_create(OpenFileDescription& file_description)
 {
-    return adopt_nonnull_ref_or_enomem(new (nothrow) Ext2FS(file_description));
+    return TRY(adopt_nonnull_lock_ref_or_enomem(new (nothrow) Ext2FS(file_description)));
 }
 
 Ext2FS::Ext2FS(OpenFileDescription& file_description)
@@ -122,7 +122,7 @@ ErrorOr<void> Ext2FS::initialize()
 
     auto blocks_to_read = ceil_div(m_block_group_count * sizeof(ext2_group_desc), block_size());
     BlockIndex first_block_of_bgdt = block_size() == 1024 ? 2 : 1;
-    m_cached_group_descriptor_table = TRY(KBuffer::try_create_with_size(block_size() * blocks_to_read, Memory::Region::Access::ReadWrite, "Ext2FS: Block group descriptors"));
+    m_cached_group_descriptor_table = TRY(KBuffer::try_create_with_size("Ext2FS: Block group descriptors"sv, block_size() * blocks_to_read, Memory::Region::Access::ReadWrite));
     auto buffer = UserOrKernelBuffer::for_kernel_buffer(m_cached_group_descriptor_table->data());
     TRY(read_blocks(first_block_of_bgdt, blocks_to_read, buffer));
 
@@ -686,7 +686,7 @@ void Ext2FS::flush_writes()
         //        The problem is that they are quite heavy objects, and use a lot of heap memory
         //        for their (child name lookup) and (block list) caches.
 
-        m_inode_cache.remove_all_matching([](InodeIndex, RefPtr<Ext2FSInode> const& cached_inode) {
+        m_inode_cache.remove_all_matching([](InodeIndex, LockRefPtr<Ext2FSInode> const& cached_inode) {
             // NOTE: If we're asked to look up an inode by number (via get_inode) and it turns out
             //       to not exist, we remember the fact that it doesn't exist by caching a nullptr.
             //       This seems like a reasonable time to uncache ideas about unknown inodes, so do that.
@@ -763,7 +763,7 @@ ErrorOr<void> Ext2FSInode::flush_metadata()
     return {};
 }
 
-ErrorOr<NonnullRefPtr<Inode>> Ext2FS::get_inode(InodeIdentifier inode) const
+ErrorOr<NonnullLockRefPtr<Inode>> Ext2FS::get_inode(InodeIdentifier inode) const
 {
     MutexLocker locker(m_lock);
     VERIFY(inode.fsid() == fsid());
@@ -773,7 +773,7 @@ ErrorOr<NonnullRefPtr<Inode>> Ext2FS::get_inode(InodeIdentifier inode) const
         if (it != m_inode_cache.end()) {
             if (!it->value)
                 return ENOENT;
-            return NonnullRefPtr<Inode> { *it->value };
+            return NonnullLockRefPtr<Inode> { *it->value };
         }
     }
 
@@ -789,7 +789,7 @@ ErrorOr<NonnullRefPtr<Inode>> Ext2FS::get_inode(InodeIdentifier inode) const
     if (!find_block_containing_inode(inode.index(), block_index, offset))
         return EINVAL;
 
-    auto new_inode = TRY(adopt_nonnull_ref_or_enomem(new (nothrow) Ext2FSInode(const_cast<Ext2FS&>(*this), inode.index())));
+    auto new_inode = TRY(adopt_nonnull_lock_ref_or_enomem(new (nothrow) Ext2FSInode(const_cast<Ext2FS&>(*this), inode.index())));
 
     auto buffer = UserOrKernelBuffer::for_kernel_buffer(reinterpret_cast<u8*>(&new_inode->m_raw_inode));
     TRY(read_block(block_index, &buffer, sizeof(ext2_inode), offset));
@@ -798,9 +798,22 @@ ErrorOr<NonnullRefPtr<Inode>> Ext2FS::get_inode(InodeIdentifier inode) const
     return new_inode;
 }
 
-ErrorOr<size_t> Ext2FSInode::read_bytes(off_t offset, size_t count, UserOrKernelBuffer& buffer, OpenFileDescription* description) const
+ErrorOr<void> Ext2FSInode::compute_block_list_with_exclusive_locking()
 {
-    MutexLocker inode_locker(m_inode_lock);
+    // Note: We verify that the inode mutex is being held locked. Because only the read_bytes_locked()
+    // method uses this method and the mutex can be locked in shared mode when reading the Inode if
+    // it is an ext2 regular file, but also in exclusive mode, when the Inode is an ext2 directory and being
+    // traversed, we use another exclusive lock to ensure we always mutate the block list safely.
+    VERIFY(m_inode_lock.is_locked());
+    MutexLocker block_list_locker(m_block_list_lock);
+    if (m_block_list.is_empty())
+        m_block_list = TRY(compute_block_list());
+    return {};
+}
+
+ErrorOr<size_t> Ext2FSInode::read_bytes_locked(off_t offset, size_t count, UserOrKernelBuffer& buffer, OpenFileDescription* description) const
+{
+    VERIFY(m_inode_lock.is_locked());
     VERIFY(offset >= 0);
     if (m_raw_inode.i_size == 0)
         return 0;
@@ -817,8 +830,12 @@ ErrorOr<size_t> Ext2FSInode::read_bytes(off_t offset, size_t count, UserOrKernel
         return nread;
     }
 
-    if (m_block_list.is_empty())
-        m_block_list = TRY(compute_block_list());
+    // Note: We bypass the const declaration of this method, but this is a strong
+    // requirement to be able to accomplish the read operation successfully.
+    // We call this special method becuase it locks a separate mutex to ensure we
+    // update the block list of the inode safely, as the m_inode_lock is locked in
+    // shared mode.
+    TRY(const_cast<Ext2FSInode&>(*this).compute_block_list_with_exclusive_locking());
 
     if (m_block_list.is_empty()) {
         dmesgln("Ext2FSInode[{}]::read_bytes(): Empty block list", identifier());
@@ -935,21 +952,18 @@ ErrorOr<void> Ext2FSInode::resize(u64 new_size)
     return {};
 }
 
-ErrorOr<size_t> Ext2FSInode::write_bytes(off_t offset, size_t count, UserOrKernelBuffer const& data, OpenFileDescription* description)
+ErrorOr<size_t> Ext2FSInode::write_bytes_locked(off_t offset, size_t count, UserOrKernelBuffer const& data, OpenFileDescription* description)
 {
+    VERIFY(m_inode_lock.is_locked());
     VERIFY(offset >= 0);
 
     if (count == 0)
         return 0;
 
-    MutexLocker inode_locker(m_inode_lock);
-
-    TRY(prepare_to_write_data());
-
     if (is_symlink()) {
         VERIFY(offset == 0);
         if (max((size_t)(offset + count), (size_t)m_raw_inode.i_size) < max_inline_symlink_length) {
-            dbgln_if(EXT2_DEBUG, "Ext2FSInode[{}]::write_bytes(): Poking into i_block array for inline symlink ({} bytes)", identifier(), count);
+            dbgln_if(EXT2_DEBUG, "Ext2FSInode[{}]::write_bytes_locked(): Poking into i_block array for inline symlink ({} bytes)", identifier(), count);
             TRY(data.read(((u8*)m_raw_inode.i_block) + offset, count));
             if ((size_t)(offset + count) > (size_t)m_raw_inode.i_size)
                 m_raw_inode.i_size = offset + count;
@@ -983,14 +997,14 @@ ErrorOr<size_t> Ext2FSInode::write_bytes(off_t offset, size_t count, UserOrKerne
     size_t nwritten = 0;
     auto remaining_count = min((off_t)count, (off_t)new_size - offset);
 
-    dbgln_if(EXT2_VERY_DEBUG, "Ext2FSInode[{}]::write_bytes(): Writing {} bytes, {} bytes into inode from {}", identifier(), count, offset, data.user_or_kernel_ptr());
+    dbgln_if(EXT2_VERY_DEBUG, "Ext2FSInode[{}]::write_bytes_locked(): Writing {} bytes, {} bytes into inode from {}", identifier(), count, offset, data.user_or_kernel_ptr());
 
     for (auto bi = first_block_logical_index; remaining_count && bi <= last_block_logical_index; bi = bi.value() + 1) {
         size_t offset_into_block = (bi == first_block_logical_index) ? offset_into_first_block : 0;
         size_t num_bytes_to_copy = min((size_t)block_size - offset_into_block, (size_t)remaining_count);
-        dbgln_if(EXT2_DEBUG, "Ext2FSInode[{}]::write_bytes(): Writing block {} (offset_into_block: {})", identifier(), m_block_list[bi.value()], offset_into_block);
+        dbgln_if(EXT2_DEBUG, "Ext2FSInode[{}]::write_bytes_locked(): Writing block {} (offset_into_block: {})", identifier(), m_block_list[bi.value()], offset_into_block);
         if (auto result = fs().write_block(m_block_list[bi.value()], data.offset(nwritten), num_bytes_to_copy, offset_into_block, allow_cache); result.is_error()) {
-            dbgln("Ext2FSInode[{}]::write_bytes(): Failed to write block {} (index {})", identifier(), m_block_list[bi.value()], bi);
+            dbgln("Ext2FSInode[{}]::write_bytes_locked(): Failed to write block {} (index {})", identifier(), m_block_list[bi.value()], bi);
             return result.release_error();
         }
         remaining_count -= num_bytes_to_copy;
@@ -999,7 +1013,7 @@ ErrorOr<size_t> Ext2FSInode::write_bytes(off_t offset, size_t count, UserOrKerne
 
     did_modify_contents();
 
-    dbgln_if(EXT2_VERY_DEBUG, "Ext2FSInode[{}]::write_bytes(): After write, i_size={}, i_blocks={} ({} blocks in list)", identifier(), size(), m_raw_inode.i_blocks, m_block_list.size());
+    dbgln_if(EXT2_VERY_DEBUG, "Ext2FSInode[{}]::write_bytes_locked(): After write, i_size={}, i_blocks={} ({} blocks in list)", identifier(), size(), m_raw_inode.i_blocks, m_block_list.size());
     return nwritten;
 }
 
@@ -1119,7 +1133,7 @@ ErrorOr<void> Ext2FSInode::write_directory(Vector<Ext2FSDirectoryEntry>& entries
     return {};
 }
 
-ErrorOr<NonnullRefPtr<Inode>> Ext2FSInode::create_child(StringView name, mode_t mode, dev_t dev, UserID uid, GroupID gid)
+ErrorOr<NonnullLockRefPtr<Inode>> Ext2FSInode::create_child(StringView name, mode_t mode, dev_t dev, UserID uid, GroupID gid)
 {
     if (::is_directory(mode))
         return fs().create_directory(*this, name, mode, uid, gid);
@@ -1415,7 +1429,7 @@ ErrorOr<Ext2FS::CachedBitmap*> Ext2FS::get_bitmap_block(BlockIndex bitmap_block_
             return cached_bitmap.ptr();
     }
 
-    auto block = TRY(KBuffer::try_create_with_size(block_size(), Memory::Region::Access::ReadWrite, "Ext2FS: Cached bitmap block"));
+    auto block = TRY(KBuffer::try_create_with_size("Ext2FS: Cached bitmap block"sv, block_size(), Memory::Region::Access::ReadWrite));
     auto buffer = UserOrKernelBuffer::for_kernel_buffer(block->data());
     TRY(read_block(bitmap_block_index, &buffer, block_size()));
     auto new_bitmap = TRY(adopt_nonnull_own_or_enomem(new (nothrow) CachedBitmap(bitmap_block_index, move(block))));
@@ -1437,7 +1451,7 @@ ErrorOr<void> Ext2FS::set_block_allocation_state(BlockIndex block_index, bool ne
     return update_bitmap_block(bgd.bg_block_bitmap, bit_index, new_state, m_super_block.s_free_blocks_count, bgd.bg_free_blocks_count);
 }
 
-ErrorOr<NonnullRefPtr<Inode>> Ext2FS::create_directory(Ext2FSInode& parent_inode, StringView name, mode_t mode, UserID uid, GroupID gid)
+ErrorOr<NonnullLockRefPtr<Inode>> Ext2FS::create_directory(Ext2FSInode& parent_inode, StringView name, mode_t mode, UserID uid, GroupID gid)
 {
     MutexLocker locker(m_lock);
     VERIFY(is_directory(mode));
@@ -1462,7 +1476,7 @@ ErrorOr<NonnullRefPtr<Inode>> Ext2FS::create_directory(Ext2FSInode& parent_inode
     return inode;
 }
 
-ErrorOr<NonnullRefPtr<Inode>> Ext2FS::create_inode(Ext2FSInode& parent_inode, StringView name, mode_t mode, dev_t dev, UserID uid, GroupID gid)
+ErrorOr<NonnullLockRefPtr<Inode>> Ext2FS::create_inode(Ext2FSInode& parent_inode, StringView name, mode_t mode, dev_t dev, UserID uid, GroupID gid)
 {
     if (name.length() > EXT2_NAME_LEN)
         return ENAMETOOLONG;
@@ -1502,9 +1516,9 @@ ErrorOr<NonnullRefPtr<Inode>> Ext2FS::create_inode(Ext2FSInode& parent_inode, St
     return new_inode;
 }
 
-ErrorOr<void> Ext2FSInode::populate_lookup_cache() const
+ErrorOr<void> Ext2FSInode::populate_lookup_cache()
 {
-    MutexLocker locker(m_inode_lock);
+    VERIFY(m_inode_lock.is_exclusively_locked_by_current_thread());
     if (!m_lookup_cache.is_empty())
         return {};
     HashMap<NonnullOwnPtr<KString>, InodeIndex> children;
@@ -1520,15 +1534,15 @@ ErrorOr<void> Ext2FSInode::populate_lookup_cache() const
     return {};
 }
 
-ErrorOr<NonnullRefPtr<Inode>> Ext2FSInode::lookup(StringView name)
+ErrorOr<NonnullLockRefPtr<Inode>> Ext2FSInode::lookup(StringView name)
 {
     VERIFY(is_directory());
     dbgln_if(EXT2_DEBUG, "Ext2FSInode[{}]:lookup(): Looking up '{}'", identifier(), name);
-    TRY(populate_lookup_cache());
 
     InodeIndex inode_index;
     {
         MutexLocker locker(m_inode_lock);
+        TRY(populate_lookup_cache());
         auto it = m_lookup_cache.find(name);
         if (it == m_lookup_cache.end()) {
             dbgln_if(EXT2_DEBUG, "Ext2FSInode[{}]:lookup(): '{}' not found", identifier(), name);
@@ -1540,32 +1554,23 @@ ErrorOr<NonnullRefPtr<Inode>> Ext2FSInode::lookup(StringView name)
     return fs().get_inode({ fsid(), inode_index });
 }
 
-ErrorOr<void> Ext2FSInode::set_atime(time_t t)
+ErrorOr<void> Ext2FSInode::update_timestamps(Optional<time_t> atime, Optional<time_t> ctime, Optional<time_t> mtime)
 {
     MutexLocker locker(m_inode_lock);
     if (fs().is_readonly())
         return EROFS;
-    m_raw_inode.i_atime = t;
-    set_metadata_dirty(true);
-    return {};
-}
-
-ErrorOr<void> Ext2FSInode::set_ctime(time_t t)
-{
-    MutexLocker locker(m_inode_lock);
-    if (fs().is_readonly())
-        return EROFS;
-    m_raw_inode.i_ctime = t;
-    set_metadata_dirty(true);
-    return {};
-}
-
-ErrorOr<void> Ext2FSInode::set_mtime(time_t t)
-{
-    MutexLocker locker(m_inode_lock);
-    if (fs().is_readonly())
-        return EROFS;
-    m_raw_inode.i_mtime = t;
+    if (atime.value_or(0) > INT32_MAX)
+        return EINVAL;
+    if (ctime.value_or(0) > INT32_MAX)
+        return EINVAL;
+    if (mtime.value_or(0) > INT32_MAX)
+        return EINVAL;
+    if (atime.has_value())
+        m_raw_inode.i_atime = atime.value();
+    if (ctime.has_value())
+        m_raw_inode.i_ctime = ctime.value();
+    if (mtime.has_value())
+        m_raw_inode.i_mtime = mtime.value();
     set_metadata_dirty(true);
     return {};
 }

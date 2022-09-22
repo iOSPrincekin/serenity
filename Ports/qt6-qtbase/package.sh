@@ -14,6 +14,7 @@ configopts=(
     "-DQT_FEATURE_cxx20=ON"
     "-DINPUT_opengl=no"
 )
+depends=("md4c")
 
 QT_HOST_PATH=/usr
 QT_HOST_CMAKE_PATH=${QT_HOST_PATH}/lib64/cmake
@@ -55,8 +56,4 @@ install() {
     echo -e "\t" "https://github.com/SerenityOS/serenity/tree/master/Ports/qt6-qtbase"
     echo "The development of the Qt Serenity platform plugin is happening here. Fixes for things like input handling, window management and theme integration should go here:"
     echo -e "\t" "https://github.com/SerenityPorts/QSerenityPlatform"
-}
-
-clean() {
-    run ninja clean
 }

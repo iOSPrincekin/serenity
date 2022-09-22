@@ -15,16 +15,14 @@ class ArrayBufferPrototype final : public PrototypeObject<ArrayBufferPrototype, 
     JS_PROTOTYPE_OBJECT(ArrayBufferPrototype, ArrayBuffer, ArrayBuffer);
 
 public:
-    explicit ArrayBufferPrototype(GlobalObject&);
-    virtual void initialize(GlobalObject&) override;
+    virtual void initialize(Realm&) override;
     virtual ~ArrayBufferPrototype() override = default;
 
 private:
+    explicit ArrayBufferPrototype(Realm&);
+
     JS_DECLARE_NATIVE_FUNCTION(slice);
-    JS_DECLARE_NATIVE_FUNCTION(resize);
     JS_DECLARE_NATIVE_FUNCTION(byte_length_getter);
-    JS_DECLARE_NATIVE_FUNCTION(max_byte_length_getter);
-    JS_DECLARE_NATIVE_FUNCTION(resizable_getter);
 };
 
 }

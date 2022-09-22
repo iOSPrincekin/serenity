@@ -8,7 +8,7 @@ print_help() {
     cat <<EOF
 Usage: $NAME COMMAND [TARGET] [TOOLCHAIN] [ARGS...]
   Supported TARGETs: aarch64, i686, x86_64, lagom. Defaults to SERENITY_ARCH, or i686 if not set.
-  Supported TOOLCHAINs: GNU, Clang. Defaults to GNU if not set.
+  Supported TOOLCHAINs: GNU, Clang. Defaults to SERENITY_TOOLCHAIN, or GNU if not set.
   Supported COMMANDs:
     build:      Compiles the target binaries, [ARGS...] are passed through to ninja
     install:    Installs the target binary
@@ -46,8 +46,10 @@ Usage: $NAME COMMAND [TARGET] [TOOLCHAIN] [ARGS...]
 
 
   Examples:
-    $NAME run i686 smp=on
+    $NAME run i686 GNU smp=on
         Runs the image in QEMU passing "smp=on" to the kernel command line
+    $NAME run i686 GNU 'init=/bin/UserspaceEmulator init_args=/bin/SystemServer'
+        Runs the image in QEMU, and run the entire system through UserspaceEmulator (not fully supported yet)
     $NAME run
         Runs the image for the default TARGET i686 in QEMU
     $NAME run lagom js -A
@@ -82,6 +84,10 @@ if [ "$CMD" = "help" ]; then
     exit 0
 fi
 
+if [ "$(id -u)" -eq 0 ]; then
+   die "Do not run serenity.sh as root, your Build directory will become root-owned"
+fi
+
 if [ -n "$1" ]; then
     TARGET="$1"; shift
 else
@@ -92,21 +98,16 @@ CMAKE_ARGS=()
 HOST_COMPILER=""
 
 # Toolchain selection only applies to non-lagom targets.
-if [ "$TARGET" != "lagom" ]; then
-    case "$1" in
-        GNU|Clang)
-            TOOLCHAIN_TYPE="$1"; shift
-            ;;
-        *)
-            if [ -n "$1" ]; then
-                echo "WARNING: unknown toolchain '$1'. Defaulting to GNU."
-                echo "         Valid values are 'Clang', 'GNU' (default)"
-            fi
-            TOOLCHAIN_TYPE="GNU"
-            ;;
-    esac
-    CMAKE_ARGS+=( "-DSERENITY_TOOLCHAIN=$TOOLCHAIN_TYPE" )
+if [ "$TARGET" != "lagom" ] && [ -n "$1" ]; then
+    TOOLCHAIN_TYPE="$1"; shift
+else
+    TOOLCHAIN_TYPE="${SERENITY_TOOLCHAIN:-"GNU"}"
 fi
+if ! [[ "${TOOLCHAIN_TYPE}" =~ ^(GNU|Clang)$ ]]; then
+    >&2 echo "ERROR: unknown toolchain '${TOOLCHAIN_TYPE}'."
+    exit 1
+fi
+CMAKE_ARGS+=( "-DSERENITY_TOOLCHAIN=$TOOLCHAIN_TYPE" )
 
 CMD_ARGS=( "$@" )
 
@@ -200,7 +201,7 @@ pick_host_compiler() {
         return
     fi
 
-    find_newest_compiler clang clang-13 clang-14 clang-15
+    find_newest_compiler clang clang-13 clang-14 clang-15 /opt/homebrew/opt/llvm/bin/clang
     if is_supported_compiler "$HOST_COMPILER"; then
         CMAKE_ARGS+=("-DCMAKE_C_COMPILER=$HOST_COMPILER")
         CMAKE_ARGS+=("-DCMAKE_CXX_COMPILER=${HOST_COMPILER/clang/clang++}")
@@ -260,7 +261,7 @@ build_target() {
         cmake -S "$SERENITY_SOURCE_DIR/Meta/Lagom" -B "$BUILD_DIR" -DBUILD_LAGOM=ON
     fi
 
-    # Get either the environement MAKEJOBS or all processors via CMake
+    # Get either the environment MAKEJOBS or all processors via CMake
     [ -z "$MAKEJOBS" ] && MAKEJOBS=$(cmake -P "$SERENITY_SOURCE_DIR/Meta/CMake/processor-count.cmake" 2>&1)
 
     # With zero args, we are doing a standard "build"
@@ -297,11 +298,10 @@ build_toolchain() {
 ensure_toolchain() {
     [ -d "$TOOLCHAIN_DIR" ] || build_toolchain
 
-    # FIXME: Remove this check when most people have already updated their toolchain
     if [ "$TOOLCHAIN_TYPE" = "GNU" ]; then
         local ld_version
         ld_version="$("$TOOLCHAIN_DIR"/bin/"$TARGET"-pc-serenity-ld -v)"
-        local expected_version="GNU ld (GNU Binutils) 2.38"
+        local expected_version="GNU ld (GNU Binutils) 2.39"
         if [ "$ld_version" != "$expected_version" ]; then
             echo "Your toolchain has an old version of binutils installed."
             echo "    installed version: \"$ld_version\""
@@ -311,6 +311,16 @@ ensure_toolchain() {
         fi
     fi
 
+}
+
+confirm_rebuild_if_toolchain_exists() {
+    [ ! -d "$TOOLCHAIN_DIR" ] && return
+
+    read -rp "You already have a toolchain, are you sure you want to delete and rebuild one [y/N]? " input
+
+    if [[ "$input" != "y" && "$input" != "Y" ]]; then
+        die "Aborted rebuild"
+    fi
 }
 
 delete_toolchain() {
@@ -434,7 +444,7 @@ if [[ "$CMD" =~ ^(build|install|image|copy-src|run|gdb|test|rebuild|recreate|kad
                 build_image
                 # In contrast to CI, we don't set 'panic=shutdown' here,
                 # in case the user wants to inspect qemu some more.
-                export SERENITY_KERNEL_CMDLINE="fbdev=off system_mode=self-test"
+                export SERENITY_KERNEL_CMDLINE="graphics_subsystem_mode=off system_mode=self-test"
                 export SERENITY_RUN="ci"
                 build_target run
             fi
@@ -484,6 +494,7 @@ elif [ "$CMD" = "delete" ]; then
 elif [ "$CMD" = "rebuild-toolchain" ]; then
     cmd_with_target
     lagom_unsupported "The lagom target uses the host toolchain"
+    confirm_rebuild_if_toolchain_exists
     delete_toolchain
     ensure_toolchain
 elif [ "$CMD" = "rebuild-world" ]; then

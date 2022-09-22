@@ -33,7 +33,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     bool gzip = false;
     bool no_auto_compress = false;
     StringView archive_file;
-    char const* directory = nullptr;
+    StringView directory;
     Vector<String> paths;
 
     Core::ArgsParser args_parser;
@@ -64,7 +64,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
         if (!archive_file.is_empty())
             file = TRY(Core::File::open(archive_file, Core::OpenMode::ReadOnly));
 
-        if (directory)
+        if (!directory.is_empty())
             TRY(Core::System::chdir(directory));
 
         Core::InputFileStream file_stream(file);
@@ -125,6 +125,27 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
                 continue;
             }
 
+            Archive::TarFileStream file_stream = tar_stream.file_contents();
+
+            // Handle other header types that don't just have an effect on extraction.
+            switch (header.type_flag()) {
+            case Archive::TarFileType::LongName: {
+                StringBuilder long_name;
+
+                Array<u8, buffer_size> buffer;
+                size_t bytes_read;
+
+                while ((bytes_read = file_stream.read(buffer)) > 0)
+                    long_name.append(reinterpret_cast<char*>(buffer.data()), bytes_read);
+
+                local_overrides.set("path", long_name.to_string());
+                continue;
+            }
+            default:
+                // None of the relevant headers, so continue as normal.
+                break;
+            }
+
             LexicalPath path = LexicalPath(header.filename());
             if (!header.prefix().is_empty())
                 path = path.prepend(header.prefix());
@@ -134,8 +155,6 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
                 outln("{}", filename);
 
             if (extract) {
-                Archive::TarFileStream file_stream = tar_stream.file_contents();
-
                 String absolute_path = Core::File::absolute_path(filename);
                 auto parent_path = LexicalPath(absolute_path).parent();
 
@@ -194,7 +213,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
         if (!archive_file.is_empty())
             file = TRY(Core::File::open(archive_file, Core::OpenMode::WriteOnly));
 
-        if (directory)
+        if (!directory.is_empty())
             TRY(Core::System::chdir(directory));
 
         Core::OutputFileStream file_stream(file);

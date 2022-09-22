@@ -47,6 +47,32 @@ bool Stream::read_or_error(Bytes buffer)
     return true;
 }
 
+ErrorOr<ByteBuffer> Stream::read_all(size_t block_size)
+{
+    return read_all_impl(block_size);
+}
+
+ErrorOr<ByteBuffer> Stream::read_all_impl(size_t block_size, size_t expected_file_size)
+{
+    ByteBuffer data;
+    data.ensure_capacity(expected_file_size);
+
+    size_t total_read = 0;
+    Bytes buffer;
+    while (!is_eof()) {
+        if (buffer.is_empty()) {
+            buffer = TRY(data.get_bytes_for_writing(block_size));
+        }
+
+        auto nread = TRY(read(buffer)).size();
+        total_read += nread;
+        buffer = buffer.slice(nread);
+    }
+
+    data.resize(total_read);
+    return data;
+}
+
 bool Stream::write_or_error(ReadonlyBytes buffer)
 {
     VERIFY(buffer.size());
@@ -117,6 +143,26 @@ ErrorOr<NonnullOwnPtr<File>> File::adopt_fd(int fd, OpenMode mode)
     return file;
 }
 
+bool File::exists(StringView filename)
+{
+    return !Core::System::stat(filename).is_error();
+}
+
+ErrorOr<NonnullOwnPtr<File>> File::open_file_or_standard_stream(StringView filename, OpenMode mode)
+{
+    if (!filename.is_empty() && filename != "-"sv)
+        return File::open(filename, mode);
+
+    switch (mode) {
+    case OpenMode::Read:
+        return File::adopt_fd(STDIN_FILENO, mode);
+    case OpenMode::Write:
+        return File::adopt_fd(STDOUT_FILENO, mode);
+    default:
+        VERIFY_NOT_REACHED();
+    }
+}
+
 int File::open_mode_to_options(OpenMode mode)
 {
     int flags = 0;
@@ -149,7 +195,7 @@ ErrorOr<void> File::open_path(StringView filename, mode_t permissions)
     VERIFY(m_fd == -1);
     auto flags = open_mode_to_options(m_mode);
 
-    m_fd = TRY(System::open(filename.characters_without_null_termination(), flags, permissions));
+    m_fd = TRY(System::open(filename, flags, permissions));
     return {};
 }
 
@@ -168,6 +214,14 @@ ErrorOr<Bytes> File::read(Bytes buffer)
     ssize_t nread = TRY(System::read(m_fd, buffer));
     m_last_read_was_eof = nread == 0;
     return buffer.trim(nread);
+}
+
+ErrorOr<ByteBuffer> File::read_all(size_t block_size)
+{
+    // Note: This is used as a heuristic, it's not valid for devices or virtual files.
+    auto const potential_file_size = TRY(System::fstat(m_fd)).st_size;
+
+    return read_all_impl(block_size, potential_file_size);
 }
 
 ErrorOr<size_t> File::write(ReadonlyBytes buffer)
@@ -289,10 +343,11 @@ ErrorOr<IPv4Address> Socket::resolve_host(String const& host, SocketType type)
     int rc = getaddrinfo(host.characters(), nullptr, &hints, &results);
     if (rc != 0) {
         if (rc == EAI_SYSTEM) {
-            return Error::from_syscall("getaddrinfo", -errno);
+            return Error::from_syscall("getaddrinfo"sv, -errno);
         }
 
-        return Error::from_string_literal(gai_strerror(rc));
+        auto const* error_string = gai_strerror(rc);
+        return Error::from_string_view({ error_string, strlen(error_string) });
     }
 
     auto* socket_address = bit_cast<struct sockaddr_in*>(results->ai_addr);
@@ -378,7 +433,7 @@ ErrorOr<bool> PosixSocketHelper::can_read_without_blocking(int timeout) const
     } while (rc < 0 && errno == EINTR);
 
     if (rc < 0) {
-        return Error::from_syscall("poll", -errno);
+        return Error::from_syscall("poll"sv, -errno);
     }
 
     return (the_fd.revents & POLLIN) > 0;

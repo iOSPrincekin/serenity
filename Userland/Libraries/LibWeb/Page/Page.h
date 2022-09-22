@@ -18,6 +18,7 @@
 #include <LibGfx/StandardCursor.h>
 #include <LibWeb/CSS/PreferredColorScheme.h>
 #include <LibWeb/Forward.h>
+#include <LibWeb/Loader/FileRequest.h>
 
 namespace Web {
 
@@ -51,6 +52,7 @@ public:
     bool handle_mousedown(Gfx::IntPoint const&, unsigned button, unsigned modifiers);
     bool handle_mousemove(Gfx::IntPoint const&, unsigned buttons, unsigned modifiers);
     bool handle_mousewheel(Gfx::IntPoint const&, unsigned button, unsigned modifiers, int wheel_delta_x, int wheel_delta_y);
+    bool handle_doubleclick(Gfx::IntPoint const&, unsigned buttons, unsigned modifiers);
 
     bool handle_keydown(KeyCode, unsigned modifiers, u32 code_point);
     bool handle_keyup(KeyCode, unsigned modifiers, u32 code_point);
@@ -82,9 +84,9 @@ public:
     virtual Gfx::Palette palette() const = 0;
     virtual Gfx::IntRect screen_rect() const = 0;
     virtual CSS::PreferredColorScheme preferred_color_scheme() const = 0;
-    virtual void page_did_set_document_in_top_level_browsing_context(DOM::Document*) { }
     virtual void page_did_change_title(String const&) { }
     virtual void page_did_start_loading(const AK::URL&) { }
+    virtual void page_did_create_main_document() { }
     virtual void page_did_finish_loading(const AK::URL&) { }
     virtual void page_did_change_selection() { }
     virtual void page_did_request_cursor_change(Gfx::StandardCursor) { }
@@ -109,6 +111,9 @@ public:
     virtual String page_did_request_cookie(const AK::URL&, Cookie::Source) { return {}; }
     virtual void page_did_set_cookie(const AK::URL&, Cookie::ParsedCookie const&, Cookie::Source) { }
     virtual void page_did_update_resource_count(i32) { }
+    virtual void page_did_close_browsing_context(HTML::BrowsingContext const&) { }
+
+    virtual void request_file(NonnullRefPtr<FileRequest>&) = 0;
 
 protected:
     virtual ~PageClient() = default;

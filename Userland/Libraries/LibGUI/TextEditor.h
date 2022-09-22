@@ -95,6 +95,8 @@ public:
     bool is_displayonly() const { return m_mode == DisplayOnly; }
     void set_mode(const Mode);
 
+    void set_editing_cursor();
+
     bool is_ruler_visible() const { return m_ruler_visible; }
     void set_ruler_visible(bool);
 
@@ -148,9 +150,14 @@ public:
     void delete_previous_char();
     void delete_from_line_start_to_cursor();
     void select_all();
+    void insert_emoji();
+    void set_or_clear_emoji_input_callback();
     void select_current_line();
     virtual void undo();
     virtual void redo();
+    bool is_indenting_selection();
+    void indent_selection();
+    void unindent_selection();
 
     Function<void()> on_change;
     Function<void(bool modified)> on_modified_change;
@@ -171,6 +178,7 @@ public:
     Action& paste_action() { return *m_paste_action; }
     Action& go_to_line_action() { return *m_go_to_line_action; }
     Action& select_all_action() { return *m_select_all_action; }
+    Action& insert_emoji_action() { return *m_insert_emoji_action; }
 
     void add_custom_context_menu_action(Action&);
 
@@ -223,6 +231,14 @@ public:
     void reset_search_results();
     Optional<size_t> search_result_index() const { return m_search_result_index; }
     Vector<TextRange> const& search_results() const { return m_search_results; }
+
+    virtual Optional<UISize> calculated_min_size() const override;
+
+    template<class T, class... Args>
+    inline void execute(Badge<EditingEngine>, Args&&... args)
+    {
+        execute<T>(forward<Args>(args)...);
+    }
 
 protected:
     explicit TextEditor(Type = Type::MultiLine);
@@ -368,7 +384,7 @@ private:
     bool m_cursor_line_highlighting { true };
     size_t m_soft_tab_width { 4 };
     int m_horizontal_content_padding { 3 };
-    TextRange m_selection;
+    TextRange m_selection {};
 
     Optional<u32> m_substitution_code_point;
     mutable OwnPtr<Vector<u32>> m_substitution_string_data; // Used to avoid repeated String construction.
@@ -381,6 +397,7 @@ private:
     RefPtr<Action> m_paste_action;
     RefPtr<Action> m_go_to_line_action;
     RefPtr<Action> m_select_all_action;
+    RefPtr<Action> m_insert_emoji_action;
     Core::ElapsedTimer m_triple_click_timer;
     NonnullRefPtrVector<Action> m_custom_context_menu_actions;
 

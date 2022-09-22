@@ -6,10 +6,12 @@
  */
 
 #include <AK/Debug.h>
-#include <AK/JsonArray.h>
+#include <AK/JsonObject.h>
+#include <LibCompress/Brotli.h>
 #include <LibCompress/Gzip.h>
 #include <LibCompress/Zlib.h>
 #include <LibCore/Event.h>
+#include <LibCore/MemoryStream.h>
 #include <LibHTTP/HttpResponse.h>
 #include <LibHTTP/Job.h>
 #include <stdio.h>
@@ -20,6 +22,11 @@ namespace HTTP {
 static Optional<ByteBuffer> handle_content_encoding(ByteBuffer const& buf, String const& content_encoding)
 {
     dbgln_if(JOB_DEBUG, "Job::handle_content_encoding: buf has content_encoding={}", content_encoding);
+
+    // FIXME: Actually do the decompression of the data using streams, instead of all at once when everything has been
+    //        received. This will require that some of the decompression algorithms are implemented in a streaming way.
+    //        Gzip and Deflate are implemented using AK::Stream, while Brotli uses the newer Core::Stream. The Gzip and
+    //        Deflate implementations will likely need to be changed to LibCore::Stream for this to work easily.
 
     if (content_encoding == "gzip") {
         if (!Compress::GzipDecompressor::is_likely_compressed(buf)) {
@@ -62,6 +69,31 @@ static Optional<ByteBuffer> handle_content_encoding(ByteBuffer const& buf, Strin
 
         if constexpr (JOB_DEBUG) {
             dbgln("Job::handle_content_encoding: Deflate decompression successful.");
+            dbgln("  Input size: {}", buf.size());
+            dbgln("  Output size: {}", uncompressed.value().size());
+        }
+
+        return uncompressed.release_value();
+    } else if (content_encoding == "br") {
+        dbgln_if(JOB_DEBUG, "Job::handle_content_encoding: buf is brotli compressed!");
+
+        // FIXME: MemoryStream is both read and write, however we only need the read part here
+        auto bufstream_result = Core::Stream::MemoryStream::construct({ const_cast<u8*>(buf.data()), buf.size() });
+        if (bufstream_result.is_error()) {
+            dbgln("Job::handle_content_encoding: MemoryStream::construct() failed.");
+            return {};
+        }
+        auto bufstream = bufstream_result.release_value();
+        auto brotli_stream = Compress::BrotliDecompressionStream { *bufstream };
+
+        auto uncompressed = brotli_stream.read_all();
+        if (uncompressed.is_error()) {
+            dbgln("Job::handle_content_encoding: Brotli::decompress() failed: {}.", uncompressed.error());
+            return {};
+        }
+
+        if constexpr (JOB_DEBUG) {
+            dbgln("Job::handle_content_encoding: Brotli::decompress() successful.");
             dbgln("  Input size: {}", buf.size());
             dbgln("  Output size: {}", uncompressed.value().size());
         }
@@ -338,7 +370,7 @@ void Job::on_socket_connected()
                 return deferred_invoke([this] { did_fail(Core::NetworkJob::Error::ProtocolFailed); });
             }
             auto value = line.substring(name.length() + 2, line.length() - name.length() - 2);
-            if (name.equals_ignoring_case("Set-Cookie")) {
+            if (name.equals_ignoring_case("Set-Cookie"sv)) {
                 dbgln_if(JOB_DEBUG, "Job: Received Set-Cookie header: '{}'", value);
                 m_set_cookie_headers.append(move(value));
 
@@ -356,11 +388,11 @@ void Job::on_socket_connected()
             } else {
                 m_headers.set(name, value);
             }
-            if (name.equals_ignoring_case("Content-Encoding")) {
+            if (name.equals_ignoring_case("Content-Encoding"sv)) {
                 // Assume that any content-encoding means that we can't decode it as a stream :(
                 dbgln_if(JOB_DEBUG, "Content-Encoding {} detected, cannot stream output :(", value);
                 m_can_stream_response = false;
-            } else if (name.equals_ignoring_case("Content-Length")) {
+            } else if (name.equals_ignoring_case("Content-Length"sv)) {
                 auto length = value.to_uint();
                 if (length.has_value())
                     m_content_length = length.value();
@@ -453,7 +485,7 @@ void Job::on_socket_connected()
                     auto encoding = transfer_encoding.value().trim_whitespace();
 
                     dbgln_if(JOB_DEBUG, "Job: This content has transfer encoding '{}'", encoding);
-                    if (encoding.equals_ignoring_case("chunked")) {
+                    if (encoding.equals_ignoring_case("chunked"sv)) {
                         m_current_chunk_remaining_size = -1;
                         goto read_chunk_size;
                     } else {

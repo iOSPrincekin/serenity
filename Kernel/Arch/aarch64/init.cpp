@@ -3,6 +3,7 @@
  * Copyright (c) 2021, Marcin Undak <mcinek@gmail.com>
  * Copyright (c) 2021, Jesse Buhagiar <jooster669@gmail.com>
  * Copyright (c) 2022, the SerenityOS developers.
+ * Copyright (c) 2022, Filiph Sandström <filiph.sandstrom@filfatstudios.com>
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
@@ -10,6 +11,8 @@
 #include <AK/Format.h>
 #include <AK/Types.h>
 
+#include <Kernel/Arch/InterruptManagement.h>
+#include <Kernel/Arch/Interrupts.h>
 #include <Kernel/Arch/Processor.h>
 #include <Kernel/Arch/aarch64/BootPPMParser.h>
 #include <Kernel/Arch/aarch64/CPU.h>
@@ -17,19 +20,17 @@
 #include <Kernel/Arch/aarch64/RPi/Mailbox.h>
 #include <Kernel/Arch/aarch64/RPi/Timer.h>
 #include <Kernel/Arch/aarch64/RPi/UART.h>
+#include <Kernel/Arch/aarch64/Registers.h>
+#include <Kernel/Arch/aarch64/TrapFrame.h>
+#include <Kernel/CommandLine.h>
+#include <Kernel/Devices/DeviceManagement.h>
+#include <Kernel/Graphics/Console/BootFramebufferConsole.h>
 #include <Kernel/KSyms.h>
+#include <Kernel/Memory/MemoryManager.h>
 #include <Kernel/Panic.h>
 
-struct TrapFrame {
-    u64 x[31];     // Saved general purpose registers
-    u64 spsr_el1;  // Save Processor Status Register, EL1
-    u64 elr_el1;   // Exception Link Reigster, EL1
-    u64 tpidr_el1; // EL0 thread ID
-    u64 sp_el0;    // EL0 stack pointer
-};
-
-extern "C" void exception_common(TrapFrame const* const trap_frame);
-extern "C" void exception_common(TrapFrame const* const trap_frame)
+extern "C" void exception_common(Kernel::TrapFrame const* const trap_frame);
+extern "C" void exception_common(Kernel::TrapFrame const* const trap_frame)
 {
     constexpr bool print_stack_frame = true;
 
@@ -45,7 +46,12 @@ extern "C" void exception_common(TrapFrame const* const trap_frame)
         dbgln("elr_el1: {:x}", trap_frame->elr_el1);
         dbgln("tpidr_el1: {:x}", trap_frame->tpidr_el1);
         dbgln("sp_el0: {:x}", trap_frame->sp_el0);
+
+        auto esr_el1 = Kernel::Aarch64::ESR_EL1::read();
+        dbgln("esr_el1: EC({:#b}) IL({:#b}) ISS({:#b}) ISS2({:#b})", esr_el1.EC, esr_el1.IL, esr_el1.ISS, esr_el1.ISS2);
     }
+
+    Kernel::Processor::halt();
 }
 
 typedef void (*ctor_func_t)();
@@ -64,6 +70,8 @@ void __stack_chk_fail()
     Kernel::Processor::halt();
 }
 
+READONLY_AFTER_INIT bool g_in_early_boot;
+
 namespace Kernel {
 
 static void draw_logo();
@@ -78,12 +86,29 @@ ALWAYS_INLINE static Processor& bootstrap_processor()
     return (Processor&)bootstrap_processor_storage;
 }
 
+Atomic<Graphics::Console*> g_boot_console;
+
 extern "C" [[noreturn]] void init()
 {
+    g_in_early_boot = true;
+
+    // FIXME: Don't hardcode this
+    multiboot_memory_map_t mmap[] = {
+        { sizeof(struct multiboot_mmap_entry) - sizeof(u32),
+            (u64)0x0,
+            (u64)0xA2F000,
+            MULTIBOOT_MEMORY_AVAILABLE }
+    };
+
+    multiboot_memory_map = mmap;
+    multiboot_memory_map_count = 1;
+
     dbgln("Welcome to Serenity OS!");
     dbgln("Imagine this being your ideal operating system.");
     dbgln("Observed deviations from that ideal are shortcomings of your imagination.");
     dbgln();
+
+    CommandLine::early_initialize("");
 
     new (&bootstrap_processor()) Processor();
     bootstrap_processor().initialize(0);
@@ -95,41 +120,54 @@ extern "C" [[noreturn]] void init()
         (*ctor)();
     kmalloc_init();
 
+    load_kernel_symbol_table();
+
+    CommandLine::initialize();
+
+    auto& framebuffer = RPi::Framebuffer::the();
+    if (framebuffer.initialized()) {
+        g_boot_console = &try_make_lock_ref_counted<Graphics::BootFramebufferConsole>(framebuffer.gpu_buffer(), framebuffer.width(), framebuffer.width(), framebuffer.pitch()).value().leak_ref();
+        draw_logo();
+    }
+    dmesgln("Starting SerenityOS...");
+
+    dmesgln("Initialize MMU");
+    init_page_tables();
+    Memory::MemoryManager::initialize(0);
+    DeviceManagement::initialize();
+
+    // Invoke all static global constructors in the kernel.
+    // Note that we want to do this as early as possible.
     for (ctor_func_t* ctor = start_ctors; ctor < end_ctors; ctor++)
         (*ctor)();
 
-    load_kernel_symbol_table();
+    initialize_interrupts();
+    InterruptManagement::initialize();
+    Processor::enable_interrupts();
 
     auto firmware_version = query_firmware_version();
-    dbgln("Firmware version: {}", firmware_version);
+    dmesgln("Firmware version: {}", firmware_version);
 
-    dbgln("Initialize MMU");
-    init_prekernel_page_tables();
+    auto& timer = RPi::Timer::the();
+    timer.set_interrupt_interval_usec(1'000'000);
+    timer.enable_interrupt_mode();
 
-    auto& framebuffer = Framebuffer::the();
-    if (framebuffer.initialized()) {
-        draw_logo();
-    }
+    dmesgln("Enter loop");
 
-    dbgln("Enter loop");
+    // This will not disable interrupts, so the timer will still fire and show that
+    // interrupts are working!
+    for (;;)
+        asm volatile("wfi");
 
-    auto& timer = Timer::the();
-    u64 start_musec = 0;
-    for (;;) {
-        u64 now_musec;
-        while ((now_musec = timer.microseconds_since_boot()) - start_musec < 1'000'000)
-            ;
-        start_musec = now_musec;
-        dbgln("Timer: {}", now_musec);
-    }
+    VERIFY_NOT_REACHED();
 }
 
-class QueryFirmwareVersionMboxMessage : Mailbox::Message {
+class QueryFirmwareVersionMboxMessage : RPi::Mailbox::Message {
 public:
     u32 version;
 
     QueryFirmwareVersionMboxMessage()
-        : Mailbox::Message(0x0000'0001, 4)
+        : RPi::Mailbox::Message(0x0000'0001, 4)
     {
         version = 0;
     }
@@ -138,12 +176,12 @@ public:
 static u32 query_firmware_version()
 {
     struct __attribute__((aligned(16))) {
-        Mailbox::MessageHeader header;
+        RPi::Mailbox::MessageHeader header;
         QueryFirmwareVersionMboxMessage query_firmware_version;
-        Mailbox::MessageTail tail;
+        RPi::Mailbox::MessageTail tail;
     } message_queue;
 
-    if (!Mailbox::the().send_queue(&message_queue, sizeof(message_queue))) {
+    if (!RPi::Mailbox::the().send_queue(&message_queue, sizeof(message_queue))) {
         return 0xffff'ffff;
     }
 
@@ -163,7 +201,7 @@ static void draw_logo()
 
     dbgln("Boot logo size: {} ({} x {})", serenity_boot_logo_size, logo_parser.image.width, logo_parser.image.height);
 
-    auto& framebuffer = Framebuffer::the();
+    auto& framebuffer = RPi::Framebuffer::the();
     auto fb_ptr = framebuffer.gpu_buffer();
     auto image_left = (framebuffer.width() - logo_parser.image.width) / 2;
     auto image_right = image_left + logo_parser.image.width;
@@ -175,12 +213,12 @@ static void draw_logo()
         for (u32 x = 0; x < framebuffer.width(); x++) {
             if (x >= image_left && x < image_right && y >= image_top && y < image_bottom) {
                 switch (framebuffer.pixel_order()) {
-                case Framebuffer::PixelOrder::RGB:
+                case RPi::Framebuffer::PixelOrder::RGB:
                     fb_ptr[0] = logo_pixels[0];
                     fb_ptr[1] = logo_pixels[1];
                     fb_ptr[2] = logo_pixels[2];
                     break;
-                case Framebuffer::PixelOrder::BGR:
+                case RPi::Framebuffer::PixelOrder::BGR:
                     fb_ptr[0] = logo_pixels[2];
                     fb_ptr[1] = logo_pixels[1];
                     fb_ptr[2] = logo_pixels[0];

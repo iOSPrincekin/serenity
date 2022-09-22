@@ -23,10 +23,12 @@ struct IconBag final {
     RefPtr<Gfx::Bitmap> default_colors { nullptr };
     RefPtr<Gfx::Bitmap> load_color_palette { nullptr };
     RefPtr<Gfx::Bitmap> save_color_palette { nullptr };
+    RefPtr<Gfx::Bitmap> fit_image_to_view { nullptr };
     RefPtr<Gfx::Bitmap> add_guide { nullptr };
     RefPtr<Gfx::Bitmap> clear_guides { nullptr };
     RefPtr<Gfx::Bitmap> edit_flip_vertical { nullptr };
     RefPtr<Gfx::Bitmap> edit_flip_horizontal { nullptr };
+    RefPtr<Gfx::Bitmap> resize_image { nullptr };
     RefPtr<Gfx::Bitmap> crop { nullptr };
     RefPtr<Gfx::Bitmap> new_layer { nullptr };
     RefPtr<Gfx::Bitmap> previous_layer { nullptr };
@@ -36,9 +38,13 @@ struct IconBag final {
     RefPtr<Gfx::Bitmap> active_layer_up { nullptr };
     RefPtr<Gfx::Bitmap> active_layer_down { nullptr };
     RefPtr<Gfx::Bitmap> delete_layer { nullptr };
+    RefPtr<Gfx::Bitmap> flatten_image { nullptr };
     RefPtr<Gfx::Bitmap> merge_visible { nullptr };
     RefPtr<Gfx::Bitmap> merge_active_layer_up { nullptr };
     RefPtr<Gfx::Bitmap> merge_active_layer_down { nullptr };
     RefPtr<Gfx::Bitmap> filter { nullptr };
+    RefPtr<Gfx::Bitmap> generic_5x5_convolution { nullptr };
+    RefPtr<Gfx::Bitmap> levels { nullptr };
+    RefPtr<Gfx::Bitmap> add_mask { nullptr };
 };
 }

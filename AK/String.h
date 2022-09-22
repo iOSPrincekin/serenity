@@ -121,6 +121,7 @@ public:
     [[nodiscard]] String to_uppercase() const;
     [[nodiscard]] String to_snakecase() const;
     [[nodiscard]] String to_titlecase() const;
+    [[nodiscard]] String invert_case() const;
 
     [[nodiscard]] bool is_whitespace() const { return StringUtils::is_whitespace(*this); }
 
@@ -157,6 +158,8 @@ public:
     Vector<size_t> find_all(StringView needle) const;
     using SearchDirection = StringUtils::SearchDirection;
     [[nodiscard]] Optional<size_t> find_any_of(StringView needles, SearchDirection direction) const { return StringUtils::find_any_of(*this, needles, direction); }
+
+    [[nodiscard]] StringView find_last_split_view(char separator) const { return view().find_last_split_view(separator); }
 
     [[nodiscard]] String substring(size_t start, size_t length) const;
     [[nodiscard]] String substring(size_t start) const;
@@ -290,7 +293,7 @@ public:
         return { characters(), length() };
     }
 
-    [[nodiscard]] String replace(StringView needle, StringView replacement, bool all_occurrences = false) const { return StringUtils::replace(*this, needle, replacement, all_occurrences); }
+    [[nodiscard]] String replace(StringView needle, StringView replacement, ReplaceMode replace_mode) const { return StringUtils::replace(*this, needle, replacement, replace_mode); }
     [[nodiscard]] size_t count(StringView needle) const { return StringUtils::count(*this, needle); }
     [[nodiscard]] String reverse() const;
 
@@ -325,11 +328,6 @@ struct CaseInsensitiveStringTraits : public Traits<String> {
     static unsigned hash(String const& s) { return s.impl() ? s.impl()->case_insensitive_hash() : 0; }
     static bool equals(String const& a, String const& b) { return a.equals_ignoring_case(b); }
 };
-
-bool operator<(char const*, String const&);
-bool operator>=(char const*, String const&);
-bool operator>(char const*, String const&);
-bool operator<=(char const*, String const&);
 
 String escape_html_entities(StringView html);
 

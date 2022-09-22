@@ -22,14 +22,14 @@ class Point {
 public:
     Point() = default;
 
-    Point(T x, T y)
+    constexpr Point(T x, T y)
         : m_x(x)
         , m_y(y)
     {
     }
 
     template<typename U>
-    Point(U x, U y)
+    constexpr Point(U x, U y)
         : m_x(x)
         , m_y(y)
     {
@@ -246,13 +246,19 @@ public:
         return Point<U>(roundf(x()), roundf(y()));
     }
 
+    template<typename U>
+    requires FloatingPoint<T>
+    [[nodiscard]] Point<U> to_ceiled() const
+    {
+        return Point<U>(ceil(x()), ceil(y()));
+    }
+
     [[nodiscard]] String to_string() const;
 
 private:
     T m_x { 0 };
     T m_y { 0 };
 };
-
 using IntPoint = Point<int>;
 using FloatPoint = Point<float>;
 

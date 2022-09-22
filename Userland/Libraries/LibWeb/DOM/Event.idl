@@ -1,12 +1,13 @@
 #import <DOM/EventTarget.idl>
 
+[]
 interface Event {
 
     constructor(DOMString type, optional EventInit eventInitDict = {});
 
     readonly attribute DOMString type;
     readonly attribute EventTarget? target;
-    readonly attribute EventTarget? srcTarget;
+    readonly attribute EventTarget? srcElement;
     readonly attribute EventTarget? currentTarget;
     sequence<EventTarget> composedPath();
 

@@ -27,8 +27,8 @@ public:
     void set_tooltip(String const& tooltip)
     {
         m_label->set_text(Gfx::parse_ampersand_string(tooltip));
-        int tooltip_width = m_label->min_width() + 10;
-        int line_count = m_label->text().count("\n");
+        int tooltip_width = m_label->effective_min_size().width().as_int() + 10;
+        int line_count = m_label->text().count("\n"sv);
         int glyph_height = m_label->font().glyph_height();
         int tooltip_height = glyph_height * (1 + line_count) + ((glyph_height + 1) / 2) * line_count + 8;
 
@@ -43,6 +43,7 @@ private:
     TooltipWindow()
     {
         set_window_type(WindowType::Tooltip);
+        set_obey_widget_min_size(false);
         m_label = set_main_widget<Label>();
         m_label->set_background_role(Gfx::ColorRole::Tooltip);
         m_label->set_foreground_role(Gfx::ColorRole::TooltipText);
@@ -136,9 +137,9 @@ void Application::unregister_global_shortcut_action(Badge<Action>, Action& actio
     m_global_shortcut_actions.remove(action.alternate_shortcut());
 }
 
-Action* Application::action_for_key_event(KeyEvent const& event)
+Action* Application::action_for_shortcut(Shortcut const& shortcut) const
 {
-    auto it = m_global_shortcut_actions.find(Shortcut(event.modifiers(), (KeyCode)event.key()));
+    auto it = m_global_shortcut_actions.find(shortcut);
     if (it == m_global_shortcut_actions.end())
         return nullptr;
     return (*it).value;
@@ -146,6 +147,8 @@ Action* Application::action_for_key_event(KeyEvent const& event)
 
 void Application::show_tooltip(String tooltip, Widget const* tooltip_source_widget)
 {
+    if (!Desktop::the().system_effects().tooltips())
+        return;
     m_tooltip_source_widget = tooltip_source_widget;
     if (!m_tooltip_window) {
         m_tooltip_window = TooltipWindow::construct();
@@ -165,6 +168,8 @@ void Application::show_tooltip(String tooltip, Widget const* tooltip_source_widg
 
 void Application::show_tooltip_immediately(String tooltip, Widget const* tooltip_source_widget)
 {
+    if (!Desktop::the().system_effects().tooltips())
+        return;
     m_tooltip_source_widget = tooltip_source_widget;
     if (!m_tooltip_window) {
         m_tooltip_window = TooltipWindow::construct();
@@ -224,7 +229,7 @@ void Application::request_tooltip_show()
     int const margin = 30;
     Gfx::IntPoint adjusted_pos = ConnectionToWindowServer::the().get_global_cursor_position();
 
-    adjusted_pos.translate_by(0, 18);
+    adjusted_pos.translate_by(0, 14);
 
     if (adjusted_pos.x() + m_tooltip_window->width() >= desktop_rect.width() - margin) {
         adjusted_pos = adjusted_pos.translated(-m_tooltip_window->width(), 0);
@@ -290,6 +295,7 @@ void Application::set_drag_hovered_widget_impl(Widget* widget, Gfx::IntPoint con
         m_drag_hovered_widget->dispatch_event(enter_event, m_drag_hovered_widget->window());
         if (enter_event.is_accepted())
             set_pending_drop_widget(m_drag_hovered_widget);
+        ConnectionToWindowServer::the().async_set_accepts_drag(enter_event.is_accepted());
     }
 }
 
@@ -310,6 +316,10 @@ void Application::event(Core::Event& event)
             if (on_action_leave)
                 on_action_leave(action);
         }
+    }
+    if (event.type() == GUI::Event::ThemeChange) {
+        if (on_theme_change)
+            on_theme_change();
     }
     Object::event(event);
 }

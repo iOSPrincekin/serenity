@@ -61,7 +61,7 @@ static constexpr Gfx::CharacterBitmap s_submenu_arrow_bitmap {
     "   ###   "
     "   ##    "
     "   #     "
-    "         ",
+    "         "sv,
     9, 9
 };
 
@@ -106,6 +106,8 @@ void Menu::redraw()
 
 void Menu::redraw(MenuItem const& menu_item)
 {
+    if (!menu_window())
+        return;
     draw(menu_item);
     menu_window()->invalidate(menu_item.rect());
 }
@@ -178,7 +180,11 @@ void Menu::draw()
     m_theme_index_at_last_paint = MenuManager::the().theme_index();
 
     VERIFY(menu_window());
-    VERIFY(menu_window()->backing_store());
+
+    // When an application has an empty menu, we don't want to draw it
+    if (menu_window()->backing_store() == nullptr)
+        return;
+
     Gfx::Painter painter(*menu_window()->backing_store());
 
     Gfx::IntRect rect { {}, menu_window()->size() };
@@ -200,9 +206,9 @@ void Menu::draw()
         bool can_go_up = m_scroll_offset > 0;
         bool can_go_down = m_scroll_offset < m_max_scroll_offset;
         Gfx::IntRect up_indicator_rect { frame_thickness(), frame_thickness(), content_width(), item_height() };
-        painter.draw_text(up_indicator_rect, "\xE2\xAC\x86", Gfx::TextAlignment::Center, can_go_up ? palette.menu_base_text() : palette.color(ColorRole::DisabledText));
+        painter.draw_text(up_indicator_rect, "\xE2\xAC\x86"sv, Gfx::TextAlignment::Center, can_go_up ? palette.menu_base_text() : palette.color(ColorRole::DisabledText));
         Gfx::IntRect down_indicator_rect { frame_thickness(), menu_window()->height() - item_height() - frame_thickness(), content_width(), item_height() };
-        painter.draw_text(down_indicator_rect, "\xE2\xAC\x87", Gfx::TextAlignment::Center, can_go_down ? palette.menu_base_text() : palette.color(ColorRole::DisabledText));
+        painter.draw_text(down_indicator_rect, "\xE2\xAC\x87"sv, Gfx::TextAlignment::Center, can_go_down ? palette.menu_base_text() : palette.color(ColorRole::DisabledText));
     }
 
     int visible_item_count = this->visible_item_count();
@@ -477,6 +483,8 @@ void Menu::clear_hovered_item()
 
 void Menu::start_activation_animation(MenuItem& item)
 {
+    if (!WindowManager::the().system_effects().animate_menus())
+        return;
     VERIFY(menu_window());
     VERIFY(menu_window()->backing_store());
     auto window = Window::construct(*this, WindowType::Menu);
@@ -589,6 +597,27 @@ void Menu::redraw_if_theme_changed()
         redraw();
 }
 
+void Menu::open_button_menu(Gfx::IntPoint const& position, Gfx::IntRect const& button_rect)
+{
+    if (is_empty())
+        return;
+
+    auto& screen = Screen::closest_to_location(position);
+    auto& window = ensure_menu_window(position);
+    Gfx::IntPoint adjusted_pos = position;
+
+    if (window.rect().right() > screen.width())
+        adjusted_pos = adjusted_pos.translated(-(window.rect().right() - screen.width()) - 1, 0);
+
+    if (window.rect().bottom() > screen.height())
+        adjusted_pos = adjusted_pos.translated(0, -window.rect().height() - button_rect.height() + 1);
+
+    window.set_rect(adjusted_pos.x(), adjusted_pos.y(), window.rect().width(), window.rect().height());
+    window.move_to(adjusted_pos);
+    MenuManager::the().open_menu(*this, true);
+    WindowManager::the().did_popup_a_menu({});
+}
+
 void Menu::popup(Gfx::IntPoint const& position)
 {
     do_popup(position, true);
@@ -605,12 +634,17 @@ void Menu::do_popup(Gfx::IntPoint const& position, bool make_input, bool as_subm
     auto& window = ensure_menu_window(position);
     redraw_if_theme_changed();
 
-    int const margin = 30;
-    Gfx::IntPoint adjusted_pos = position;
+    constexpr auto margin = 10;
+    Gfx::IntPoint adjusted_pos = m_unadjusted_position = position;
 
     if (adjusted_pos.x() + window.width() > screen.rect().right() - margin) {
         // Vertically translate the window by its full width, i.e. flip it at its vertical axis.
         adjusted_pos = adjusted_pos.translated(-window.width(), 0);
+        // If the window is a submenu, translate to the opposite side of its immediate ancestor
+        if (auto* ancestor = MenuManager::the().closest_open_ancestor_of(*this); ancestor && as_submenu) {
+            constexpr auto offset = 1 + frame_thickness() * 2;
+            adjusted_pos = adjusted_pos.translated(-ancestor->menu_window()->width() + offset, 0);
+        }
     } else {
         // Even if no adjustment needs to be done, move the menu to the right by 1px so it's not
         // underneath the cursor and can be closed by another click at the same position.

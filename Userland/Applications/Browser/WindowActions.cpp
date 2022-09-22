@@ -66,7 +66,7 @@ WindowActions::WindowActions(GUI::Window& window)
     m_tab_actions.last().set_status_tip("Switch to last tab");
 
     m_about_action = GUI::Action::create(
-        "&About Browser", GUI::Icon::default_icon("app-browser").bitmap_for_size(16), [this](const GUI::Action&) {
+        "&About Browser", GUI::Icon::default_icon("app-browser"sv).bitmap_for_size(16), [this](const GUI::Action&) {
             if (on_about)
                 on_about();
         },
@@ -81,6 +81,15 @@ WindowActions::WindowActions(GUI::Window& window)
         },
         &window);
     m_show_bookmarks_bar_action->set_status_tip("Show/hide the bookmarks bar");
+
+    m_vertical_tabs_action = GUI::Action::create_checkable(
+        "&Vertical Tabs", { Mod_Ctrl, Key_Comma },
+        [this](auto& action) {
+            if (on_vertical_tabs)
+                on_vertical_tabs(action);
+        },
+        &window);
+    m_vertical_tabs_action->set_status_tip("Enable/Disable vertical tabs");
 }
 
 }

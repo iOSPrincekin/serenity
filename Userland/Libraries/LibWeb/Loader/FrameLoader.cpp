@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Andreas Kling <kling@serenityos.org>
+ * Copyright (c) 2020-2022, Andreas Kling <kling@serenityos.org>
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
@@ -17,22 +17,29 @@
 #include <LibWeb/DOM/Text.h>
 #include <LibWeb/HTML/BrowsingContext.h>
 #include <LibWeb/HTML/HTMLIFrameElement.h>
+#include <LibWeb/HTML/NavigationParams.h>
 #include <LibWeb/HTML/Parser/HTMLParser.h>
-#include <LibWeb/ImageDecoding.h>
 #include <LibWeb/Loader/FrameLoader.h>
 #include <LibWeb/Loader/ResourceLoader.h>
 #include <LibWeb/Page/Page.h>
+#include <LibWeb/Platform/ImageCodecPlugin.h>
 #include <LibWeb/XML/XMLDocumentBuilder.h>
 
 namespace Web {
 
+static String s_default_favicon_path = "/res/icons/16x16/app-browser.png";
 static RefPtr<Gfx::Bitmap> s_default_favicon_bitmap;
+
+void FrameLoader::set_default_favicon_path(String path)
+{
+    s_default_favicon_path = move(path);
+}
 
 FrameLoader::FrameLoader(HTML::BrowsingContext& browsing_context)
     : m_browsing_context(browsing_context)
 {
     if (!s_default_favicon_bitmap) {
-        s_default_favicon_bitmap = Gfx::Bitmap::try_load_from_file("/res/icons/16x16/app-browser.png").release_value_but_fixme_should_propagate_errors();
+        s_default_favicon_bitmap = Gfx::Bitmap::try_load_from_file(s_default_favicon_path).release_value_but_fixme_should_propagate_errors();
         VERIFY(s_default_favicon_bitmap);
     }
 }
@@ -75,7 +82,7 @@ static bool build_text_document(DOM::Document& document, ByteBuffer const& data)
 
 static bool build_image_document(DOM::Document& document, ByteBuffer const& data)
 {
-    auto image = ImageDecoding::Decoder::the().decode_image(data);
+    auto image = Platform::ImageCodecPlugin::the().decode_image(data);
     if (!image.has_value() || image->frames.is_empty())
         return false;
     auto const& frame = image->frames[0];
@@ -92,8 +99,8 @@ static bool build_image_document(DOM::Document& document, ByteBuffer const& data
     head_element->append_child(title_element);
 
     auto basename = LexicalPath::basename(document.url().path());
-    auto title_text = adopt_ref(*new DOM::Text(document, String::formatted("{} [{}x{}]", basename, bitmap->width(), bitmap->height())));
-    title_element->append_child(title_text);
+    auto title_text = document.heap().allocate<DOM::Text>(document.realm(), document, String::formatted("{} [{}x{}]", basename, bitmap->width(), bitmap->height()));
+    title_element->append_child(*title_text);
 
     auto body_element = document.create_element("body").release_value();
     html_element->append_child(body_element);
@@ -136,9 +143,9 @@ bool FrameLoader::parse_document(DOM::Document& document, ByteBuffer const& data
         parser->run(document.url());
         return true;
     }
-    if (mime_type.ends_with("+xml") || mime_type.is_one_of("text/xml", "application/xml"))
+    if (mime_type.ends_with("+xml"sv) || mime_type.is_one_of("text/xml", "application/xml"))
         return build_xml_document(document, data);
-    if (mime_type.starts_with("image/"))
+    if (mime_type.starts_with("image/"sv))
         return build_image_document(document, data);
     if (mime_type == "text/plain" || mime_type == "application/json")
         return build_text_document(document, data);
@@ -208,7 +215,7 @@ bool FrameLoader::load(LoadRequest& request, Type type)
                 if (data.is_empty())
                     return;
                 RefPtr<Gfx::Bitmap> favicon_bitmap;
-                auto decoded_image = ImageDecoding::Decoder::the().decode_image(data);
+                auto decoded_image = Platform::ImageCodecPlugin::the().decode_image(data);
                 if (!decoded_image.has_value() || decoded_image->frames.is_empty()) {
                     dbgln("Could not decode favicon {}", favicon_url);
                 } else {
@@ -247,10 +254,35 @@ bool FrameLoader::load(const AK::URL& url, Type type)
 
 void FrameLoader::load_html(StringView html, const AK::URL& url)
 {
-    auto document = DOM::Document::create(url);
+    auto response = make<Fetch::Infrastructure::Response>();
+    response->url_list().append(url);
+    HTML::NavigationParams navigation_params {
+        .id = {},
+        .request = nullptr,
+        .response = move(response),
+        .origin = HTML::Origin {},
+        .policy_container = HTML::PolicyContainer {},
+        .final_sandboxing_flag_set = HTML::SandboxingFlagSet {},
+        .cross_origin_opener_policy = HTML::CrossOriginOpenerPolicy {},
+        .coop_enforcement_result = HTML::CrossOriginOpenerPolicyEnforcementResult {},
+        .reserved_environment = {},
+        .browsing_context = browsing_context(),
+    };
+    auto document = DOM::Document::create_and_initialize(
+        DOM::Document::Type::HTML,
+        "text/html",
+        move(navigation_params));
+
     auto parser = HTML::HTMLParser::create(document, html, "utf-8");
     parser->run(url);
-    browsing_context().set_active_document(&parser->document());
+    browsing_context().set_active_document(parser->document());
+}
+
+static String s_error_page_url = "file:///res/html/error.html";
+
+void FrameLoader::set_error_page_url(String error_page_url)
+{
+    s_error_page_url = error_page_url;
 }
 
 // FIXME: Use an actual templating engine (our own one when it's built, preferably
@@ -258,9 +290,8 @@ void FrameLoader::load_html(StringView html, const AK::URL& url)
 
 void FrameLoader::load_error_page(const AK::URL& failed_url, String const& error)
 {
-    auto error_page_url = "file:///res/html/error.html";
     ResourceLoader::the().load(
-        error_page_url,
+        s_error_page_url,
         [this, failed_url, error](auto data, auto&, auto) {
             VERIFY(!data.is_null());
             StringBuilder builder;
@@ -281,7 +312,7 @@ void FrameLoader::load_favicon(RefPtr<Gfx::Bitmap> bitmap)
     if (auto* page = browsing_context().page()) {
         if (bitmap)
             page->client().page_did_change_favicon(*bitmap);
-        else
+        else if (s_default_favicon_bitmap)
             page->client().page_did_change_favicon(*s_default_favicon_bitmap);
     }
 }
@@ -336,12 +367,39 @@ void FrameLoader::resource_did_load()
         dbgln_if(RESOURCE_DEBUG, "This content has MIME type '{}', encoding unknown", resource()->mime_type());
     }
 
-    auto document = DOM::Document::create();
+    auto final_sandboxing_flag_set = HTML::SandboxingFlagSet {};
+
+    // (Part of https://html.spec.whatwg.org/#navigating-across-documents)
+    // 3. Let responseOrigin be the result of determining the origin given browsingContext, resource's url, finalSandboxFlags, and incumbentNavigationOrigin.
+    // FIXME: Pass incumbentNavigationOrigin
+    auto response_origin = HTML::determine_the_origin(browsing_context(), url, final_sandboxing_flag_set, {});
+
+    auto response = make<Fetch::Infrastructure::Response>();
+    response->url_list().append(url);
+    HTML::NavigationParams navigation_params {
+        .id = {},
+        .request = nullptr,
+        .response = move(response),
+        .origin = move(response_origin),
+        .policy_container = HTML::PolicyContainer {},
+        .final_sandboxing_flag_set = move(final_sandboxing_flag_set),
+        .cross_origin_opener_policy = HTML::CrossOriginOpenerPolicy {},
+        .coop_enforcement_result = HTML::CrossOriginOpenerPolicyEnforcementResult {},
+        .reserved_environment = {},
+        .browsing_context = browsing_context(),
+    };
+    auto document = DOM::Document::create_and_initialize(
+        DOM::Document::Type::HTML,
+        "text/html",
+        move(navigation_params));
+
     document->set_url(url);
     document->set_encoding(resource()->encoding());
     document->set_content_type(resource()->mime_type());
 
     browsing_context().set_active_document(document);
+    if (auto* page = browsing_context().page())
+        page->client().page_did_create_main_document();
 
     if (!parse_document(*document, resource()->encoded_data())) {
         load_error_page(url, "Failed to parse content.");

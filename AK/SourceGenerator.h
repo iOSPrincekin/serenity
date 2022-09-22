@@ -37,7 +37,15 @@ public:
 
     SourceGenerator fork() { return SourceGenerator { m_builder, m_mapping, m_opening, m_closing }; }
 
-    void set(StringView key, String value) { m_mapping.set(key, move(value)); }
+    void set(StringView key, String value)
+    {
+        if (key.contains(m_opening) || key.contains(m_closing)) {
+            warnln("SourceGenerator keys cannot contain the opening/closing delimiters `{}` and `{}`. (Keys are only wrapped in these when using them, not when setting them.)", m_opening, m_closing);
+            VERIFY_NOT_REACHED();
+        }
+        m_mapping.set(key, move(value));
+    }
+
     String get(StringView key) const
     {
         auto result = m_mapping.get(key);
@@ -81,6 +89,30 @@ public:
     {
         append(pattern);
         m_builder.append('\n');
+    }
+
+    template<size_t N>
+    String get(char const (&key)[N])
+    {
+        return get(StringView { key, N - 1 });
+    }
+
+    template<size_t N>
+    void set(char const (&key)[N], String value)
+    {
+        set(StringView { key, N - 1 }, value);
+    }
+
+    template<size_t N>
+    void append(char const (&pattern)[N])
+    {
+        append(StringView { pattern, N - 1 });
+    }
+
+    template<size_t N>
+    void appendln(char const (&pattern)[N])
+    {
+        appendln(StringView { pattern, N - 1 });
     }
 
 private:

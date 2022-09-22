@@ -22,19 +22,19 @@
 
 namespace Kernel {
 
-ErrorOr<NonnullRefPtr<OpenFileDescription>> OpenFileDescription::try_create(Custody& custody)
+ErrorOr<NonnullLockRefPtr<OpenFileDescription>> OpenFileDescription::try_create(Custody& custody)
 {
     auto inode_file = TRY(InodeFile::create(custody.inode()));
-    auto description = TRY(adopt_nonnull_ref_or_enomem(new (nothrow) OpenFileDescription(move(inode_file))));
+    auto description = TRY(adopt_nonnull_lock_ref_or_enomem(new (nothrow) OpenFileDescription(move(inode_file))));
 
-    description->m_custody = custody;
+    description->m_state.with([&](auto& state) { state.custody = custody; });
     TRY(description->attach());
     return description;
 }
 
-ErrorOr<NonnullRefPtr<OpenFileDescription>> OpenFileDescription::try_create(File& file)
+ErrorOr<NonnullLockRefPtr<OpenFileDescription>> OpenFileDescription::try_create(File& file)
 {
-    auto description = TRY(adopt_nonnull_ref_or_enomem(new (nothrow) OpenFileDescription(file)));
+    auto description = TRY(adopt_nonnull_lock_ref_or_enomem(new (nothrow) OpenFileDescription(file)));
     TRY(description->attach());
     return description;
 }
@@ -72,7 +72,7 @@ ErrorOr<void> OpenFileDescription::attach()
 
 void OpenFileDescription::set_original_custody(Badge<VirtualFileSystem>, Custody& custody)
 {
-    m_custody = custody;
+    m_state.with([&](auto& state) { state.custody = custody; });
 }
 
 Thread::FileBlocker::BlockFlags OpenFileDescription::should_unblock(Thread::FileBlocker::BlockFlags block_flags) const
@@ -355,15 +355,15 @@ ErrorOr<void> OpenFileDescription::close()
 
 ErrorOr<NonnullOwnPtr<KString>> OpenFileDescription::original_absolute_path() const
 {
-    if (!m_custody)
-        return ENOENT;
-    return m_custody->try_serialize_absolute_path();
+    if (auto custody = this->custody())
+        return custody->try_serialize_absolute_path();
+    return ENOENT;
 }
 
 ErrorOr<NonnullOwnPtr<KString>> OpenFileDescription::pseudo_path() const
 {
-    if (m_custody)
-        return m_custody->try_serialize_absolute_path();
+    if (auto custody = this->custody())
+        return custody->try_serialize_absolute_path();
     return m_file->pseudo_path(*this);
 }
 
@@ -374,9 +374,9 @@ InodeMetadata OpenFileDescription::metadata() const
     return {};
 }
 
-ErrorOr<Memory::Region*> OpenFileDescription::mmap(Process& process, Memory::VirtualRange const& range, u64 offset, int prot, bool shared)
+ErrorOr<NonnullLockRefPtr<Memory::VMObject>> OpenFileDescription::vmobject_for_mmap(Process& process, Memory::VirtualRange const& range, u64& offset, bool shared)
 {
-    return m_file->mmap(process, *this, range, offset, prot, shared);
+    return m_file->vmobject_for_mmap(process, range, offset, shared);
 }
 
 ErrorOr<void> OpenFileDescription::truncate(u64 length)
@@ -430,14 +430,14 @@ void OpenFileDescription::set_file_flags(u32 flags)
     });
 }
 
-ErrorOr<void> OpenFileDescription::chmod(mode_t mode)
+ErrorOr<void> OpenFileDescription::chmod(Credentials const& credentials, mode_t mode)
 {
-    return m_file->chmod(*this, mode);
+    return m_file->chmod(credentials, *this, mode);
 }
 
-ErrorOr<void> OpenFileDescription::chown(UserID uid, GroupID gid)
+ErrorOr<void> OpenFileDescription::chown(Credentials const& credentials, UserID uid, GroupID gid)
 {
-    return m_file->chown(*this, uid, gid);
+    return m_file->chown(credentials, *this, uid, gid);
 }
 
 FileBlockerSet& OpenFileDescription::blocker_set()
@@ -445,12 +445,12 @@ FileBlockerSet& OpenFileDescription::blocker_set()
     return m_file->blocker_set();
 }
 
-ErrorOr<void> OpenFileDescription::apply_flock(Process const& process, Userspace<flock const*> lock)
+ErrorOr<void> OpenFileDescription::apply_flock(Process const& process, Userspace<flock const*> lock, ShouldBlock should_block)
 {
     if (!m_inode)
         return EBADF;
 
-    return m_inode->apply_flock(process, *this, lock);
+    return m_inode->apply_flock(process, *this, lock, should_block);
 }
 
 ErrorOr<void> OpenFileDescription::get_flock(Userspace<flock*> lock) const
@@ -536,6 +536,16 @@ OwnPtr<OpenFileDescriptionData>& OpenFileDescription::data()
 off_t OpenFileDescription::offset() const
 {
     return m_state.with([](auto& state) { return state.current_offset; });
+}
+
+RefPtr<Custody const> OpenFileDescription::custody() const
+{
+    return m_state.with([](auto& state) { return state.custody; });
+}
+
+RefPtr<Custody> OpenFileDescription::custody()
+{
+    return m_state.with([](auto& state) { return state.custody; });
 }
 
 }

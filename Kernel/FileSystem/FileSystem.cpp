@@ -7,7 +7,7 @@
 #include <AK/HashMap.h>
 #include <AK/Singleton.h>
 #include <AK/StringView.h>
-#include <Kernel/Arch/x86/InterruptDisabler.h>
+#include <Kernel/Arch/InterruptDisabler.h>
 #include <Kernel/FileSystem/FileSystem.h>
 #include <Kernel/FileSystem/Inode.h>
 #include <Kernel/Memory/MemoryManager.h>
@@ -53,7 +53,7 @@ void FileSystem::sync()
 {
     Inode::sync_all();
 
-    NonnullRefPtrVector<FileSystem, 32> file_systems;
+    NonnullLockRefPtrVector<FileSystem, 32> file_systems;
     {
         InterruptDisabler disabler;
         for (auto& it : all_file_systems())

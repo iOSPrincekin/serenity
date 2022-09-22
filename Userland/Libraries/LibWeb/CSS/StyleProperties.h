@@ -48,6 +48,7 @@ public:
     Color color_or_fallback(CSS::PropertyID, Layout::NodeWithStyle const&, Color fallback) const;
     Optional<CSS::TextAlign> text_align() const;
     Optional<CSS::TextJustify> text_justify() const;
+    CSS::Clip clip() const;
     CSS::Display display() const;
     Optional<CSS::Float> float_() const;
     Optional<CSS::Clear> clear() const;
@@ -67,6 +68,9 @@ public:
     float flex_shrink() const;
     int order() const;
     Optional<CSS::AlignItems> align_items() const;
+    Optional<CSS::AlignSelf> align_self() const;
+    Optional<CSS::Appearance> appearance() const;
+    CSS::BackdropFilter backdrop_filter() const;
     float opacity() const;
     Optional<CSS::Visibility> visibility() const;
     Optional<CSS::ImageRendering> image_rendering() const;
@@ -78,6 +82,12 @@ public:
     Optional<CSS::PointerEvents> pointer_events() const;
     Variant<CSS::VerticalAlign, CSS::LengthPercentage> vertical_align() const;
     Optional<CSS::FontVariant> font_variant() const;
+    Vector<CSS::GridTrackSize> grid_template_columns() const;
+    Vector<CSS::GridTrackSize> grid_template_rows() const;
+    CSS::GridTrackPlacement grid_column_end() const;
+    CSS::GridTrackPlacement grid_column_start() const;
+    CSS::GridTrackPlacement grid_row_end() const;
+    CSS::GridTrackPlacement grid_row_start() const;
 
     Vector<CSS::Transformation> transformations() const;
     CSS::TransformOrigin transform_origin() const;

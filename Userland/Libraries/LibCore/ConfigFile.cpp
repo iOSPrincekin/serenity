@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2018-2020, Andreas Kling <kling@serenityos.org>
- * Copyright (c) 2021, Jakob-Niklas See <git@nwex.de>
+ * Copyright (c) 2021, networkException <networkexception@serenityos.org>
  * Copyright (c) 2022, Sam Atkins <atkinssj@serenityos.org>
  *
  * SPDX-License-Identifier: BSD-2-Clause
@@ -174,11 +174,6 @@ void ConfigFile::write_num_entry(String const& group, String const& key, int val
 void ConfigFile::write_bool_entry(String const& group, String const& key, bool value)
 {
     write_entry(group, key, value ? "true" : "false");
-}
-
-void ConfigFile::write_color_entry(String const& group, String const& key, Color value)
-{
-    write_entry(group, key, String::formatted("{},{},{},{}", value.red(), value.green(), value.blue(), value.alpha()));
 }
 
 ErrorOr<void> ConfigFile::sync()

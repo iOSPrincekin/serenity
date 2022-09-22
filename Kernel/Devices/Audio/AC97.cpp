@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/Format.h>
+#include <Kernel/Arch/Delay.h>
 #include <Kernel/Devices/Audio/AC97.h>
 #include <Kernel/Devices/DeviceManagement.h>
 #include <Kernel/Memory/AnonymousVMObject.h>
@@ -19,9 +21,9 @@ static constexpr u16 pcm_fixed_sample_rate = 48000;
 static constexpr u16 pcm_sample_rate_minimum = 8000;
 static constexpr u16 pcm_sample_rate_maximum = 48000;
 
-UNMAP_AFTER_INIT ErrorOr<NonnullRefPtr<AC97>> AC97::try_create(PCI::DeviceIdentifier const& pci_device_identifier)
+UNMAP_AFTER_INIT ErrorOr<NonnullLockRefPtr<AC97>> AC97::try_create(PCI::DeviceIdentifier const& pci_device_identifier)
 {
-    auto ac97 = adopt_nonnull_ref_or_enomem(new (nothrow) AC97(pci_device_identifier));
+    auto ac97 = adopt_nonnull_lock_ref_or_enomem(new (nothrow) AC97(pci_device_identifier));
     if (!ac97.is_error())
         TRY(ac97.value()->initialize());
     return ac97;
@@ -165,7 +167,7 @@ void AC97::set_pcm_output_volume(u8 left_channel, u8 right_channel, Muted mute)
     m_io_mixer_base.offset(NativeAudioMixerRegister::SetPCMOutputVolume).out(volume_value);
 }
 
-RefPtr<AudioChannel> AC97::audio_channel(u32 index) const
+LockRefPtr<AudioChannel> AC97::audio_channel(u32 index) const
 {
     if (index == 0)
         return m_audio_channel;
@@ -206,12 +208,12 @@ ErrorOr<size_t> AC97::write(size_t channel_index, UserOrKernelBuffer const& data
         m_buffer_descriptor_list = TRY(MM.allocate_dma_buffer_pages(buffer_descriptor_list_size, "AC97 Buffer Descriptor List"sv, Memory::Region::Access::Write));
     }
 
-    auto remaining = length;
+    Checked<size_t> remaining = length;
     size_t offset = 0;
-    while (remaining > 0) {
-        TRY(write_single_buffer(data, offset, min(remaining, PAGE_SIZE)));
+    while (remaining > static_cast<size_t>(0)) {
+        TRY(write_single_buffer(data, offset, min(remaining.value(), PAGE_SIZE)));
         offset += PAGE_SIZE;
-        remaining -= PAGE_SIZE;
+        remaining.saturating_sub(PAGE_SIZE);
     }
 
     return length;
@@ -274,8 +276,12 @@ ErrorOr<void> AC97::write_single_buffer(UserOrKernelBuffer const& data, size_t o
 void AC97::AC97Channel::handle_dma_stopped()
 {
     dbgln_if(AC97_DEBUG, "AC97 @ {}: channel {}: DMA engine has stopped", m_device.pci_address(), name());
-    VERIFY(m_dma_running);
-    m_dma_running = false;
+    m_dma_running.with([this](auto& dma_running) {
+        // NOTE: QEMU might send spurious interrupts while we're not running, so we don't want to panic here.
+        if (!dma_running)
+            dbgln("AC97 @ {}: received DMA interrupt while it wasn't running", m_device.pci_address());
+        dma_running = false;
+    });
 }
 
 void AC97::AC97Channel::reset()
@@ -286,9 +292,11 @@ void AC97::AC97Channel::reset()
     control_register.out(AudioControlRegisterFlag::ResetRegisters);
 
     while ((control_register.in<u8>() & AudioControlRegisterFlag::ResetRegisters) > 0)
-        IO::delay(50);
+        microseconds_delay(50);
 
-    m_dma_running = false;
+    m_dma_running.with([](auto& dma_running) {
+        dma_running = false;
+    });
 }
 
 void AC97::AC97Channel::set_last_valid_index(u32 buffer_address, u8 last_valid_index)
@@ -310,7 +318,9 @@ void AC97::AC97Channel::start_dma()
     control |= AudioControlRegisterFlag::InterruptOnCompletionEnable;
     control_register.out(control);
 
-    m_dma_running = true;
+    m_dma_running.with([](auto& dma_running) {
+        dma_running = true;
+    });
 }
 
 }

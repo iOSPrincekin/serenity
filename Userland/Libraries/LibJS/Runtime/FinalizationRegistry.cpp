@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Idan Horowitz <idan.horowitz@serenityos.org>
+ * Copyright (c) 2021-2022, Idan Horowitz <idan.horowitz@serenityos.org>
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
@@ -12,18 +12,18 @@ namespace JS {
 FinalizationRegistry::FinalizationRegistry(Realm& realm, JobCallback cleanup_callback, Object& prototype)
     : Object(prototype)
     , WeakContainer(heap())
-    , m_realm(make_handle(realm))
+    , m_realm(realm)
     , m_cleanup_callback(move(cleanup_callback))
 {
 }
 
-void FinalizationRegistry::add_finalization_record(Cell& target, Value held_value, Object* unregister_token)
+void FinalizationRegistry::add_finalization_record(Cell& target, Value held_value, Cell* unregister_token)
 {
     VERIFY(!held_value.is_empty());
     m_records.append({ &target, held_value, unregister_token });
 }
 
-bool FinalizationRegistry::remove_by_token(Object& unregister_token)
+bool FinalizationRegistry::remove_by_token(Cell& unregister_token)
 {
     auto removed = false;
     for (auto it = m_records.begin(); it != m_records.end(); ++it) {
@@ -53,7 +53,6 @@ void FinalizationRegistry::remove_dead_cells(Badge<Heap>)
 ThrowCompletionOr<void> FinalizationRegistry::cleanup(Optional<JobCallback> callback)
 {
     auto& vm = this->vm();
-    auto& global_object = this->global_object();
 
     // 1. Assert: finalizationRegistry has [[Cells]] and [[CleanupCallback]] internal slots.
     // Note: Ensured by type.
@@ -73,7 +72,7 @@ ThrowCompletionOr<void> FinalizationRegistry::cleanup(Optional<JobCallback> call
         it.remove(m_records);
 
         // c. Perform ? HostCallJobCallback(callback, undefined, « cell.[[HeldValue]] »).
-        TRY(vm.host_call_job_callback(global_object, cleanup_callback, js_undefined(), move(arguments)));
+        TRY(vm.host_call_job_callback(cleanup_callback, js_undefined(), move(arguments)));
     }
 
     // 4. Return unused.
@@ -83,6 +82,7 @@ ThrowCompletionOr<void> FinalizationRegistry::cleanup(Optional<JobCallback> call
 void FinalizationRegistry::visit_edges(Cell::Visitor& visitor)
 {
     Base::visit_edges(visitor);
+    visitor.visit(m_realm.ptr());
     for (auto& record : m_records) {
         visitor.visit(record.held_value);
         visitor.visit(record.unregister_token);

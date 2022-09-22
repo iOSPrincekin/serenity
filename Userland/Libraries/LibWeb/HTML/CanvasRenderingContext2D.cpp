@@ -6,40 +6,57 @@
  */
 
 #include <AK/Debug.h>
-#include <AK/ExtraMathConstants.h>
 #include <AK/OwnPtr.h>
 #include <LibGfx/Painter.h>
 #include <LibGfx/Quad.h>
 #include <LibGfx/Rect.h>
-#include <LibWeb/Bindings/CanvasRenderingContext2DWrapper.h>
-#include <LibWeb/Bindings/WindowObject.h>
 #include <LibWeb/DOM/ExceptionOr.h>
 #include <LibWeb/HTML/CanvasRenderingContext2D.h>
 #include <LibWeb/HTML/HTMLCanvasElement.h>
 #include <LibWeb/HTML/HTMLImageElement.h>
 #include <LibWeb/HTML/ImageData.h>
+#include <LibWeb/HTML/Path2D.h>
 #include <LibWeb/HTML/TextMetrics.h>
 #include <LibWeb/HTML/Window.h>
 #include <LibWeb/Layout/TextNode.h>
+#include <LibWeb/Platform/FontPlugin.h>
 
 namespace Web::HTML {
 
-CanvasRenderingContext2D::CanvasRenderingContext2D(HTMLCanvasElement& element)
-    : m_element(element)
+JS::NonnullGCPtr<CanvasRenderingContext2D> CanvasRenderingContext2D::create(HTML::Window& window, HTMLCanvasElement& element)
 {
+    return *window.heap().allocate<CanvasRenderingContext2D>(window.realm(), window, element);
+}
+
+CanvasRenderingContext2D::CanvasRenderingContext2D(HTML::Window& window, HTMLCanvasElement& element)
+    : PlatformObject(window.realm())
+    , CanvasPath(static_cast<Bindings::PlatformObject&>(*this))
+    , m_element(element)
+{
+    set_prototype(&window.cached_web_prototype("CanvasRenderingContext2D"));
 }
 
 CanvasRenderingContext2D::~CanvasRenderingContext2D() = default;
 
-void CanvasRenderingContext2D::set_fill_style(String style)
+void CanvasRenderingContext2D::visit_edges(Cell::Visitor& visitor)
 {
-    // FIXME: 2. If the given value is a CanvasPattern object that is marked as not origin-clean, then set this's origin-clean flag to false.
-    m_drawing_state.fill_style = Gfx::Color::from_string(style).value_or(Color::Black);
+    Base::visit_edges(visitor);
+    visitor.visit(m_element.ptr());
 }
 
-String CanvasRenderingContext2D::fill_style() const
+HTMLCanvasElement& CanvasRenderingContext2D::canvas_element()
 {
-    return m_drawing_state.fill_style.to_string();
+    return *m_element;
+}
+
+HTMLCanvasElement const& CanvasRenderingContext2D::canvas_element() const
+{
+    return *m_element;
+}
+
+JS::NonnullGCPtr<HTMLCanvasElement> CanvasRenderingContext2D::canvas_for_binding() const
+{
+    return *m_element;
 }
 
 void CanvasRenderingContext2D::fill_rect(float x, float y, float width, float height)
@@ -48,8 +65,10 @@ void CanvasRenderingContext2D::fill_rect(float x, float y, float width, float he
     if (!painter)
         return;
 
-    auto rect = m_drawing_state.transform.map(Gfx::FloatRect(x, y, width, height));
-    painter->fill_rect(enclosing_int_rect(rect), m_drawing_state.fill_style);
+    auto& drawing_state = this->drawing_state();
+
+    auto rect = drawing_state.transform.map(Gfx::FloatRect(x, y, width, height));
+    painter->fill_rect(enclosing_int_rect(rect), drawing_state.fill_style);
     did_draw(rect);
 }
 
@@ -59,20 +78,9 @@ void CanvasRenderingContext2D::clear_rect(float x, float y, float width, float h
     if (!painter)
         return;
 
-    auto rect = m_drawing_state.transform.map(Gfx::FloatRect(x, y, width, height));
+    auto rect = drawing_state().transform.map(Gfx::FloatRect(x, y, width, height));
     painter->clear_rect(enclosing_int_rect(rect), Color());
     did_draw(rect);
-}
-
-void CanvasRenderingContext2D::set_stroke_style(String style)
-{
-    // FIXME: 2. If the given value is a CanvasPattern object that is marked as not origin-clean, then set this's origin-clean flag to false.
-    m_drawing_state.stroke_style = Gfx::Color::from_string(style).value_or(Color::Black);
-}
-
-String CanvasRenderingContext2D::stroke_style() const
-{
-    return m_drawing_state.stroke_style.to_string();
 }
 
 void CanvasRenderingContext2D::stroke_rect(float x, float y, float width, float height)
@@ -81,60 +89,25 @@ void CanvasRenderingContext2D::stroke_rect(float x, float y, float width, float 
     if (!painter)
         return;
 
-    auto rect = m_drawing_state.transform.map(Gfx::FloatRect(x, y, width, height));
+    auto& drawing_state = this->drawing_state();
 
-    auto top_left = m_drawing_state.transform.map(Gfx::FloatPoint(x, y)).to_type<int>();
-    auto top_right = m_drawing_state.transform.map(Gfx::FloatPoint(x + width - 1, y)).to_type<int>();
-    auto bottom_left = m_drawing_state.transform.map(Gfx::FloatPoint(x, y + height - 1)).to_type<int>();
-    auto bottom_right = m_drawing_state.transform.map(Gfx::FloatPoint(x + width - 1, y + height - 1)).to_type<int>();
+    auto rect = drawing_state.transform.map(Gfx::FloatRect(x, y, width, height));
 
-    painter->draw_line(top_left, top_right, m_drawing_state.stroke_style, m_drawing_state.line_width);
-    painter->draw_line(top_right, bottom_right, m_drawing_state.stroke_style, m_drawing_state.line_width);
-    painter->draw_line(bottom_right, bottom_left, m_drawing_state.stroke_style, m_drawing_state.line_width);
-    painter->draw_line(bottom_left, top_left, m_drawing_state.stroke_style, m_drawing_state.line_width);
+    auto top_left = drawing_state.transform.map(Gfx::FloatPoint(x, y)).to_type<int>();
+    auto top_right = drawing_state.transform.map(Gfx::FloatPoint(x + width - 1, y)).to_type<int>();
+    auto bottom_left = drawing_state.transform.map(Gfx::FloatPoint(x, y + height - 1)).to_type<int>();
+    auto bottom_right = drawing_state.transform.map(Gfx::FloatPoint(x + width - 1, y + height - 1)).to_type<int>();
+
+    painter->draw_line(top_left, top_right, drawing_state.stroke_style, drawing_state.line_width);
+    painter->draw_line(top_right, bottom_right, drawing_state.stroke_style, drawing_state.line_width);
+    painter->draw_line(bottom_right, bottom_left, drawing_state.stroke_style, drawing_state.line_width);
+    painter->draw_line(bottom_left, top_left, drawing_state.stroke_style, drawing_state.line_width);
 
     did_draw(rect);
 }
 
-static void default_source_size(CanvasImageSource const& image, float& source_width, float& source_height)
-{
-    image.visit([&source_width, &source_height](auto const& source) {
-        if (source->bitmap()) {
-            source_width = source->bitmap()->width();
-            source_height = source->bitmap()->height();
-        } else {
-            source_width = source->width();
-            source_height = source->height();
-        }
-    });
-}
-
-// https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-drawimage
-DOM::ExceptionOr<void> CanvasRenderingContext2D::draw_image(CanvasImageSource const& image, float destination_x, float destination_y)
-{
-    // If not specified, the dw and dh arguments must default to the values of sw and sh, interpreted such that one CSS pixel in the image is treated as one unit in the output bitmap's coordinate space.
-    // If the sx, sy, sw, and sh arguments are omitted, then they must default to 0, 0, the image's intrinsic width in image pixels, and the image's intrinsic height in image pixels, respectively.
-    // If the image has no intrinsic dimensions, then the concrete object size must be used instead, as determined using the CSS "Concrete Object Size Resolution" algorithm, with the specified size having
-    // neither a definite width nor height, nor any additional constraints, the object's intrinsic properties being those of the image argument, and the default object size being the size of the output bitmap.
-    float source_width;
-    float source_height;
-    default_source_size(image, source_width, source_height);
-    return draw_image(image, 0, 0, source_width, source_height, destination_x, destination_y, source_width, source_height);
-}
-
-DOM::ExceptionOr<void> CanvasRenderingContext2D::draw_image(CanvasImageSource const& image, float destination_x, float destination_y, float destination_width, float destination_height)
-{
-    // If the sx, sy, sw, and sh arguments are omitted, then they must default to 0, 0, the image's intrinsic width in image pixels, and the image's intrinsic height in image pixels, respectively.
-    // If the image has no intrinsic dimensions, then the concrete object size must be used instead, as determined using the CSS "Concrete Object Size Resolution" algorithm, with the specified size having
-    // neither a definite width nor height, nor any additional constraints, the object's intrinsic properties being those of the image argument, and the default object size being the size of the output bitmap.
-    float source_width;
-    float source_height;
-    default_source_size(image, source_width, source_height);
-    return draw_image(image, 0, 0, source_width, source_height, destination_x, destination_y, destination_width, destination_height);
-}
-
 // 4.12.5.1.14 Drawing images, https://html.spec.whatwg.org/multipage/canvas.html#drawing-images
-DOM::ExceptionOr<void> CanvasRenderingContext2D::draw_image(CanvasImageSource const& image, float source_x, float source_y, float source_width, float source_height, float destination_x, float destination_y, float destination_width, float destination_height)
+DOM::ExceptionOr<void> CanvasRenderingContext2D::draw_image_internal(CanvasImageSource const& image, float source_x, float source_y, float source_width, float source_height, float destination_x, float destination_y, float destination_width, float destination_height)
 {
     // 1. If any of the arguments are infinite or NaN, then return.
     if (!isfinite(source_x) || !isfinite(source_y) || !isfinite(source_width) || !isfinite(source_height) || !isfinite(destination_x) || !isfinite(destination_y) || !isfinite(destination_width) || !isfinite(destination_height))
@@ -182,10 +155,12 @@ DOM::ExceptionOr<void> CanvasRenderingContext2D::draw_image(CanvasImageSource co
     if (!painter)
         return {};
 
-    if (m_drawing_state.transform.is_identity_or_translation()) {
-        painter->translate(m_drawing_state.transform.e(), m_drawing_state.transform.f());
+    auto& drawing_state = this->drawing_state();
+
+    if (drawing_state.transform.is_identity_or_translation()) {
+        painter->translate(drawing_state.transform.e(), drawing_state.transform.f());
         painter->draw_scaled_bitmap(destination_rect.to_rounded<int>(), *bitmap, source_rect, 1.0f, Gfx::Painter::ScalingMode::BilinearBlend);
-        painter->translate(-m_drawing_state.transform.e(), -m_drawing_state.transform.f());
+        painter->translate(-drawing_state.transform.e(), -drawing_state.transform.f());
     } else {
         // The context has an affine transform, we have to draw through it!
 
@@ -200,11 +175,11 @@ DOM::ExceptionOr<void> CanvasRenderingContext2D::draw_image(CanvasImageSource co
 
         // FIXME: Gfx::Painter should have an affine transform as part of its state and handle all of this instead.
 
-        auto inverse_transform = m_drawing_state.transform.inverse();
+        auto inverse_transform = drawing_state.transform.inverse();
         if (!inverse_transform.has_value())
             return {};
 
-        auto destination_quad = m_drawing_state.transform.map_to_quad(destination_rect);
+        auto destination_quad = drawing_state.transform.map_to_quad(destination_rect);
         auto destination_bounding_rect = destination_quad.bounding_rect().to_rounded<int>();
 
         Gfx::AffineTransform source_transform;
@@ -242,45 +217,22 @@ DOM::ExceptionOr<void> CanvasRenderingContext2D::draw_image(CanvasImageSource co
     return {};
 }
 
-void CanvasRenderingContext2D::scale(float sx, float sy)
-{
-    dbgln_if(CANVAS_RENDERING_CONTEXT_2D_DEBUG, "CanvasRenderingContext2D::scale({}, {})", sx, sy);
-    m_drawing_state.transform.scale(sx, sy);
-}
-
-void CanvasRenderingContext2D::translate(float tx, float ty)
-{
-    dbgln_if(CANVAS_RENDERING_CONTEXT_2D_DEBUG, "CanvasRenderingContext2D::translate({}, {})", tx, ty);
-    m_drawing_state.transform.translate(tx, ty);
-}
-
-void CanvasRenderingContext2D::rotate(float radians)
-{
-    dbgln_if(CANVAS_RENDERING_CONTEXT_2D_DEBUG, "CanvasRenderingContext2D::rotate({})", radians);
-    m_drawing_state.transform.rotate_radians(radians);
-}
-
 void CanvasRenderingContext2D::did_draw(Gfx::FloatRect const&)
 {
     // FIXME: Make use of the rect to reduce the invalidated area when possible.
-    if (!m_element)
+    if (!canvas_element().layout_node())
         return;
-    if (!m_element->layout_node())
-        return;
-    m_element->layout_node()->set_needs_display();
+    canvas_element().layout_node()->set_needs_display();
 }
 
 OwnPtr<Gfx::Painter> CanvasRenderingContext2D::painter()
 {
-    if (!m_element)
-        return {};
-
-    if (!m_element->bitmap()) {
-        if (!m_element->create_bitmap())
+    if (!canvas_element().bitmap()) {
+        if (!canvas_element().create_bitmap())
             return {};
     }
 
-    return make<Gfx::Painter>(*m_element->bitmap());
+    return make<Gfx::Painter>(*canvas_element().bitmap());
 }
 
 void CanvasRenderingContext2D::fill_text(String const& text, float x, float y, Optional<double> max_width)
@@ -292,10 +244,12 @@ void CanvasRenderingContext2D::fill_text(String const& text, float x, float y, O
     if (!painter)
         return;
 
+    auto& drawing_state = this->drawing_state();
+
     // FIXME: painter only supports integer rects for text right now, so this effectively chops off any fractional position
     auto text_rect = Gfx::IntRect(x, y, max_width.has_value() ? max_width.value() : painter->font().width(text), painter->font().pixel_size());
-    auto transformed_rect = m_drawing_state.transform.map(text_rect);
-    painter->draw_text(transformed_rect, text, Gfx::TextAlignment::TopLeft, m_drawing_state.fill_style);
+    auto transformed_rect = drawing_state.transform.map(text_rect);
+    painter->draw_text(transformed_rect, text, Gfx::TextAlignment::TopLeft, drawing_state.fill_style);
     did_draw(transformed_rect.to_type<float>());
 }
 
@@ -307,170 +261,87 @@ void CanvasRenderingContext2D::stroke_text(String const& text, float x, float y,
 
 void CanvasRenderingContext2D::begin_path()
 {
-    m_path = Gfx::Path();
+    path().clear();
 }
 
-void CanvasRenderingContext2D::close_path()
+void CanvasRenderingContext2D::stroke_internal(Gfx::Path const& path)
 {
-    m_path.close();
-}
-
-void CanvasRenderingContext2D::move_to(float x, float y)
-{
-    m_path.move_to({ x, y });
-}
-
-void CanvasRenderingContext2D::line_to(float x, float y)
-{
-    m_path.line_to({ x, y });
-}
-
-void CanvasRenderingContext2D::quadratic_curve_to(float cx, float cy, float x, float y)
-{
-    m_path.quadratic_bezier_curve_to({ cx, cy }, { x, y });
-}
-
-void CanvasRenderingContext2D::bezier_curve_to(double cp1x, double cp1y, double cp2x, double cp2y, double x, double y)
-{
-    m_path.cubic_bezier_curve_to(Gfx::FloatPoint(cp1x, cp1y), Gfx::FloatPoint(cp2x, cp2y), Gfx::FloatPoint(x, y));
-}
-
-DOM::ExceptionOr<void> CanvasRenderingContext2D::arc(float x, float y, float radius, float start_angle, float end_angle, bool counter_clockwise)
-{
-    if (radius < 0)
-        return DOM::IndexSizeError::create(String::formatted("The radius provided ({}) is negative.", radius));
-    return ellipse(x, y, radius, radius, 0, start_angle, end_angle, counter_clockwise);
-}
-
-DOM::ExceptionOr<void> CanvasRenderingContext2D::ellipse(float x, float y, float radius_x, float radius_y, float rotation, float start_angle, float end_angle, bool counter_clockwise)
-{
-    if (radius_x < 0)
-        return DOM::IndexSizeError::create(String::formatted("The major-axis radius provided ({}) is negative.", radius_x));
-
-    if (radius_y < 0)
-        return DOM::IndexSizeError::create(String::formatted("The minor-axis radius provided ({}) is negative.", radius_y));
-
-    if (constexpr float tau = M_TAU; (!counter_clockwise && (end_angle - start_angle) >= tau)
-        || (counter_clockwise && (start_angle - end_angle) >= tau)) {
-        start_angle = 0;
-        end_angle = tau;
-    } else {
-        start_angle = fmodf(start_angle, tau);
-        end_angle = fmodf(end_angle, tau);
-    }
-
-    // Then, figure out where the ends of the arc are.
-    // To do so, we can pretend that the center of this ellipse is at (0, 0),
-    // and the whole coordinate system is rotated `rotation` radians around the x axis, centered on `center`.
-    // The sign of the resulting relative positions is just whether our angle is on one of the left quadrants.
-    auto sin_rotation = sinf(rotation);
-    auto cos_rotation = cosf(rotation);
-
-    auto resolve_point_with_angle = [&](float angle) {
-        auto tan_relative = tanf(angle);
-        auto tan2 = tan_relative * tan_relative;
-
-        auto ab = radius_x * radius_y;
-        auto a2 = radius_x * radius_x;
-        auto b2 = radius_y * radius_y;
-        auto sqrt = sqrtf(b2 + a2 * tan2);
-
-        auto relative_x_position = ab / sqrt;
-        auto relative_y_position = ab * tan_relative / sqrt;
-
-        // Make sure to set the correct sign
-        float sn = sinf(angle) >= 0 ? 1 : -1;
-        relative_x_position *= sn;
-        relative_y_position *= sn;
-
-        // Now rotate it (back) around the center point by 'rotation' radians, then move it back to our actual origin.
-        auto relative_rotated_x_position = relative_x_position * cos_rotation - relative_y_position * sin_rotation;
-        auto relative_rotated_y_position = relative_x_position * sin_rotation + relative_y_position * cos_rotation;
-        return Gfx::FloatPoint { relative_rotated_x_position + x, relative_rotated_y_position + y };
-    };
-
-    auto start_point = resolve_point_with_angle(start_angle);
-    auto end_point = resolve_point_with_angle(end_angle);
-
-    m_path.move_to(start_point);
-
-    double delta_theta = end_angle - start_angle;
-
-    // FIXME: This is still goofy for some values.
-    m_path.elliptical_arc_to(end_point, { radius_x, radius_y }, rotation, delta_theta > M_PI, !counter_clockwise);
-
-    m_path.close();
-    return {};
-}
-
-void CanvasRenderingContext2D::rect(float x, float y, float width, float height)
-{
-    m_path.move_to({ x, y });
-    if (width == 0 || height == 0)
+    auto painter = this->painter();
+    if (!painter)
         return;
-    m_path.line_to({ x + width, y });
-    m_path.line_to({ x + width, y + height });
-    m_path.line_to({ x, y + height });
-    m_path.close();
+
+    auto& drawing_state = this->drawing_state();
+
+    painter->stroke_path(path, drawing_state.stroke_style, drawing_state.line_width);
+    did_draw(path.bounding_box());
 }
 
 void CanvasRenderingContext2D::stroke()
 {
-    auto painter = this->painter();
-    if (!painter)
-        return;
-
-    painter->stroke_path(m_path, m_drawing_state.stroke_style, m_drawing_state.line_width);
-    did_draw(m_path.bounding_box());
+    stroke_internal(path());
 }
 
-void CanvasRenderingContext2D::fill(Gfx::Painter::WindingRule winding)
+void CanvasRenderingContext2D::stroke(Path2D const& path)
+{
+    auto transformed_path = path.path().copy_transformed(drawing_state().transform);
+    stroke_internal(transformed_path);
+}
+
+void CanvasRenderingContext2D::fill_internal(Gfx::Path& path, String const& fill_rule)
 {
     auto painter = this->painter();
     if (!painter)
         return;
 
-    auto path = m_path;
     path.close_all_subpaths();
-    painter->fill_path(path, m_drawing_state.fill_style, winding);
-    did_draw(m_path.bounding_box());
+
+    auto winding = Gfx::Painter::WindingRule::Nonzero;
+    if (fill_rule == "evenodd")
+        winding = Gfx::Painter::WindingRule::EvenOdd;
+    else if (fill_rule == "nonzero")
+        winding = Gfx::Painter::WindingRule::Nonzero;
+    else
+        dbgln("Unrecognized fillRule for CRC2D.fill() - this problem goes away once we pass an enum instead of a string");
+
+    painter->fill_path(path, drawing_state().fill_style, winding);
+    did_draw(path.bounding_box());
 }
 
 void CanvasRenderingContext2D::fill(String const& fill_rule)
 {
-    if (fill_rule == "evenodd")
-        return fill(Gfx::Painter::WindingRule::EvenOdd);
-    return fill(Gfx::Painter::WindingRule::Nonzero);
+    return fill_internal(path(), fill_rule);
 }
 
-RefPtr<ImageData> CanvasRenderingContext2D::create_image_data(int width, int height) const
+void CanvasRenderingContext2D::fill(Path2D& path, String const& fill_rule)
 {
-    if (!wrapper()) {
-        dbgln("Hmm! Attempted to create ImageData for wrapper-less CRC2D.");
-        return {};
-    }
-    return ImageData::create_with_size(wrapper()->global_object(), width, height);
+    auto transformed_path = path.path().copy_transformed(drawing_state().transform);
+    return fill_internal(transformed_path, fill_rule);
+}
+
+JS::GCPtr<ImageData> CanvasRenderingContext2D::create_image_data(int width, int height) const
+{
+    return ImageData::create_with_size(global_object(), width, height);
 }
 
 // https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-getimagedata
-DOM::ExceptionOr<RefPtr<ImageData>> CanvasRenderingContext2D::get_image_data(int x, int y, int width, int height) const
+DOM::ExceptionOr<JS::GCPtr<ImageData>> CanvasRenderingContext2D::get_image_data(int x, int y, int width, int height) const
 {
     // 1. If either the sw or sh arguments are zero, then throw an "IndexSizeError" DOMException.
     if (width == 0 || height == 0)
-        return DOM::IndexSizeError::create("Width and height must not be zero");
+        return DOM::IndexSizeError::create(global_object(), "Width and height must not be zero");
 
     // 2. If the CanvasRenderingContext2D's origin-clean flag is set to false, then throw a "SecurityError" DOMException.
     if (!m_origin_clean)
-        return DOM::SecurityError::create("CanvasRenderingContext2D is not origin-clean");
+        return DOM::SecurityError::create(global_object(), "CanvasRenderingContext2D is not origin-clean");
 
     // 3. Let imageData be a new ImageData object.
     // 4. Initialize imageData given sw, sh, settings set to settings, and defaultColorSpace set to this's color space.
-    auto image_data = ImageData::create_with_size(wrapper()->global_object(), width, height);
+    auto image_data = ImageData::create_with_size(global_object(), width, height);
 
     // NOTE: We don't attempt to create the underlying bitmap here; if it doesn't exist, it's like copying only transparent black pixels (which is a no-op).
-    if (!m_element || !m_element->bitmap())
+    if (!canvas_element().bitmap())
         return image_data;
-    auto const& bitmap = *m_element->bitmap();
+    auto const& bitmap = *canvas_element().bitmap();
 
     // 5. Let the source rectangle be the rectangle whose corners are the four points (sx, sy), (sx+sw, sy), (sx+sw, sy+sh), (sx, sy+sh).
     auto source_rect = Gfx::Rect { x, y, width, height };
@@ -503,36 +374,6 @@ void CanvasRenderingContext2D::put_image_data(ImageData const& image_data, float
     did_draw(Gfx::FloatRect(x, y, image_data.width(), image_data.height()));
 }
 
-// https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-save
-void CanvasRenderingContext2D::save()
-{
-    // The save() method steps are to push a copy of the current drawing state onto the drawing state stack.
-    m_drawing_state_stack.append(m_drawing_state);
-}
-
-// https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-restore
-void CanvasRenderingContext2D::restore()
-{
-    // The restore() method steps are to pop the top entry in the drawing state stack, and reset the drawing state it describes. If there is no saved state, then the method must do nothing.
-    if (m_drawing_state_stack.is_empty())
-        return;
-    m_drawing_state = m_drawing_state_stack.take_last();
-}
-
-// https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-reset
-void CanvasRenderingContext2D::reset()
-{
-    // The reset() method steps are to reset the rendering context to its default state.
-    reset_to_default_state();
-}
-
-// https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-iscontextlost
-bool CanvasRenderingContext2D::is_context_lost()
-{
-    // The isContextLost() method steps are to return this's context lost.
-    return m_context_lost;
-}
-
 // https://html.spec.whatwg.org/multipage/canvas.html#reset-the-rendering-context-to-its-default-state
 void CanvasRenderingContext2D::reset_to_default_state()
 {
@@ -543,20 +384,20 @@ void CanvasRenderingContext2D::reset_to_default_state()
         painter->clear_rect(painter->target()->rect(), Color::Transparent);
 
     // 2. Empty the list of subpaths in context's current default path.
-    m_path.clear();
+    path().clear();
 
     // 3. Clear the context's drawing state stack.
-    m_drawing_state_stack.clear();
+    clear_drawing_state_stack();
 
     // 4. Reset everything that drawing state consists of to their initial values.
-    m_drawing_state = {};
+    reset_drawing_state();
 
     if (painter)
         did_draw(painter->target()->rect().to_type<float>());
 }
 
 // https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-measuretext
-RefPtr<TextMetrics> CanvasRenderingContext2D::measure_text(String const& text)
+JS::NonnullGCPtr<TextMetrics> CanvasRenderingContext2D::measure_text(String const& text)
 {
     // The measureText(text) method steps are to run the text preparation
     // algorithm, passing it text and the object implementing the CanvasText
@@ -564,9 +405,9 @@ RefPtr<TextMetrics> CanvasRenderingContext2D::measure_text(String const& text)
     // TextMetrics object with members behaving as described in the following
     // list:
     auto prepared_text = prepare_text(text);
-    auto metrics = TextMetrics::create();
+    auto metrics = TextMetrics::create(global_object());
     // FIXME: Use the font that was used to create the glyphs in prepared_text.
-    auto& font = Gfx::FontDatabase::default_font();
+    auto& font = Platform::FontPlugin::the().default_font();
 
     // width attribute: The width of that inline box, in CSS pixels. (The text's advance width.)
     metrics->set_width(prepared_text.bounding_box.width());
@@ -637,7 +478,7 @@ CanvasRenderingContext2D::PreparedText CanvasRenderingContext2D::prepare_text(St
     // ...and with all other properties set to their initial values.
     // FIXME: Actually use a LineBox here instead of, you know, using the default font and measuring its size (which is not the spec at all).
     // FIXME: Once we have CanvasTextDrawingStyles, add the CSS attributes.
-    auto& font = Gfx::FontDatabase::default_font();
+    auto& font = Platform::FontPlugin::the().default_font();
     size_t width = 0;
     size_t height = font.pixel_size();
     for (auto c : Utf8View { replaced_text }) {
@@ -660,7 +501,7 @@ CanvasRenderingContext2D::PreparedText CanvasRenderingContext2D::prepare_text(St
     //   7.8. If textBaseline is ideographic: Let the anchor point's vertical position be the ideographic-under baseline of the first available font of the inline box.
     //   7.9. If textBaseline is bottom: Let the anchor point's vertical position be the bottom of the em box of the first available font of the inline box.
     // FIXME: Once we have CanvasTextDrawingStyles, handle the alignment and baseline.
-    Gfx::IntPoint anchor { 0, 0 };
+    [[maybe_unused]] Gfx::IntPoint anchor { 0, 0 };
     auto physical_alignment = Gfx::TextAlignment::CenterLeft;
 
     // 8. Let result be an array constructed by iterating over each glyph in the inline box from left to right (if any), adding to the array, for each glyph, the shape of the glyph as it is in the inline box, positioned on a coordinate space using CSS pixels with its origin is at the anchor point.
@@ -677,56 +518,6 @@ CanvasRenderingContext2D::PreparedText CanvasRenderingContext2D::prepare_text(St
     return prepared_text;
 }
 
-NonnullRefPtr<CanvasGradient> CanvasRenderingContext2D::create_radial_gradient(double x0, double y0, double r0, double x1, double y1, double r1)
-{
-    return CanvasGradient::create_radial(x0, y0, r0, x1, y1, r1);
-}
-
-NonnullRefPtr<CanvasGradient> CanvasRenderingContext2D::create_linear_gradient(double x0, double y0, double x1, double y1)
-{
-    return CanvasGradient::create_linear(x0, y0, x1, y1);
-}
-
-NonnullRefPtr<CanvasGradient> CanvasRenderingContext2D::create_conic_gradient(double start_angle, double x, double y)
-{
-    return CanvasGradient::create_conic(start_angle, x, y);
-}
-
-// https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-transform
-void CanvasRenderingContext2D::transform(double a, double b, double c, double d, double e, double f)
-{
-    // 1. If any of the arguments are infinite or NaN, then return.
-    if (!isfinite(a) || !isfinite(b) || !isfinite(c) || !isfinite(d) || !isfinite(e) || !isfinite(f))
-        return;
-
-    // 2. Replace the current transformation matrix with the result of multiplying the current transformation matrix with the matrix described by:
-    //    a c e
-    //    b d f
-    //    0 0 1
-    m_drawing_state.transform.multiply({ static_cast<float>(a), static_cast<float>(b), static_cast<float>(c), static_cast<float>(d), static_cast<float>(e), static_cast<float>(f) });
-}
-
-// https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-settransform
-void CanvasRenderingContext2D::set_transform(double a, double b, double c, double d, double e, double f)
-{
-    // 1. If any of the arguments are infinite or NaN, then return.
-    if (!isfinite(a) || !isfinite(b) || !isfinite(c) || !isfinite(d) || !isfinite(e) || !isfinite(f))
-        return;
-
-    // 2. Reset the current transformation matrix to the identity matrix.
-    m_drawing_state.transform = {};
-
-    // 3. Invoke the transform(a, b, c, d, e, f) method with the same arguments.
-    transform(a, b, c, d, e, f);
-}
-
-// https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-resettransform
-void CanvasRenderingContext2D::reset_transform()
-{
-    // The resetTransform() method, when invoked, must reset the current transformation matrix to the identity matrix.
-    m_drawing_state.transform = {};
-}
-
 void CanvasRenderingContext2D::clip()
 {
     // FIXME: Implement.
@@ -738,15 +529,15 @@ DOM::ExceptionOr<CanvasImageSourceUsability> check_usability_of_image(CanvasImag
     // 1. Switch on image:
     auto usability = TRY(image.visit(
         // HTMLOrSVGImageElement
-        [](HTMLImageElement const& image_element) -> DOM::ExceptionOr<Optional<CanvasImageSourceUsability>> {
+        [](JS::Handle<HTMLImageElement> const& image_element) -> DOM::ExceptionOr<Optional<CanvasImageSourceUsability>> {
             // FIXME: If image's current request's state is broken, then throw an "InvalidStateError" DOMException.
 
             // If image is not fully decodable, then return bad.
-            if (!image_element.bitmap())
+            if (!image_element->bitmap())
                 return { CanvasImageSourceUsability::Bad };
 
             // If image has an intrinsic width or intrinsic height (or both) equal to zero, then return bad.
-            if (image_element.bitmap()->width() == 0 || image_element.bitmap()->height() == 0)
+            if (image_element->bitmap()->width() == 0 || image_element->bitmap()->height() == 0)
                 return { CanvasImageSourceUsability::Bad };
             return Optional<CanvasImageSourceUsability> {};
         },
@@ -756,10 +547,10 @@ DOM::ExceptionOr<CanvasImageSourceUsability> check_usability_of_image(CanvasImag
 
         // HTMLCanvasElement
         // FIXME: OffscreenCanvas
-        [](HTMLCanvasElement const& canvas_element) -> DOM::ExceptionOr<Optional<CanvasImageSourceUsability>> {
+        [](JS::Handle<HTMLCanvasElement> const& canvas_element) -> DOM::ExceptionOr<Optional<CanvasImageSourceUsability>> {
             // If image has either a horizontal dimension or a vertical dimension equal to zero, then throw an "InvalidStateError" DOMException.
-            if (canvas_element.width() == 0 || canvas_element.height() == 0)
-                return DOM::InvalidStateError::create("Canvas width or height is zero");
+            if (canvas_element->width() == 0 || canvas_element->height() == 0)
+                return DOM::InvalidStateError::create(canvas_element->global_object(), "Canvas width or height is zero");
             return Optional<CanvasImageSourceUsability> {};
         }));
     if (usability.has_value())
@@ -775,7 +566,7 @@ bool image_is_not_origin_clean(CanvasImageSource const& image)
     // An object image is not origin-clean if, switching on image's type:
     return image.visit(
         // HTMLOrSVGImageElement
-        [](HTMLImageElement const&) {
+        [](JS::Handle<HTMLImageElement> const&) {
             // FIXME: image's current request's image data is CORS-cross-origin.
             return false;
         },
@@ -785,7 +576,7 @@ bool image_is_not_origin_clean(CanvasImageSource const& image)
 
         // HTMLCanvasElement
         // FIXME: ImageBitmap
-        [](HTMLCanvasElement const&) {
+        [](JS::Handle<HTMLCanvasElement> const&) {
             // FIXME: image's bitmap's origin-clean flag is false.
             return false;
         });

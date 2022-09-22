@@ -53,6 +53,7 @@ public:
     String dump_layout_tree();
 
     OrderedHashMap<String, String> get_local_storage_entries();
+    OrderedHashMap<String, String> get_session_storage_entries();
 
     void set_content_filters(Vector<String>);
     void set_proxy_mappings(Vector<String> proxies, HashMap<String, size_t> mappings);
@@ -111,6 +112,7 @@ public:
     String notify_server_did_request_cookie(Badge<WebContentClient>, const AK::URL& url, Web::Cookie::Source source);
     void notify_server_did_set_cookie(Badge<WebContentClient>, const AK::URL& url, Web::Cookie::ParsedCookie const& cookie, Web::Cookie::Source source);
     void notify_server_did_update_resource_count(i32 count_waiting);
+    void notify_server_did_request_file(Badge<WebContentClient>, String const& path, i32);
 
 private:
     OutOfProcessWebView();
@@ -122,12 +124,15 @@ private:
     virtual void mouseup_event(GUI::MouseEvent&) override;
     virtual void mousemove_event(GUI::MouseEvent&) override;
     virtual void mousewheel_event(GUI::MouseEvent&) override;
+    virtual void doubleclick_event(GUI::MouseEvent&) override;
     virtual void keydown_event(GUI::KeyEvent&) override;
     virtual void keyup_event(GUI::KeyEvent&) override;
     virtual void theme_change_event(GUI::ThemeChangeEvent&) override;
     virtual void screen_rects_change_event(GUI::ScreenRectsChangeEvent&) override;
     virtual void focusin_event(GUI::FocusEvent&) override;
     virtual void focusout_event(GUI::FocusEvent&) override;
+    virtual void show_event(GUI::ShowEvent&) override;
+    virtual void hide_event(GUI::HideEvent&) override;
 
     // ^AbstractScrollableWidget
     virtual void did_scroll() override;

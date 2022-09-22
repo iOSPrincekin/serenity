@@ -37,9 +37,9 @@ UNMAP_AFTER_INIT ProcFSComponentRegistry::ProcFSComponentRegistry()
 {
 }
 
-ErrorOr<NonnullRefPtr<ProcFS>> ProcFS::try_create()
+ErrorOr<NonnullLockRefPtr<FileSystem>> ProcFS::try_create()
 {
-    return adopt_nonnull_ref_or_enomem(new (nothrow) ProcFS());
+    return TRY(adopt_nonnull_lock_ref_or_enomem(new (nothrow) ProcFS));
 }
 
 ProcFS::ProcFS() = default;
@@ -73,7 +73,7 @@ ErrorOr<void> ProcFSInode::add_child(Inode&, StringView, mode_t)
     return EROFS;
 }
 
-ErrorOr<NonnullRefPtr<Inode>> ProcFSInode::create_child(StringView, mode_t, dev_t, UserID, GroupID)
+ErrorOr<NonnullLockRefPtr<Inode>> ProcFSInode::create_child(StringView, mode_t, dev_t, UserID, GroupID)
 {
     return EROFS;
 }
@@ -93,9 +93,9 @@ ErrorOr<void> ProcFSInode::chown(UserID, GroupID)
     return EPERM;
 }
 
-ErrorOr<NonnullRefPtr<ProcFSGlobalInode>> ProcFSGlobalInode::try_create(ProcFS const& fs, ProcFSExposedComponent const& component)
+ErrorOr<NonnullLockRefPtr<ProcFSGlobalInode>> ProcFSGlobalInode::try_create(ProcFS const& fs, ProcFSExposedComponent const& component)
 {
-    return adopt_nonnull_ref_or_enomem(new (nothrow) ProcFSGlobalInode(fs, component));
+    return adopt_nonnull_lock_ref_or_enomem(new (nothrow) ProcFSGlobalInode(fs, component));
 }
 
 ProcFSGlobalInode::ProcFSGlobalInode(ProcFS const& fs, ProcFSExposedComponent const& component)
@@ -120,7 +120,7 @@ ErrorOr<void> ProcFSGlobalInode::attach(OpenFileDescription& description)
     return m_associated_component->refresh_data(description);
 }
 
-ErrorOr<size_t> ProcFSGlobalInode::read_bytes(off_t offset, size_t count, UserOrKernelBuffer& buffer, OpenFileDescription* fd) const
+ErrorOr<size_t> ProcFSGlobalInode::read_bytes_locked(off_t offset, size_t count, UserOrKernelBuffer& buffer, OpenFileDescription* fd) const
 {
     return m_associated_component->read_bytes(offset, count, buffer, fd);
 }
@@ -135,7 +135,7 @@ ErrorOr<void> ProcFSGlobalInode::traverse_as_directory(Function<ErrorOr<void>(Fi
     VERIFY_NOT_REACHED();
 }
 
-ErrorOr<NonnullRefPtr<Inode>> ProcFSGlobalInode::lookup(StringView)
+ErrorOr<NonnullLockRefPtr<Inode>> ProcFSGlobalInode::lookup(StringView)
 {
     VERIFY_NOT_REACHED();
 }
@@ -145,9 +145,9 @@ ErrorOr<void> ProcFSGlobalInode::truncate(u64 size)
     return m_associated_component->truncate(size);
 }
 
-ErrorOr<void> ProcFSGlobalInode::set_mtime(time_t time)
+ErrorOr<void> ProcFSGlobalInode::update_timestamps(Optional<time_t>, Optional<time_t>, Optional<time_t>)
 {
-    return m_associated_component->set_mtime(time);
+    return {};
 }
 
 InodeMetadata ProcFSGlobalInode::metadata() const
@@ -163,14 +163,14 @@ InodeMetadata ProcFSGlobalInode::metadata() const
     return metadata;
 }
 
-ErrorOr<size_t> ProcFSGlobalInode::write_bytes(off_t offset, size_t count, UserOrKernelBuffer const& buffer, OpenFileDescription* fd)
+ErrorOr<size_t> ProcFSGlobalInode::write_bytes_locked(off_t offset, size_t count, UserOrKernelBuffer const& buffer, OpenFileDescription* fd)
 {
     return m_associated_component->write_bytes(offset, count, buffer, fd);
 }
 
-ErrorOr<NonnullRefPtr<ProcFSDirectoryInode>> ProcFSDirectoryInode::try_create(ProcFS const& procfs, ProcFSExposedComponent const& component)
+ErrorOr<NonnullLockRefPtr<ProcFSDirectoryInode>> ProcFSDirectoryInode::try_create(ProcFS const& procfs, ProcFSExposedComponent const& component)
 {
-    return adopt_nonnull_ref_or_enomem(new (nothrow) ProcFSDirectoryInode(procfs, component));
+    return adopt_nonnull_lock_ref_or_enomem(new (nothrow) ProcFSDirectoryInode(procfs, component));
 }
 
 ProcFSDirectoryInode::ProcFSDirectoryInode(ProcFS const& fs, ProcFSExposedComponent const& component)
@@ -197,16 +197,16 @@ ErrorOr<void> ProcFSDirectoryInode::traverse_as_directory(Function<ErrorOr<void>
     return m_associated_component->traverse_as_directory(procfs().fsid(), move(callback));
 }
 
-ErrorOr<NonnullRefPtr<Inode>> ProcFSDirectoryInode::lookup(StringView name)
+ErrorOr<NonnullLockRefPtr<Inode>> ProcFSDirectoryInode::lookup(StringView name)
 {
     MutexLocker locker(procfs().m_lock);
     auto component = TRY(m_associated_component->lookup(name));
     return component->to_inode(procfs());
 }
 
-ErrorOr<NonnullRefPtr<ProcFSLinkInode>> ProcFSLinkInode::try_create(ProcFS const& procfs, ProcFSExposedComponent const& component)
+ErrorOr<NonnullLockRefPtr<ProcFSLinkInode>> ProcFSLinkInode::try_create(ProcFS const& procfs, ProcFSExposedComponent const& component)
 {
-    return adopt_nonnull_ref_or_enomem(new (nothrow) ProcFSLinkInode(procfs, component));
+    return adopt_nonnull_lock_ref_or_enomem(new (nothrow) ProcFSLinkInode(procfs, component));
 }
 
 ProcFSLinkInode::ProcFSLinkInode(ProcFS const& fs, ProcFSExposedComponent const& component)
@@ -233,14 +233,14 @@ ProcFSProcessAssociatedInode::ProcFSProcessAssociatedInode(ProcFS const& fs, Pro
 {
 }
 
-ErrorOr<size_t> ProcFSProcessAssociatedInode::write_bytes(off_t, size_t, UserOrKernelBuffer const&, OpenFileDescription*)
+ErrorOr<size_t> ProcFSProcessAssociatedInode::write_bytes_locked(off_t, size_t, UserOrKernelBuffer const&, OpenFileDescription*)
 {
     return ENOTSUP;
 }
 
-ErrorOr<NonnullRefPtr<ProcFSProcessDirectoryInode>> ProcFSProcessDirectoryInode::try_create(ProcFS const& procfs, ProcessID pid)
+ErrorOr<NonnullLockRefPtr<ProcFSProcessDirectoryInode>> ProcFSProcessDirectoryInode::try_create(ProcFS const& procfs, ProcessID pid)
 {
-    return adopt_nonnull_ref_or_enomem(new (nothrow) ProcFSProcessDirectoryInode(procfs, pid));
+    return adopt_nonnull_lock_ref_or_enomem(new (nothrow) ProcFSProcessDirectoryInode(procfs, pid));
 }
 
 ProcFSProcessDirectoryInode::ProcFSProcessDirectoryInode(ProcFS const& procfs, ProcessID pid)
@@ -271,7 +271,7 @@ InodeMetadata ProcFSProcessDirectoryInode::metadata() const
     return metadata;
 }
 
-ErrorOr<size_t> ProcFSProcessDirectoryInode::read_bytes(off_t, size_t, UserOrKernelBuffer&, OpenFileDescription*) const
+ErrorOr<size_t> ProcFSProcessDirectoryInode::read_bytes_locked(off_t, size_t, UserOrKernelBuffer&, OpenFileDescription*) const
 {
     VERIFY_NOT_REACHED();
 }
@@ -285,7 +285,7 @@ ErrorOr<void> ProcFSProcessDirectoryInode::traverse_as_directory(Function<ErrorO
     return process->procfs_traits()->traverse_as_directory(procfs().fsid(), move(callback));
 }
 
-ErrorOr<NonnullRefPtr<Inode>> ProcFSProcessDirectoryInode::lookup(StringView name)
+ErrorOr<NonnullLockRefPtr<Inode>> ProcFSProcessDirectoryInode::lookup(StringView name)
 {
     MutexLocker locker(procfs().m_lock);
     auto process = Process::from_pid(associated_pid());
@@ -311,12 +311,14 @@ ErrorOr<NonnullRefPtr<Inode>> ProcFSProcessDirectoryInode::lookup(StringView nam
         return TRY(ProcFSProcessPropertyInode::try_create_for_pid_property(procfs(), SegmentedProcFSIndex::MainProcessProperty::PerformanceEvents, associated_pid()));
     if (name == "vm"sv)
         return TRY(ProcFSProcessPropertyInode::try_create_for_pid_property(procfs(), SegmentedProcFSIndex::MainProcessProperty::VirtualMemoryStats, associated_pid()));
+    if (name == "cmdline"sv)
+        return TRY(ProcFSProcessPropertyInode::try_create_for_pid_property(procfs(), SegmentedProcFSIndex::MainProcessProperty::CommandLine, associated_pid()));
     return ENOENT;
 }
 
-ErrorOr<NonnullRefPtr<ProcFSProcessSubDirectoryInode>> ProcFSProcessSubDirectoryInode::try_create(ProcFS const& procfs, SegmentedProcFSIndex::ProcessSubDirectory sub_directory_type, ProcessID pid)
+ErrorOr<NonnullLockRefPtr<ProcFSProcessSubDirectoryInode>> ProcFSProcessSubDirectoryInode::try_create(ProcFS const& procfs, SegmentedProcFSIndex::ProcessSubDirectory sub_directory_type, ProcessID pid)
 {
-    return adopt_nonnull_ref_or_enomem(new (nothrow) ProcFSProcessSubDirectoryInode(procfs, sub_directory_type, pid));
+    return adopt_nonnull_lock_ref_or_enomem(new (nothrow) ProcFSProcessSubDirectoryInode(procfs, sub_directory_type, pid));
 }
 
 ProcFSProcessSubDirectoryInode::ProcFSProcessSubDirectoryInode(ProcFS const& procfs, SegmentedProcFSIndex::ProcessSubDirectory sub_directory_type, ProcessID pid)
@@ -325,7 +327,7 @@ ProcFSProcessSubDirectoryInode::ProcFSProcessSubDirectoryInode(ProcFS const& pro
 {
 }
 
-ErrorOr<size_t> ProcFSProcessSubDirectoryInode::read_bytes(off_t, size_t, UserOrKernelBuffer&, OpenFileDescription*) const
+ErrorOr<size_t> ProcFSProcessSubDirectoryInode::read_bytes_locked(off_t, size_t, UserOrKernelBuffer&, OpenFileDescription*) const
 {
     VERIFY_NOT_REACHED();
 }
@@ -377,7 +379,7 @@ ErrorOr<void> ProcFSProcessSubDirectoryInode::traverse_as_directory(Function<Err
     VERIFY_NOT_REACHED();
 }
 
-ErrorOr<NonnullRefPtr<Inode>> ProcFSProcessSubDirectoryInode::lookup(StringView name)
+ErrorOr<NonnullLockRefPtr<Inode>> ProcFSProcessSubDirectoryInode::lookup(StringView name)
 {
     MutexLocker locker(procfs().m_lock);
     auto process = Process::from_pid(associated_pid());
@@ -395,21 +397,21 @@ ErrorOr<NonnullRefPtr<Inode>> ProcFSProcessSubDirectoryInode::lookup(StringView 
     }
 }
 
-ErrorOr<NonnullRefPtr<ProcFSProcessPropertyInode>> ProcFSProcessPropertyInode::try_create_for_file_description_link(ProcFS const& procfs, unsigned file_description_index, ProcessID pid)
+ErrorOr<NonnullLockRefPtr<ProcFSProcessPropertyInode>> ProcFSProcessPropertyInode::try_create_for_file_description_link(ProcFS const& procfs, unsigned file_description_index, ProcessID pid)
 {
-    return adopt_nonnull_ref_or_enomem(new (nothrow) ProcFSProcessPropertyInode(procfs, file_description_index, pid));
+    return adopt_nonnull_lock_ref_or_enomem(new (nothrow) ProcFSProcessPropertyInode(procfs, file_description_index, pid));
 }
-ErrorOr<NonnullRefPtr<ProcFSProcessPropertyInode>> ProcFSProcessPropertyInode::try_create_for_thread_stack(ProcFS const& procfs, ThreadID stack_thread_index, ProcessID pid)
+ErrorOr<NonnullLockRefPtr<ProcFSProcessPropertyInode>> ProcFSProcessPropertyInode::try_create_for_thread_stack(ProcFS const& procfs, ThreadID stack_thread_index, ProcessID pid)
 {
-    return adopt_nonnull_ref_or_enomem(new (nothrow) ProcFSProcessPropertyInode(procfs, stack_thread_index, pid));
+    return adopt_nonnull_lock_ref_or_enomem(new (nothrow) ProcFSProcessPropertyInode(procfs, stack_thread_index, pid));
 }
-ErrorOr<NonnullRefPtr<ProcFSProcessPropertyInode>> ProcFSProcessPropertyInode::try_create_for_pid_property(ProcFS const& procfs, SegmentedProcFSIndex::MainProcessProperty main_property_type, ProcessID pid)
+ErrorOr<NonnullLockRefPtr<ProcFSProcessPropertyInode>> ProcFSProcessPropertyInode::try_create_for_pid_property(ProcFS const& procfs, SegmentedProcFSIndex::MainProcessProperty main_property_type, ProcessID pid)
 {
-    return adopt_nonnull_ref_or_enomem(new (nothrow) ProcFSProcessPropertyInode(procfs, main_property_type, pid));
+    return adopt_nonnull_lock_ref_or_enomem(new (nothrow) ProcFSProcessPropertyInode(procfs, main_property_type, pid));
 }
-ErrorOr<NonnullRefPtr<ProcFSProcessPropertyInode>> ProcFSProcessPropertyInode::try_create_for_child_process_link(ProcFS const& procfs, ProcessID child_pid, ProcessID pid)
+ErrorOr<NonnullLockRefPtr<ProcFSProcessPropertyInode>> ProcFSProcessPropertyInode::try_create_for_child_process_link(ProcFS const& procfs, ProcessID child_pid, ProcessID pid)
 {
-    return adopt_nonnull_ref_or_enomem(new (nothrow) ProcFSProcessPropertyInode(procfs, child_pid, pid));
+    return adopt_nonnull_lock_ref_or_enomem(new (nothrow) ProcFSProcessPropertyInode(procfs, child_pid, pid));
 }
 
 ProcFSProcessPropertyInode::ProcFSProcessPropertyInode(ProcFS const& procfs, SegmentedProcFSIndex::MainProcessProperty main_property_type, ProcessID pid)
@@ -488,9 +490,9 @@ ErrorOr<void> ProcFSProcessPropertyInode::traverse_as_directory(Function<ErrorOr
 {
     VERIFY_NOT_REACHED();
 }
-ErrorOr<size_t> ProcFSProcessPropertyInode::read_bytes(off_t offset, size_t count, UserOrKernelBuffer& buffer, OpenFileDescription* description) const
+ErrorOr<size_t> ProcFSProcessPropertyInode::read_bytes_locked(off_t offset, size_t count, UserOrKernelBuffer& buffer, OpenFileDescription* description) const
 {
-    dbgln_if(PROCFS_DEBUG, "ProcFS ProcessInformation: read_bytes offset: {} count: {}", offset, count);
+    dbgln_if(PROCFS_DEBUG, "ProcFS ProcessInformation: read_bytes_locked offset: {} count: {}", offset, count);
 
     VERIFY(offset >= 0);
     VERIFY(buffer.user_or_kernel_ptr());
@@ -526,7 +528,7 @@ ErrorOr<size_t> ProcFSProcessPropertyInode::read_bytes(off_t offset, size_t coun
 
     return nread;
 }
-ErrorOr<NonnullRefPtr<Inode>> ProcFSProcessPropertyInode::lookup(StringView)
+ErrorOr<NonnullLockRefPtr<Inode>> ProcFSProcessPropertyInode::lookup(StringView)
 {
     return EINVAL;
 }
@@ -571,6 +573,8 @@ ErrorOr<void> ProcFSProcessPropertyInode::try_to_acquire_data(Process& process, 
         return process.procfs_get_perf_events(builder);
     case SegmentedProcFSIndex::MainProcessProperty::VirtualMemoryStats:
         return process.procfs_get_virtual_memory_stats(builder);
+    case SegmentedProcFSIndex::MainProcessProperty::CommandLine:
+        return process.procfs_get_command_line(builder);
     default:
         VERIFY_NOT_REACHED();
     }

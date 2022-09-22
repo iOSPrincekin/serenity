@@ -12,14 +12,13 @@
 
 namespace Web::DOM {
 
-class Text final : public CharacterData {
-public:
-    using WrapperType = Bindings::TextWrapper;
+class Text : public CharacterData {
+    WEB_PLATFORM_OBJECT(Text, CharacterData);
 
-    explicit Text(Document&, String const&);
+public:
     virtual ~Text() override = default;
 
-    static NonnullRefPtr<Text> create_with_global_object(Bindings::WindowObject& window, String const& data);
+    static JS::NonnullGCPtr<Text> create_with_global_object(HTML::Window& window, String const& data);
 
     // ^Node
     virtual FlyString node_name() const override { return "#text"; }
@@ -28,12 +27,18 @@ public:
     void set_always_editable(bool b) { m_always_editable = b; }
 
     void set_owner_input_element(Badge<HTML::HTMLInputElement>, HTML::HTMLInputElement&);
-    HTML::HTMLInputElement* owner_input_element() { return m_owner_input_element; }
+    HTML::HTMLInputElement* owner_input_element() { return m_owner_input_element.ptr(); }
 
-    ExceptionOr<NonnullRefPtr<Text>> split_text(size_t offset);
+    ExceptionOr<JS::NonnullGCPtr<Text>> split_text(size_t offset);
+
+protected:
+    explicit Text(Document&, String const&);
+    Text(Document&, NodeType, String const&);
+
+    virtual void visit_edges(Cell::Visitor&) override;
 
 private:
-    WeakPtr<HTML::HTMLInputElement> m_owner_input_element;
+    JS::GCPtr<HTML::HTMLInputElement> m_owner_input_element;
 
     bool m_always_editable { false };
 };

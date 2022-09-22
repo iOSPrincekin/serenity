@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2018-2020, Andreas Kling <kling@serenityos.org>
- * Copyright (c) 2021, Jakob-Niklas See <git@nwex.de>
+ * Copyright (c) 2021, networkException <networkexception@serenityos.org>
  * Copyright (c) 2022, Sam Atkins <atkinssj@serenityos.org>
  *
  * SPDX-License-Identifier: BSD-2-Clause
@@ -15,7 +15,6 @@
 #include <AK/String.h>
 #include <AK/Vector.h>
 #include <LibCore/Stream.h>
-#include <LibGfx/Color.h>
 
 namespace Core {
 
@@ -48,7 +47,6 @@ public:
     void write_entry(String const& group, String const& key, String const& value);
     void write_num_entry(String const& group, String const& key, int value);
     void write_bool_entry(String const& group, String const& key, bool value);
-    void write_color_entry(String const& group, String const& key, Color value);
 
     void dump() const;
 

@@ -119,19 +119,16 @@ GoToOffsetDialog::GoToOffsetDialog()
     m_offset_from_box->set_selected_index(0);
     m_offset_from_box->set_only_allow_values_from_model(true);
 
-    m_text_editor->on_return_pressed = [this] {
-        m_go_button->click();
-    };
-
     m_go_button->on_click = [this](auto) {
         done(ExecResult::OK);
     };
+    m_go_button->set_default(true);
 
     m_text_editor->on_change = [this]() {
         auto text = m_text_editor->text();
-        if (text.starts_with("0x")) {
+        if (text.starts_with("0x"sv)) {
             m_offset_type_box->set_selected_index(1);
-            m_text_editor->set_text(text.replace("0x", ""));
+            m_text_editor->set_text(text.replace("0x"sv, ""sv, ReplaceMode::FirstOnly));
         }
         update_statusbar();
     };

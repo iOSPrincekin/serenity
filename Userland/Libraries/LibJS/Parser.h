@@ -27,7 +27,7 @@ enum class Associativity {
 };
 
 struct FunctionNodeParseOptions {
-    enum {
+    enum : u16 {
         CheckForFunctionAndName = 1 << 0,
         AllowSuperPropertyLookup = 1 << 1,
         AllowSuperConstructorCall = 1 << 2,
@@ -36,6 +36,7 @@ struct FunctionNodeParseOptions {
         IsArrowFunction = 1 << 5,
         IsGeneratorFunction = 1 << 6,
         IsAsyncFunction = 1 << 7,
+        HasDefaultExportName = 1 << 8,
     };
 };
 
@@ -55,8 +56,8 @@ public:
     NonnullRefPtr<Program> parse_program(bool starts_in_strict_mode = false);
 
     template<typename FunctionNodeType>
-    NonnullRefPtr<FunctionNodeType> parse_function_node(u8 parse_options = FunctionNodeParseOptions::CheckForFunctionAndName, Optional<Position> const& function_start = {});
-    Vector<FunctionNode::Parameter> parse_formal_parameters(int& function_length, u8 parse_options = 0);
+    NonnullRefPtr<FunctionNodeType> parse_function_node(u16 parse_options = FunctionNodeParseOptions::CheckForFunctionAndName, Optional<Position> const& function_start = {});
+    Vector<FunctionNode::Parameter> parse_formal_parameters(int& function_length, u16 parse_options = 0);
 
     enum class AllowDuplicates {
         Yes,
@@ -142,7 +143,14 @@ public:
     NonnullRefPtr<RegExpLiteral> parse_regexp_literal();
     NonnullRefPtr<ObjectExpression> parse_object_expression();
     NonnullRefPtr<ArrayExpression> parse_array_expression();
-    NonnullRefPtr<StringLiteral> parse_string_literal(Token const& token, bool in_template_literal = false);
+
+    enum class StringLiteralType {
+        Normal,
+        NonTaggedTemplate,
+        TaggedTemplate
+    };
+
+    NonnullRefPtr<StringLiteral> parse_string_literal(Token const& token, StringLiteralType string_literal_type = StringLiteralType::Normal, bool* contains_invalid_escape = nullptr);
     NonnullRefPtr<TemplateLiteral> parse_template_literal(bool is_tagged);
     ExpressionResult parse_secondary_expression(NonnullRefPtr<Expression>, int min_precedence, Associativity associate = Associativity::Right, ForbiddenTokens forbidden = {});
     NonnullRefPtr<Expression> parse_call_expression(NonnullRefPtr<Expression>);
@@ -182,7 +190,7 @@ public:
                 return {};
             // We need to modify the source to match what the lexer considers one line - normalizing
             // line terminators to \n is easier than splitting using all different LT characters.
-            String source_string = source.replace("\r\n", "\n").replace("\r", "\n").replace(LINE_SEPARATOR_STRING, "\n").replace(PARAGRAPH_SEPARATOR_STRING, "\n");
+            String source_string = source.replace("\r\n"sv, "\n"sv, ReplaceMode::All).replace("\r"sv, "\n"sv, ReplaceMode::All).replace(LINE_SEPARATOR_STRING, "\n"sv, ReplaceMode::All).replace(PARAGRAPH_SEPARATOR_STRING, "\n"sv, ReplaceMode::All);
             StringBuilder builder;
             builder.append(source_string.split_view('\n', true)[position.value().line - 1]);
             builder.append('\n');
@@ -212,7 +220,7 @@ public:
     };
 
     // Needs to mess with m_state, and we're not going to expose a non-const getter for that :^)
-    friend ThrowCompletionOr<ECMAScriptFunctionObject*> FunctionConstructor::create_dynamic_function(GlobalObject&, FunctionObject&, FunctionObject*, FunctionKind, MarkedVector<Value> const&);
+    friend ThrowCompletionOr<ECMAScriptFunctionObject*> FunctionConstructor::create_dynamic_function(VM&, FunctionObject&, FunctionObject*, FunctionKind, MarkedVector<Value> const&);
 
 private:
     friend class ScopePusher;

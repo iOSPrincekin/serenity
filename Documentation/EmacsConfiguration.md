@@ -13,11 +13,11 @@ CompileFlags:
   Add:
     - "-D__serenity__"
     - "-UNO_TLS"
-    - "-I/path/to/serenity/Toolchain/Local/i686/i686-pc-serenity/include/c++/11.2.0"
-    - "-I/path/to/serenity/Toolchain/Local/i686/i686-pc-serenity/include/c++/11.2.0/i686-pc-serenity"
+    - "-I/path/to/serenity/Toolchain/Local/i686/i686-pc-serenity/include/c++/12.1.0"
+    - "-I/path/to/serenity/Toolchain/Local/i686/i686-pc-serenity/include/c++/12.1.0/i686-pc-serenity"
 ```
 
-You will need to change `/path/to/serenity` and change `11.2.0` to
+You will need to change `/path/to/serenity` and change `12.1.0` to
 whatever your GCC toolchain version at the time is.
 
 Run cmake (`Meta/serenity.sh run` or similar) at least once for this
@@ -54,4 +54,10 @@ There are multiple packages to handle auto formatting with
 - [format-all-mode](https://github.com/lassik/emacs-format-all-the-code)
 - [clang-format-plus](https://github.com/SavchenkoValeriy/emacs-clang-format-plus)
 
+Alternatively, this can be done without additional packages, using `lsp-mode`.
+You can use the following `.dir-locals.el` file placed in the project root:
+
+```lisp
+((c++-mode
+  (eval add-hook 'before-save-hook #'lsp-format-buffer nil t)))
 ```

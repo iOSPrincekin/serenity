@@ -17,8 +17,10 @@ ErrorOr<FlatPtr> Process::sys$map_time_page()
 
     auto& vmobject = TimeManagement::the().time_page_vmobject();
 
-    auto* region = TRY(address_space().allocate_region_with_vmobject(Memory::RandomizeVirtualAddress::Yes, {}, PAGE_SIZE, PAGE_SIZE, vmobject, 0, "Kernel time page"sv, PROT_READ, true));
-    return region->vaddr().get();
+    return address_space().with([&](auto& space) -> ErrorOr<FlatPtr> {
+        auto* region = TRY(space->allocate_region_with_vmobject(Memory::RandomizeVirtualAddress::Yes, {}, PAGE_SIZE, PAGE_SIZE, vmobject, 0, "Kernel time page"sv, PROT_READ, true));
+        return region->vaddr().get();
+    });
 }
 
 ErrorOr<FlatPtr> Process::sys$clock_gettime(clockid_t clock_id, Userspace<timespec*> user_ts)
@@ -38,7 +40,8 @@ ErrorOr<FlatPtr> Process::sys$clock_settime(clockid_t clock_id, Userspace<timesp
     VERIFY_NO_PROCESS_BIG_LOCK(this);
     TRY(require_promise(Pledge::settime));
 
-    if (!is_superuser())
+    auto credentials = this->credentials();
+    if (!credentials->is_superuser())
         return EPERM;
 
     auto time = TRY(copy_time_from_user(user_ts));
@@ -91,6 +94,23 @@ ErrorOr<FlatPtr> Process::sys$clock_nanosleep(Userspace<Syscall::SC_clock_nanosl
     return 0;
 }
 
+ErrorOr<FlatPtr> Process::sys$clock_getres(Userspace<Syscall::SC_clock_getres_params const*> user_params)
+{
+    VERIFY_NO_PROCESS_BIG_LOCK(this);
+    auto params = TRY(copy_typed_from_user(user_params));
+    timespec ts {};
+    switch (params.clock_id) {
+    case CLOCK_REALTIME:
+        ts.tv_sec = 0;
+        ts.tv_nsec = 1000000000 / _SC_CLK_TCK;
+        TRY(copy_to_user(params.result, &ts));
+        break;
+    default:
+        return EINVAL;
+    }
+    return 0;
+}
+
 ErrorOr<FlatPtr> Process::sys$adjtime(Userspace<timeval const*> user_delta, Userspace<timeval*> user_old_delta)
 {
     VERIFY_NO_PROCESS_BIG_LOCK(this);
@@ -103,7 +123,8 @@ ErrorOr<FlatPtr> Process::sys$adjtime(Userspace<timeval const*> user_delta, User
 
     if (user_delta) {
         TRY(require_promise(Pledge::settime));
-        if (!is_superuser())
+        auto credentials = this->credentials();
+        if (!credentials->is_superuser())
             return EPERM;
         auto delta = TRY(copy_time_from_user(user_delta));
 

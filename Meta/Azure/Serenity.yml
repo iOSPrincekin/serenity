@@ -15,7 +15,7 @@ jobs:
       value: $(Build.SourcesDirectory)/.ccache
 
     pool:
-      vmImage: ubuntu-20.04
+      vmImage: ubuntu-22.04
 
     steps:
     - template: Setup.yml
@@ -90,7 +90,7 @@ jobs:
       timeoutInMinutes: 60
       env:
         SERENITY_QEMU_CPU: 'max,vmx=off'
-        SERENITY_KERNEL_CMDLINE: 'fbdev=off panic=shutdown system_mode=self-test'
+        SERENITY_KERNEL_CMDLINE: 'graphics_subsystem_mode=off panic=shutdown system_mode=self-test'
         SERENITY_RUN: 'ci'
 
     - script: |

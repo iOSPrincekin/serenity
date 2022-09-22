@@ -25,8 +25,6 @@ size_t malloc_good_size(size_t);
 void serenity_dump_malloc_stats(void);
 void free(void*);
 __attribute__((alloc_size(2))) void* realloc(void* ptr, size_t);
-__attribute__((malloc, alloc_size(1), alloc_align(2))) void* _aligned_malloc(size_t size, size_t alignment);
-void _aligned_free(void* memblock);
 char* getenv(char const* name);
 char* secure_getenv(char const* name);
 int putenv(char*);
@@ -101,11 +99,7 @@ int posix_openpt(int flags);
 int grantpt(int fd);
 int unlockpt(int fd);
 
-// FIXME: Remove the ifdef once we have a working memalign implementation.
-// This is hidden by default until then because many applications prefer
-// `posix_memalign` over other implementations of aligned memory.
-#ifdef SERENITY_LIBC_SHOW_POSIX_MEMALIGN
 int posix_memalign(void**, size_t alignment, size_t size);
-#endif
+__attribute__((malloc, alloc_size(2), alloc_align(1))) void* aligned_alloc(size_t alignment, size_t size);
 
 __END_DECLS

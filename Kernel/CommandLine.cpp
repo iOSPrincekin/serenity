@@ -13,7 +13,7 @@
 namespace Kernel {
 
 static char s_cmd_line[1024];
-static constexpr StringView s_embedded_cmd_line = "";
+static constexpr StringView s_embedded_cmd_line = ""sv;
 static CommandLine* s_the;
 
 UNMAP_AFTER_INIT void CommandLine::early_initialize(char const* cmd_line)
@@ -41,16 +41,10 @@ CommandLine const& kernel_command_line()
 UNMAP_AFTER_INIT void CommandLine::initialize()
 {
     VERIFY(!s_the);
-    s_the = new CommandLine(s_cmd_line);
+    s_the = new CommandLine({ s_cmd_line, strlen(s_cmd_line) });
     dmesgln("Kernel Commandline: {}", kernel_command_line().string());
     // Validate the modes the user passed in.
     (void)s_the->panic_mode(Validate::Yes);
-    if (s_the->contains("boot_mode"sv)) {
-        // I know, we don't do legacy, but even though I eliminated 'boot_mode' from the codebase, there
-        // is a good chance that someone's still using it. Let's be nice and tell them where to look.
-        // TODO: Remove this in 2022.
-        PANIC("'boot_mode' is now split into panic=[halt|shutdown], fbdev=[on|off], and system_mode=[graphical|text|selftest].");
-    }
 }
 
 UNMAP_AFTER_INIT NonnullOwnPtr<KString> CommandLine::build_commandline(StringView cmdline_from_bootloader)
@@ -58,7 +52,7 @@ UNMAP_AFTER_INIT NonnullOwnPtr<KString> CommandLine::build_commandline(StringVie
     StringBuilder builder;
     builder.append(cmdline_from_bootloader);
     if constexpr (!s_embedded_cmd_line.is_empty()) {
-        builder.append(" ");
+        builder.append(' ');
         builder.append(s_embedded_cmd_line);
     }
     return KString::must_create(builder.string_view());
@@ -155,8 +149,10 @@ UNMAP_AFTER_INIT PCIAccessLevel CommandLine::pci_access_level() const
     auto value = lookup("pci"sv).value_or("ecam"sv);
     if (value == "ecam"sv)
         return PCIAccessLevel::MemoryAddressing;
+#if ARCH(I386) || ARCH(X86_64)
     if (value == "io"sv)
         return PCIAccessLevel::IOAddressing;
+#endif
     if (value == "none"sv)
         return PCIAccessLevel::None;
     PANIC("Unknown PCI ECAM setting: {}", value);
@@ -189,7 +185,7 @@ UNMAP_AFTER_INIT bool CommandLine::is_force_pio() const
 
 UNMAP_AFTER_INIT StringView CommandLine::root_device() const
 {
-    return lookup("root"sv).value_or("/dev/hda"sv);
+    return lookup("root"sv).value_or("lun0:0:0"sv);
 }
 
 bool CommandLine::is_nvme_polling_enabled() const
@@ -305,9 +301,9 @@ NonnullOwnPtrVector<KString> CommandLine::userspace_init_args() const
 
     auto init_args = lookup("init_args"sv).value_or(""sv).split_view(';');
     if (!init_args.is_empty())
-        MUST(args.try_prepend(KString::must_create(userspace_init())));
+        MUST(args.try_prepend(MUST(KString::try_create(userspace_init()))));
     for (auto& init_arg : init_args)
-        args.append(KString::must_create(init_arg));
+        args.append(MUST(KString::try_create(init_arg)));
     return args;
 }
 

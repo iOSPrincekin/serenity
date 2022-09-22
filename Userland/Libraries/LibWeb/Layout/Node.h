@@ -10,40 +10,36 @@
 #include <AK/TypeCasts.h>
 #include <AK/Vector.h>
 #include <LibGfx/Rect.h>
+#include <LibJS/Heap/Handle.h>
 #include <LibWeb/CSS/ComputedValues.h>
 #include <LibWeb/CSS/StyleProperties.h>
 #include <LibWeb/Forward.h>
 #include <LibWeb/Layout/BoxModelMetrics.h>
-#include <LibWeb/Layout/LayoutPosition.h>
 #include <LibWeb/Painting/PaintContext.h>
 #include <LibWeb/TreeNode.h>
 
 namespace Web::Layout {
 
 enum class LayoutMode {
-    // Normal layout.
-    // - We use the containing block's used width.
-    // - Content flows into the available space, line breaks inserted where necessary.
+    // Normal layout. No min-content or max-content constraints applied.
     Normal,
 
-    // MinContent layout is used for discovering the min-content intrinsic size of a box.
-    // - We act as if the containing block has 0 used width.
-    // - Every line-breaking opportunity is taken.
-    MinContent,
-
-    // MaxContent layout is used for discovering the max-content intrinsic size of a box.
-    // - We act as if the containing block has infinite used width.
-    // - Only forced line-breaking opportunities are taken.
-    MaxContent,
+    // Intrinsic size determination.
+    // Boxes honor min-content and max-content constraints (set via LayoutState::UsedValues::{width,height}_constraint)
+    // by considering their containing block to be 0-sized or infinitely large in the relevant axis.
+    // https://drafts.csswg.org/css-sizing-3/#intrinsic-sizing
+    IntrinsicSizing,
 };
 
 class Node : public TreeNode<Node> {
 public:
     virtual ~Node();
 
-    bool is_anonymous() const { return !m_dom_node; }
-    const DOM::Node* dom_node() const { return m_dom_node; }
-    DOM::Node* dom_node() { return m_dom_node; }
+    size_t serial_id() const { return m_serial_id; }
+
+    bool is_anonymous() const;
+    DOM::Node const* dom_node() const;
+    DOM::Node* dom_node();
 
     Painting::Paintable* paintable() { return m_paintable; }
     Painting::Paintable const* paintable() const { return m_paintable; }
@@ -51,8 +47,8 @@ public:
 
     virtual RefPtr<Painting::Paintable> create_paintable() const;
 
-    DOM::Document& document() { return m_document; }
-    const DOM::Document& document() const { return m_document; }
+    DOM::Document& document();
+    DOM::Document const& document() const;
 
     HTML::BrowsingContext const& browsing_context() const;
     HTML::BrowsingContext& browsing_context();
@@ -144,9 +140,11 @@ protected:
 private:
     friend class NodeWithStyle;
 
-    NonnullRefPtr<DOM::Document> m_document;
-    RefPtr<DOM::Node> m_dom_node;
+    JS::Handle<DOM::Document> m_document;
+    JS::Handle<DOM::Node> m_dom_node;
     RefPtr<Painting::Paintable> m_paintable;
+
+    size_t m_serial_id { 0 };
 
     bool m_inline { false };
     bool m_has_style { false };
@@ -168,17 +166,9 @@ public:
     Gfx::Font const& font() const { return *m_font; }
     float line_height() const { return m_line_height; }
     Vector<CSS::BackgroundLayerData> const& background_layers() const { return computed_values().background_layers(); }
-    const CSS::ImageStyleValue* list_style_image() const { return m_list_style_image; }
+    const CSS::AbstractImageStyleValue* list_style_image() const { return m_list_style_image; }
 
     NonnullRefPtr<NodeWithStyle> create_anonymous_wrapper() const;
-
-    bool has_definite_height() const { return m_has_definite_height; }
-    bool has_definite_width() const { return m_has_definite_width; }
-
-    void set_has_definite_height(bool b) { m_has_definite_height = b; }
-    void set_has_definite_width(bool b) { m_has_definite_width = b; }
-
-    void did_insert_into_layout_tree(CSS::StyleProperties const&);
 
 protected:
     NodeWithStyle(DOM::Document&, DOM::Node*, NonnullRefPtr<CSS::StyleProperties>);
@@ -188,10 +178,7 @@ private:
     CSS::ComputedValues m_computed_values;
     RefPtr<Gfx::Font> m_font;
     float m_line_height { 0 };
-    RefPtr<CSS::ImageStyleValue> m_list_style_image;
-
-    bool m_has_definite_height { false };
-    bool m_has_definite_width { false };
+    RefPtr<CSS::AbstractImageStyleValue> m_list_style_image;
 };
 
 class NodeWithStyleAndBoxModelMetrics : public NodeWithStyle {

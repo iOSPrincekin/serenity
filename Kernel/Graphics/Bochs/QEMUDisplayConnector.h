@@ -6,10 +6,11 @@
 
 #pragma once
 
-#include <AK/RefPtr.h>
 #include <AK/Try.h>
-#include <Kernel/Graphics/Bochs/DisplayConnector.h>
+#include <Kernel/Graphics/Bochs/Definitions.h>
 #include <Kernel/Graphics/Console/GenericFramebufferConsole.h>
+#include <Kernel/Graphics/DisplayConnector.h>
+#include <Kernel/Library/LockRefPtr.h>
 #include <Kernel/Locking/Spinlock.h>
 #include <Kernel/Memory/TypedMapping.h>
 
@@ -17,28 +18,42 @@ namespace Kernel {
 
 struct BochsDisplayMMIORegisters;
 class QEMUDisplayConnector final
-    : public BochsDisplayConnector {
+    : public DisplayConnector {
     friend class BochsGraphicsAdapter;
     friend class DeviceManagement;
 
 public:
-    static NonnullRefPtr<QEMUDisplayConnector> must_create(PhysicalAddress framebuffer_address, Memory::TypedMapping<BochsDisplayMMIORegisters volatile>);
+    AK_TYPEDEF_DISTINCT_ORDERED_ID(u16, IndexID);
 
-    virtual IndexID index_id() const override;
+    static NonnullLockRefPtr<QEMUDisplayConnector> must_create(PhysicalAddress framebuffer_address, size_t framebuffer_resource_size, Memory::TypedMapping<BochsDisplayMMIORegisters volatile>);
 
 private:
-    ErrorOr<void> fetch_and_initialize_edid();
-    QEMUDisplayConnector(PhysicalAddress framebuffer_address, Memory::TypedMapping<BochsDisplayMMIORegisters volatile>);
+    IndexID index_id() const;
 
+    ErrorOr<void> fetch_and_initialize_edid();
+    ErrorOr<void> create_attached_framebuffer_console();
+    QEMUDisplayConnector(PhysicalAddress framebuffer_address, size_t framebuffer_resource_size, Memory::TypedMapping<BochsDisplayMMIORegisters volatile>);
+
+    virtual bool mutable_mode_setting_capable() const override final { return true; }
     virtual bool double_framebuffering_capable() const override { return true; }
     virtual ErrorOr<void> set_mode_setting(ModeSetting const&) override;
     virtual ErrorOr<void> set_y_offset(size_t y) override;
+    virtual ErrorOr<void> set_safe_mode_setting() override final;
     virtual ErrorOr<void> unblank() override;
+    virtual bool partial_flush_support() const override final { return false; }
+    virtual bool flush_support() const override final { return false; }
+    // Note: Paravirtualized hardware doesn't require a defined refresh rate for modesetting.
+    virtual bool refresh_rate_support() const override final { return false; }
+    virtual ErrorOr<void> flush_first_surface() override final;
 
     void set_framebuffer_to_big_endian_format();
     void set_framebuffer_to_little_endian_format();
 
-private:
+    virtual void enable_console() override final;
+    virtual void disable_console() override final;
+
+    LockRefPtr<Graphics::GenericFramebufferConsole> m_framebuffer_console;
+
     Memory::TypedMapping<BochsDisplayMMIORegisters volatile> m_registers;
 };
 }

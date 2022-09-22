@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
-#include <Kernel/Arch/x86/InterruptDisabler.h>
+#include <Kernel/Arch/InterruptDisabler.h>
 #include <Kernel/Process.h>
 #include <Kernel/TTY/TTY.h>
 
@@ -12,7 +12,7 @@ namespace Kernel {
 
 ErrorOr<FlatPtr> Process::sys$getsid(pid_t pid)
 {
-    VERIFY_PROCESS_BIG_LOCK_ACQUIRED(this)
+    VERIFY_PROCESS_BIG_LOCK_ACQUIRED(this);
     TRY(require_promise(Pledge::proc));
     if (pid == 0)
         return sid().value();
@@ -26,7 +26,7 @@ ErrorOr<FlatPtr> Process::sys$getsid(pid_t pid)
 
 ErrorOr<FlatPtr> Process::sys$setsid()
 {
-    VERIFY_PROCESS_BIG_LOCK_ACQUIRED(this)
+    VERIFY_PROCESS_BIG_LOCK_ACQUIRED(this);
     TRY(require_promise(Pledge::proc));
     InterruptDisabler disabler;
     bool found_process_with_same_pgid_as_my_pid = false;
@@ -40,14 +40,15 @@ ErrorOr<FlatPtr> Process::sys$setsid()
 
     m_pg = TRY(ProcessGroup::try_create(ProcessGroupID(pid().value())));
     m_tty = nullptr;
-    ProtectedDataMutationScope scope { *this };
-    m_protected_values.sid = pid().value();
-    return sid().value();
+    return with_mutable_protected_data([&](auto& protected_data) -> ErrorOr<FlatPtr> {
+        protected_data.sid = pid().value();
+        return protected_data.sid.value();
+    });
 }
 
 ErrorOr<FlatPtr> Process::sys$getpgid(pid_t pid)
 {
-    VERIFY_PROCESS_BIG_LOCK_ACQUIRED(this)
+    VERIFY_PROCESS_BIG_LOCK_ACQUIRED(this);
     TRY(require_promise(Pledge::proc));
     if (pid == 0)
         return pgid().value();
@@ -59,7 +60,7 @@ ErrorOr<FlatPtr> Process::sys$getpgid(pid_t pid)
 
 ErrorOr<FlatPtr> Process::sys$getpgrp()
 {
-    VERIFY_PROCESS_BIG_LOCK_ACQUIRED(this)
+    VERIFY_PROCESS_BIG_LOCK_ACQUIRED(this);
     TRY(require_promise(Pledge::stdio));
     return pgid().value();
 }
@@ -79,7 +80,7 @@ SessionID Process::get_sid_from_pgid(ProcessGroupID pgid)
 
 ErrorOr<FlatPtr> Process::sys$setpgid(pid_t specified_pid, pid_t specified_pgid)
 {
-    VERIFY_PROCESS_BIG_LOCK_ACQUIRED(this)
+    VERIFY_PROCESS_BIG_LOCK_ACQUIRED(this);
     TRY(require_promise(Pledge::proc));
     ProcessID pid = specified_pid ? ProcessID(specified_pid) : this->pid();
     if (specified_pgid < 0) {

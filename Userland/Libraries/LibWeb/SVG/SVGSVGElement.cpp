@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2020, Matthew Olsson <matthewcolsson@gmail.com>
+ * Copyright (c) 2022, Andreas Kling <kling@serenityos.org>
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
@@ -19,6 +20,7 @@ namespace Web::SVG {
 SVGSVGElement::SVGSVGElement(DOM::Document& document, DOM::QualifiedName qualified_name)
     : SVGGraphicsElement(document, qualified_name)
 {
+    set_prototype(&window().cached_web_prototype("SVGSVGElement"));
 }
 
 RefPtr<Layout::Node> SVGSVGElement::create_layout_node(NonnullRefPtr<CSS::StyleProperties> style)
@@ -28,17 +30,24 @@ RefPtr<Layout::Node> SVGSVGElement::create_layout_node(NonnullRefPtr<CSS::StyleP
 
 void SVGSVGElement::apply_presentational_hints(CSS::StyleProperties& style) const
 {
-    // Width defaults to 100%
-    if (auto width_value = HTML::parse_dimension_value(attribute(SVG::AttributeNames::width))) {
+    auto width_attribute = attribute(SVG::AttributeNames::width);
+    if (auto width_value = HTML::parse_dimension_value(width_attribute)) {
         style.set_property(CSS::PropertyID::Width, width_value.release_nonnull());
-    } else {
+    } else if (width_attribute == "") {
+        // If the `width` attribute is an empty string, it defaults to 100%.
+        // This matches WebKit and Blink, but not Firefox. The spec is unclear.
+        // FIXME: Figure out what to do here.
         style.set_property(CSS::PropertyID::Width, CSS::PercentageStyleValue::create(CSS::Percentage { 100 }));
     }
 
     // Height defaults to 100%
-    if (auto height_value = HTML::parse_dimension_value(attribute(SVG::AttributeNames::height))) {
+    auto height_attribute = attribute(SVG::AttributeNames::height);
+    if (auto height_value = HTML::parse_dimension_value(height_attribute)) {
         style.set_property(CSS::PropertyID::Height, height_value.release_nonnull());
-    } else {
+    } else if (height_attribute == "") {
+        // If the `height` attribute is an empty string, it defaults to 100%.
+        // This matches WebKit and Blink, but not Firefox. The spec is unclear.
+        // FIXME: Figure out what to do here.
         style.set_property(CSS::PropertyID::Height, CSS::PercentageStyleValue::create(CSS::Percentage { 100 }));
     }
 }

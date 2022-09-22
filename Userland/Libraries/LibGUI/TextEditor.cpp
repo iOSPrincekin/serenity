@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2018-2020, Andreas Kling <kling@serenityos.org>
- * Copyright (c) 2021, Jakob-Niklas See <git@nwex.de>
+ * Copyright (c) 2021, networkException <networkexception@serenityos.org>
  * Copyright (c) 2022, the SerenityOS developers.
  *
  * SPDX-License-Identifier: BSD-2-Clause
@@ -17,6 +17,7 @@
 #include <LibGUI/AutocompleteProvider.h>
 #include <LibGUI/Clipboard.h>
 #include <LibGUI/EditingEngine.h>
+#include <LibGUI/EmojiInputDialog.h>
 #include <LibGUI/InputBox.h>
 #include <LibGUI/Menu.h>
 #include <LibGUI/Painter.h>
@@ -28,6 +29,7 @@
 #include <LibGfx/Font/Font.h>
 #include <LibGfx/Font/FontDatabase.h>
 #include <LibGfx/Palette.h>
+#include <LibGfx/StandardCursor.h>
 #include <LibSyntax/Highlighter.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -50,7 +52,7 @@ TextEditor::TextEditor(Type type)
         { DisplayOnly, "DisplayOnly" });
 
     set_focus_policy(GUI::FocusPolicy::StrongFocus);
-    set_accepts_emoji_input(true);
+    set_or_clear_emoji_input_callback();
     set_override_cursor(Gfx::StandardCursor::IBeam);
     set_background_role(ColorRole::Base);
     set_foreground_role(ColorRole::BaseText);
@@ -89,12 +91,12 @@ void TextEditor::create_actions()
     m_cut_action->set_enabled(false);
     m_copy_action->set_enabled(false);
     m_paste_action = CommonActions::make_paste_action([&](auto&) { paste(); }, this);
-    m_paste_action->set_enabled(is_editable() && Clipboard::the().fetch_mime_type().starts_with("text/"));
+    m_paste_action->set_enabled(is_editable() && Clipboard::the().fetch_mime_type().starts_with("text/"sv));
     if (is_multi_line()) {
         m_go_to_line_action = Action::create(
-            "Go to line...", { Mod_Ctrl, Key_L }, Gfx::Bitmap::try_load_from_file("/res/icons/16x16/go-to.png").release_value_but_fixme_should_propagate_errors(), [this](auto&) {
+            "Go to line...", { Mod_Ctrl, Key_L }, Gfx::Bitmap::try_load_from_file("/res/icons/16x16/go-to.png"sv).release_value_but_fixme_should_propagate_errors(), [this](auto&) {
                 String value;
-                if (InputBox::show(window(), value, "Line:", "Go to line") == InputBox::ExecResult::OK) {
+                if (InputBox::show(window(), value, "Line:"sv, "Go to line"sv) == InputBox::ExecResult::OK) {
                     auto line_target = value.to_uint();
                     if (line_target.has_value()) {
                         set_cursor_and_focus_line(line_target.value() - 1, 0);
@@ -104,6 +106,7 @@ void TextEditor::create_actions()
             this);
     }
     m_select_all_action = CommonActions::make_select_all_action([this](auto&) { select_all(); }, this);
+    m_insert_emoji_action = CommonActions::make_insert_emoji_action([&](auto&) { insert_emoji(); }, this);
 }
 
 void TextEditor::set_text(StringView text, AllowCallback allow_callback)
@@ -309,6 +312,12 @@ void TextEditor::mousemove_event(MouseEvent& event)
         did_update_selection();
         update();
         return;
+    }
+
+    if (m_ruler_visible && (ruler_rect_in_inner_coordinates().contains(event.position()))) {
+        set_override_cursor(Gfx::StandardCursor::None);
+    } else {
+        set_editing_cursor();
     }
 }
 
@@ -743,6 +752,17 @@ void TextEditor::paint_event(PaintEvent& event)
         painter.fill_rect(cursor_content_rect(), palette().text_cursor());
 }
 
+Optional<UISize> TextEditor::calculated_min_size() const
+{
+    auto margins = content_margins();
+    int horizontal = margins.left() + margins.right(),
+        vertical = margins.top() + margins.bottom();
+    int vertical_content_size = font().glyph_height() + 4;
+    if (!is_multi_line() && m_icon)
+        vertical_content_size = max(vertical_content_size, icon_size() + 2);
+    return UISize(horizontal, vertical);
+}
+
 void TextEditor::select_all()
 {
     TextPosition start_of_document { 0, 0 };
@@ -753,11 +773,46 @@ void TextEditor::select_all()
     update();
 }
 
+void TextEditor::insert_emoji()
+{
+    if (!on_emoji_input || window()->blocks_emoji_input())
+        return;
+
+    auto emoji_input_dialog = EmojiInputDialog::construct(window());
+    if (emoji_input_dialog->exec() != EmojiInputDialog::ExecResult::OK)
+        return;
+
+    auto emoji_code_point = emoji_input_dialog->selected_emoji_text();
+    insert_at_cursor_or_replace_selection(emoji_code_point);
+}
+
+void TextEditor::set_or_clear_emoji_input_callback()
+{
+    switch (m_mode) {
+    case Editable:
+        on_emoji_input = [this](auto emoji) {
+            insert_at_cursor_or_replace_selection(emoji);
+        };
+        break;
+
+    case DisplayOnly:
+    case ReadOnly:
+        on_emoji_input = {};
+        break;
+
+    default:
+        VERIFY_NOT_REACHED();
+    }
+}
+
 void TextEditor::keydown_event(KeyEvent& event)
 {
+    if (!is_editable() && event.key() == KeyCode::Key_Tab)
+        return AbstractScrollableWidget::keydown_event(event);
+
     if (m_autocomplete_box && m_autocomplete_box->is_visible() && (event.key() == KeyCode::Key_Return || event.key() == KeyCode::Key_Tab)) {
         TemporaryChange change { m_should_keep_autocomplete_box, true };
-        if (m_autocomplete_box->apply_suggestion() == AutocompleteProvider::Entry::HideAutocompleteAfterApplying::Yes)
+        if (m_autocomplete_box->apply_suggestion() == CodeComprehension::AutocompleteResultEntry::HideAutocompleteAfterApplying::Yes)
             hide_autocomplete();
         else
             try_update_autocomplete();
@@ -856,6 +911,19 @@ void TextEditor::keydown_event(KeyEvent& event)
         return;
     }
 
+    if (event.key() == KeyCode::Key_Tab) {
+        if (has_selection()) {
+            if (event.modifiers() == Mod_Shift) {
+                unindent_selection();
+                return;
+            }
+            if (is_indenting_selection()) {
+                indent_selection();
+                return;
+            }
+        }
+    }
+
     if (event.key() == KeyCode::Key_Delete) {
         if (!is_editable())
             return;
@@ -939,6 +1007,50 @@ void TextEditor::keydown_event(KeyEvent& event)
     }
 
     event.ignore();
+}
+
+bool TextEditor::is_indenting_selection()
+{
+    auto const selection_start = m_selection.start() > m_selection.end() ? m_selection.end() : m_selection.start();
+    auto const selection_end = m_selection.end() > m_selection.start() ? m_selection.end() : m_selection.start();
+    auto const whole_line_selected = selection_end.column() - selection_start.column() >= current_line().length() - current_line().first_non_whitespace_column();
+    auto const on_same_line = selection_start.line() == selection_end.line();
+
+    if (has_selection() && (whole_line_selected || !on_same_line)) {
+        return true;
+    }
+
+    return false;
+}
+
+void TextEditor::indent_selection()
+{
+    auto const selection_start = m_selection.start() > m_selection.end() ? m_selection.end() : m_selection.start();
+    auto const selection_end = m_selection.end() > m_selection.start() ? m_selection.end() : m_selection.start();
+
+    if (is_indenting_selection()) {
+        execute<IndentSelection>(m_soft_tab_width, TextRange(selection_start, selection_end));
+        m_selection.set_start({ selection_start.line(), selection_start.column() + m_soft_tab_width });
+        m_selection.set_end({ selection_end.line(), selection_end.column() + m_soft_tab_width });
+        set_cursor({ m_cursor.line(), m_cursor.column() + m_soft_tab_width });
+    }
+}
+
+void TextEditor::unindent_selection()
+{
+    auto const selection_start = m_selection.start() > m_selection.end() ? m_selection.end() : m_selection.start();
+    auto const selection_end = m_selection.end() > m_selection.start() ? m_selection.end() : m_selection.start();
+
+    if (current_line().first_non_whitespace_column() != 0) {
+        if (current_line().first_non_whitespace_column() > m_soft_tab_width && selection_start.column() != 0) {
+            m_selection.set_start({ selection_start.line(), selection_start.column() - m_soft_tab_width });
+            m_selection.set_end({ selection_end.line(), selection_end.column() - m_soft_tab_width });
+        } else if (selection_start.column() != 0) {
+            m_selection.set_start({ selection_start.line(), selection_start.column() - current_line().leading_spaces() });
+            m_selection.set_end({ selection_end.line(), selection_end.column() - current_line().leading_spaces() });
+        }
+        execute<UnindentSelection>(m_soft_tab_width, TextRange(selection_start, selection_end));
+    }
 }
 
 void TextEditor::delete_previous_word()
@@ -1490,7 +1602,7 @@ void TextEditor::paste()
         return;
 
     auto [data, mime_type, _] = GUI::Clipboard::the().fetch_data_and_type();
-    if (!mime_type.starts_with("text/"))
+    if (!mime_type.starts_with("text/"sv))
         return;
 
     if (data.is_empty())
@@ -1589,18 +1701,24 @@ void TextEditor::set_mode(const Mode mode)
     case Editable:
         m_cut_action->set_enabled(has_selection() && !text_is_secret());
         m_paste_action->set_enabled(true);
-        set_accepts_emoji_input(true);
+        m_insert_emoji_action->set_enabled(true);
         break;
     case DisplayOnly:
     case ReadOnly:
         m_cut_action->set_enabled(false);
         m_paste_action->set_enabled(false);
-        set_accepts_emoji_input(false);
+        m_insert_emoji_action->set_enabled(false);
         break;
     default:
         VERIFY_NOT_REACHED();
     }
 
+    set_or_clear_emoji_input_callback();
+    set_editing_cursor();
+}
+
+void TextEditor::set_editing_cursor()
+{
     if (!is_displayonly())
         set_override_cursor(Gfx::StandardCursor::IBeam);
     else
@@ -1624,6 +1742,8 @@ void TextEditor::context_menu_event(ContextMenuEvent& event)
     if (is_displayonly())
         return;
 
+    m_insert_emoji_action->set_enabled(on_emoji_input && !window()->blocks_emoji_input());
+
     if (!m_context_menu) {
         m_context_menu = Menu::construct();
         m_context_menu->add_action(undo_action());
@@ -1634,6 +1754,7 @@ void TextEditor::context_menu_event(ContextMenuEvent& event)
         m_context_menu->add_action(paste_action());
         m_context_menu->add_separator();
         m_context_menu->add_action(select_all_action());
+        m_context_menu->add_action(insert_emoji_action());
         if (is_multi_line()) {
             m_context_menu->add_separator();
             m_context_menu->add_action(go_to_line_action());
@@ -1883,8 +2004,8 @@ void TextEditor::document_did_update_undo_stack()
     m_undo_action->set_enabled(can_undo() && !text_is_secret());
     m_redo_action->set_enabled(can_redo() && !text_is_secret());
 
-    m_undo_action->set_text(make_action_text("&Undo", document().undo_stack().undo_action_text()));
-    m_redo_action->set_text(make_action_text("&Redo", document().undo_stack().redo_action_text()));
+    m_undo_action->set_text(make_action_text("&Undo"sv, document().undo_stack().undo_action_text()));
+    m_redo_action->set_text(make_action_text("&Redo"sv, document().undo_stack().redo_action_text()));
 
     // FIXME: This is currently firing more often than it should.
     //        Ideally we'd only send this out when the undo stack modified state actually changes.
@@ -1912,7 +2033,7 @@ void TextEditor::cursor_did_change()
 
 void TextEditor::clipboard_content_did_change(String const& mime_type)
 {
-    m_paste_action->set_enabled(is_editable() && mime_type.starts_with("text/"));
+    m_paste_action->set_enabled(is_editable() && mime_type.starts_with("text/"sv));
 }
 
 void TextEditor::set_document(TextDocument& document)

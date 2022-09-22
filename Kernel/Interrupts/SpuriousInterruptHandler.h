@@ -8,8 +8,8 @@
 
 #include <AK/OwnPtr.h>
 #include <AK/Types.h>
+#include <Kernel/Arch/IRQController.h>
 #include <Kernel/Interrupts/GenericInterruptHandler.h>
-#include <Kernel/Interrupts/IRQController.h>
 
 namespace Kernel {
 
@@ -42,7 +42,7 @@ private:
     explicit SpuriousInterruptHandler(u8 interrupt_number);
     bool m_enabled { false };
     bool m_real_irq { false };
-    RefPtr<IRQController> m_responsible_irq_controller;
+    LockRefPtr<IRQController> m_responsible_irq_controller;
     OwnPtr<GenericInterruptHandler> m_real_handler;
 };
 }

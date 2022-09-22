@@ -69,8 +69,8 @@ public:
     };
 
 public:
-    static NonnullRefPtr<VirtualConsole> create(size_t index);
-    static NonnullRefPtr<VirtualConsole> create_with_preset_log(size_t index, CircularQueue<char, 16384> const&);
+    static NonnullLockRefPtr<VirtualConsole> create(size_t index);
+    static NonnullLockRefPtr<VirtualConsole> create_with_preset_log(size_t index, CircularQueue<char, 16384> const&);
 
     virtual ~VirtualConsole() override;
 
@@ -101,7 +101,8 @@ private:
     virtual void terminal_did_resize(u16 columns, u16 rows) override;
     virtual void terminal_history_changed(int) override;
     virtual void emit(u8 const*, size_t) override;
-    virtual void set_cursor_style(VT::CursorStyle) override;
+    virtual void set_cursor_shape(VT::CursorShape) override;
+    virtual void set_cursor_blinking(bool) override;
 
     // ^CharacterDevice
     virtual StringView class_name() const override { return "VirtualConsole"sv; }

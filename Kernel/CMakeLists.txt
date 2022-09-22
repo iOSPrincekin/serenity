@@ -19,15 +19,12 @@ set(KERNEL_HEAP_SOURCES
 
 set(KERNEL_SOURCES
     AddressSanitizer.cpp
-    Bus/PCI/Controller/HostBridge.cpp
+    Bus/PCI/Controller/HostController.cpp
     Bus/PCI/Controller/MemoryBackedHostBridge.cpp
     Bus/PCI/Controller/VolumeManagementDevice.cpp
     Bus/PCI/Access.cpp
     Bus/PCI/API.cpp
     Bus/PCI/Device.cpp
-    Bus/PCI/Initializer.cpp
-    Bus/PCI/SysFSPCI.cpp
-    Bus/USB/SysFSUSB.cpp
     Bus/USB/UHCI/UHCIController.cpp
     Bus/USB/UHCI/UHCIRootHub.cpp
     Bus/USB/USBConfiguration.cpp
@@ -42,9 +39,9 @@ set(KERNEL_SOURCES
     Bus/VirtIO/Device.cpp
     Bus/VirtIO/Queue.cpp
     Bus/VirtIO/RNG.cpp
-    CMOS.cpp
     CommandLine.cpp
     Coredump.cpp
+    Credentials.cpp
     Devices/AsyncDeviceRequest.cpp
     Devices/Audio/AC97.cpp
     Devices/Audio/Channel.cpp
@@ -61,35 +58,25 @@ set(KERNEL_SOURCES
     Devices/MemoryDevice.cpp
     Devices/NullDevice.cpp
     Devices/PCISerialDevice.cpp
-    Devices/PCSpeaker.cpp
     Devices/RandomDevice.cpp
     Devices/SelfTTYDevice.cpp
     Devices/SerialDevice.cpp
     Devices/ZeroDevice.cpp
-    Devices/HID/I8042Controller.cpp
     Devices/HID/HIDManagement.cpp
     Devices/HID/KeyboardDevice.cpp
     Devices/HID/MouseDevice.cpp
-    Devices/HID/PS2KeyboardDevice.cpp
-    Devices/HID/PS2MouseDevice.cpp
-    Devices/HID/VMWareMouseDevice.cpp
     GlobalProcessExposed.cpp
-    Graphics/Bochs/DisplayConnector.cpp
     Graphics/Bochs/GraphicsAdapter.cpp
     Graphics/Bochs/QEMUDisplayConnector.cpp
     Graphics/Console/BootFramebufferConsole.cpp
     Graphics/Console/GenericFramebufferConsole.cpp
     Graphics/Console/ContiguousFramebufferConsole.cpp
-    Graphics/Console/TextModeConsole.cpp
-    Graphics/Console/VGAConsole.cpp
+    Graphics/Console/VGATextModeConsole.cpp
     Graphics/DisplayConnector.cpp
+    Graphics/Generic/DisplayConnector.cpp
     Graphics/GraphicsManagement.cpp
     Graphics/Intel/NativeDisplayConnector.cpp
     Graphics/Intel/NativeGraphicsAdapter.cpp
-    Graphics/VGA/DisplayConnector.cpp
-    Graphics/VGA/ISAAdapter.cpp
-    Graphics/VGA/PCIAdapter.cpp
-    Graphics/VGA/VGACompatibleAdapter.cpp
     Graphics/VMWare/Console.cpp
     Graphics/VMWare/GraphicsAdapter.cpp
     Graphics/VMWare/DisplayConnector.cpp
@@ -98,23 +85,15 @@ set(KERNEL_SOURCES
     Graphics/VirtIOGPU/GPU3DDevice.cpp
     Graphics/VirtIOGPU/GraphicsAdapter.cpp
     SanCov.cpp
-    Storage/ATA/AHCIController.cpp
-    Storage/ATA/AHCIPort.cpp
-    Storage/ATA/AHCIPortHandler.cpp
+    Storage/ATA/AHCI/Controller.cpp
+    Storage/ATA/AHCI/Port.cpp
+    Storage/ATA/AHCI/InterruptHandler.cpp
+    Storage/ATA/GenericIDE/Controller.cpp
+    Storage/ATA/GenericIDE/Channel.cpp
+    Storage/ATA/ATAController.cpp
     Storage/ATA/ATADevice.cpp
     Storage/ATA/ATADiskDevice.cpp
-    Storage/ATA/ATAPIDiscDevice.cpp
-    Storage/ATA/BMIDEChannel.cpp
-    Storage/ATA/ISAIDEController.cpp
-    Storage/ATA/PCIIDEController.cpp
-    Storage/ATA/IDEController.cpp
-    Storage/ATA/IDEChannel.cpp
-    Storage/Partition/DiskPartition.cpp
-    Storage/Partition/DiskPartitionMetadata.cpp
-    Storage/Partition/EBRPartitionTable.cpp
-    Storage/Partition/GUIDPartitionTable.cpp
-    Storage/Partition/MBRPartitionTable.cpp
-    Storage/Partition/PartitionTable.cpp
+    Storage/ATA/ATAPort.cpp
     Storage/NVMe/NVMeController.cpp
     Storage/NVMe/NVMeNameSpace.cpp
     Storage/NVMe/NVMeInterruptQueue.cpp
@@ -122,6 +101,8 @@ set(KERNEL_SOURCES
     Storage/NVMe/NVMeQueue.cpp
     Storage/Ramdisk/Controller.cpp
     Storage/Ramdisk/Device.cpp
+    Storage/DiskPartition.cpp
+    Storage/StorageController.cpp
     Storage/StorageDevice.cpp
     Storage/StorageManagement.cpp
     DoubleBuffer.cpp
@@ -137,6 +118,7 @@ set(KERNEL_SOURCES
     FileSystem/FileSystem.cpp
     FileSystem/Inode.cpp
     FileSystem/InodeFile.cpp
+    FileSystem/InodeMetadata.cpp
     FileSystem/InodeWatcher.cpp
     FileSystem/ISO9660FileSystem.cpp
     FileSystem/Mount.cpp
@@ -144,23 +126,41 @@ set(KERNEL_SOURCES
     FileSystem/Plan9FileSystem.cpp
     FileSystem/ProcFS.cpp
     FileSystem/SysFS.cpp
-    FileSystem/SysFSComponent.cpp
+    FileSystem/SysFS/Component.cpp
+    FileSystem/SysFS/Registry.cpp
+    FileSystem/SysFS/RootDirectory.cpp
+    FileSystem/SysFS/Subsystems/Bus/PCI/BusDirectory.cpp
+    FileSystem/SysFS/Subsystems/Bus/PCI/DeviceAttribute.cpp
+    FileSystem/SysFS/Subsystems/Bus/PCI/DeviceDirectory.cpp
+    FileSystem/SysFS/Subsystems/Bus/USB/BusDirectory.cpp
+    FileSystem/SysFS/Subsystems/Bus/USB/DeviceInformation.cpp
+    FileSystem/SysFS/Subsystems/Bus/Directory.cpp
+    FileSystem/SysFS/Subsystems/DeviceIdentifiers/BlockDevicesDirectory.cpp
+    FileSystem/SysFS/Subsystems/DeviceIdentifiers/CharacterDevicesDirectory.cpp
+    FileSystem/SysFS/Subsystems/DeviceIdentifiers/DeviceComponent.cpp
+    FileSystem/SysFS/Subsystems/DeviceIdentifiers/Directory.cpp
+    FileSystem/SysFS/Subsystems/DeviceIdentifiers/SymbolicLinkDeviceComponent.cpp
+    FileSystem/SysFS/Subsystems/Devices/Storage/DeviceAttribute.cpp
+    FileSystem/SysFS/Subsystems/Devices/Storage/DeviceDirectory.cpp
+    FileSystem/SysFS/Subsystems/Devices/Storage/Directory.cpp
+    FileSystem/SysFS/Subsystems/Devices/Graphics/Directory.cpp
+    FileSystem/SysFS/Subsystems/Devices/Graphics/DisplayConnector/Directory.cpp
+    FileSystem/SysFS/Subsystems/Devices/Graphics/DisplayConnector/DeviceDirectory.cpp
+    FileSystem/SysFS/Subsystems/Devices/Graphics/DisplayConnector/DeviceAttribute.cpp
+    FileSystem/SysFS/Subsystems/Devices/Directory.cpp
+    FileSystem/SysFS/Subsystems/Firmware/BIOS/Component.cpp
+    FileSystem/SysFS/Subsystems/Firmware/BIOS/Directory.cpp
+    FileSystem/SysFS/Subsystems/Firmware/Directory.cpp
+    FileSystem/SysFS/Subsystems/Firmware/PowerStateSwitch.cpp
     FileSystem/TmpFS.cpp
     FileSystem/VirtualFileSystem.cpp
+    Firmware/BIOS.cpp
     Firmware/ACPI/Initialize.cpp
     Firmware/ACPI/Parser.cpp
-    Firmware/Hypervisor/VMWareBackdoor.cpp
     Firmware/MultiProcessor/Parser.cpp
-    Firmware/BIOS.cpp
-    Firmware/PowerStateSwitch.cpp
-    Firmware/SysFSFirmware.cpp
     FutexQueue.cpp
-    Interrupts/APIC.cpp
     Interrupts/GenericInterruptHandler.cpp
-    Interrupts/IOAPIC.cpp
     Interrupts/IRQHandler.cpp
-    Interrupts/InterruptManagement.cpp
-    Interrupts/PIC.cpp
     Interrupts/SharedIRQHandler.cpp
     Interrupts/SpuriousInterruptHandler.cpp
     Interrupts/UnhandledInterruptHandler.cpp
@@ -182,12 +182,14 @@ set(KERNEL_SOURCES
     Memory/RingBuffer.cpp
     Memory/ScatterGatherList.cpp
     Memory/ScopedAddressSpaceSwitcher.cpp
+    Memory/SharedFramebufferVMObject.cpp
     Memory/SharedInodeVMObject.cpp
     Memory/VMObject.cpp
     Memory/VirtualRange.cpp
     MiniStdLib.cpp
     Locking/LockRank.cpp
     Locking/Mutex.cpp
+    Locking/Spinlock.cpp
     Net/Intel/E1000ENetworkAdapter.cpp
     Net/Intel/E1000NetworkAdapter.cpp
     Net/NE2000/NetworkAdapter.cpp
@@ -210,7 +212,6 @@ set(KERNEL_SOURCES
     ProcessSpecificExposed.cpp
     ProcessGroup.cpp
     ProcessProcFSTraits.cpp
-    RTC.cpp
     Random.cpp
     Scheduler.cpp
     StdLib.cpp
@@ -229,6 +230,7 @@ set(KERNEL_SOURCES
     Syscalls/emuctl.cpp
     Syscalls/execve.cpp
     Syscalls/exit.cpp
+    Syscalls/fallocate.cpp
     Syscalls/fcntl.cpp
     Syscalls/fork.cpp
     Syscalls/fsync.cpp
@@ -281,6 +283,7 @@ set(KERNEL_SOURCES
     Syscalls/unlink.cpp
     Syscalls/unveil.cpp
     Syscalls/utime.cpp
+    Syscalls/utimensat.cpp
     Syscalls/waitid.cpp
     Syscalls/inode_watcher.cpp
     Syscalls/write.cpp
@@ -306,16 +309,41 @@ set(KERNEL_SOURCES
     UserOrKernelBuffer.cpp
     WaitQueue.cpp
     WorkQueue.cpp
-    init.cpp
     kprintf.cpp
 )
 
 if ("${SERENITY_ARCH}" STREQUAL "i686" OR "${SERENITY_ARCH}" STREQUAL "x86_64")
     set(KERNEL_SOURCES
         ${KERNEL_SOURCES}
+        Arch/x86/init.cpp
+
+        Arch/Processor.cpp
+
+        Arch/x86/common/Interrupts/APIC.cpp
+        Arch/x86/common/Interrupts/IOAPIC.cpp
+        Arch/x86/common/Interrupts/PIC.cpp
+
+        Arch/x86/common/CMOS.cpp
+        Arch/x86/common/DebugOutput.cpp
+        Arch/x86/common/Delay.cpp
+        Arch/x86/common/I8042Reboot.cpp
+        Arch/x86/common/PCSpeaker.cpp
+        Arch/x86/common/RTC.cpp
         Arch/x86/common/ScopedCritical.cpp
         Arch/x86/common/SmapDisabler.cpp
-        Arch/x86/common/Spinlock.cpp
+        Arch/x86/common/Shutdown.cpp
+
+        Arch/x86/Hypervisor/BochsDisplayConnector.cpp
+        Arch/x86/Hypervisor/VMWareBackdoor.cpp
+
+        Arch/x86/ISABus/HID/PS2KeyboardDevice.cpp
+        Arch/x86/ISABus/HID/PS2MouseDevice.cpp
+        Arch/x86/ISABus/HID/VMWareMouseDevice.cpp
+        Arch/x86/ISABus/I8042Controller.cpp
+        Arch/x86/ISABus/IDEController.cpp
+        Arch/x86/PCI/Controller/HostBridge.cpp
+        Arch/x86/PCI/IDELegacyModeController.cpp
+        Arch/x86/PCI/Initializer.cpp
     )
 
     set(KERNEL_SOURCES
@@ -330,9 +358,10 @@ if ("${SERENITY_ARCH}" STREQUAL "i686" OR "${SERENITY_ARCH}" STREQUAL "x86_64")
         ${KERNEL_SOURCES}
         
         ${CMAKE_CURRENT_SOURCE_DIR}/Arch/x86/common/ASM_wrapper.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/Arch/x86/common/CrashHandler.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/Arch/x86/common/CPU.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/Arch/x86/common/CPUID.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/Arch/x86/common/CrashHandler.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/Arch/x86/common/InterruptManagement.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/Arch/x86/common/Interrupts.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/Arch/x86/common/PageDirectory.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/Arch/x86/common/Processor.cpp
@@ -345,6 +374,13 @@ if ("${SERENITY_ARCH}" STREQUAL "i686" OR "${SERENITY_ARCH}" STREQUAL "x86_64")
         set(KERNEL_SOURCES
             ${KERNEL_SOURCES}
             ${CMAKE_CURRENT_SOURCE_DIR}/Arch/x86/${KERNEL_ARCH}/SyscallEntry.cpp
+        )
+    endif()
+
+    if ("${SERENITY_ARCH}" STREQUAL "i686")
+        set(KERNEL_SOURCES
+            ${KERNEL_SOURCES}
+            ${CMAKE_CURRENT_SOURCE_DIR}/Arch/x86/${KERNEL_ARCH}/Atomics.cpp
         )
     endif()
 endif()
@@ -384,6 +420,14 @@ set(CRYPTO_SOURCES
     ../Userland/Libraries/LibCrypto/Hash/SHA2.cpp
 )
 
+set(PARTITION_SOURCES
+    ../Userland/Libraries/LibPartition/DiskPartitionMetadata.cpp
+    ../Userland/Libraries/LibPartition/EBRPartitionTable.cpp
+    ../Userland/Libraries/LibPartition/GUIDPartitionTable.cpp
+    ../Userland/Libraries/LibPartition/MBRPartitionTable.cpp
+    ../Userland/Libraries/LibPartition/PartitionTable.cpp
+)
+
 set(SOURCES
     ${AK_SOURCES}
     )
@@ -395,11 +439,14 @@ if (NOT "${SERENITY_ARCH}" STREQUAL "aarch64")
         ${ELF_SOURCES}
         ${VT_SOURCES}
         ${CRYPTO_SOURCES}
+        ${PARTITION_SOURCES}
     )
 else()
     set(RPI_SOURCES
+        Arch/aarch64/RPi/DebugOutput.cpp
         Arch/aarch64/RPi/Framebuffer.cpp
         Arch/aarch64/RPi/GPIO.cpp
+        Arch/aarch64/RPi/InterruptController.cpp
         Arch/aarch64/RPi/Mailbox.cpp
         Arch/aarch64/RPi/MMIO.cpp
         Arch/aarch64/RPi/Timer.cpp
@@ -409,12 +456,16 @@ else()
         ${AK_SOURCES}
         ${RPI_SOURCES}
 
+        Arch/Processor.cpp
+
         Arch/aarch64/boot.S
         Arch/aarch64/BootPPMParser.cpp
         Arch/aarch64/CrashHandler.cpp
         Arch/aarch64/Dummy.cpp
         Arch/aarch64/Exceptions.cpp
         Arch/aarch64/init.cpp
+        Arch/aarch64/InterruptManagement.cpp
+        Arch/aarch64/Interrupts.cpp
         Arch/aarch64/kprintf.cpp
         Arch/aarch64/MainIdRegister.cpp
         Arch/aarch64/MMU.cpp
@@ -424,13 +475,21 @@ else()
         Arch/aarch64/SafeMem.cpp
         Arch/aarch64/ScopedCritical.cpp
         Arch/aarch64/SmapDisabler.cpp
-        Arch/aarch64/Spinlock.cpp
         Arch/aarch64/vector_table.S
 
         # Files from base Kernel
+        CommandLine.cpp
+        KString.cpp
         KSyms.cpp
         MiniStdLib.cpp
         UBSanitizer.cpp
+
+        Devices/DeviceManagement.cpp
+
+        Graphics/Console/BootFramebufferConsole.cpp
+        Graphics/Console/GenericFramebufferConsole.cpp
+
+        Locking/Spinlock.cpp
 
         Memory/AddressSpace.cpp
         Memory/AnonymousVMObject.cpp
@@ -448,6 +507,11 @@ else()
         Memory/SharedInodeVMObject.cpp
         Memory/VirtualRange.cpp
         Memory/VMObject.cpp
+
+        Interrupts/GenericInterruptHandler.cpp
+        Interrupts/IRQHandler.cpp
+        Interrupts/SharedIRQHandler.cpp
+        Interrupts/UnhandledInterruptHandler.cpp
     )
 
     # Otherwise linker errors e.g undefined reference to `__aarch64_cas8_acq_rel'
@@ -460,14 +524,30 @@ endif()
 add_compile_options(-fsigned-char)
 add_compile_options(-Wno-unknown-warning-option -Wvla -Wnull-dereference)
 add_compile_options(-fno-rtti -ffreestanding -fbuiltin)
+
 if ("${SERENITY_ARCH}" STREQUAL "i686" OR "${SERENITY_ARCH}" STREQUAL "x86_64")
     add_compile_options(-mno-80387 -mno-mmx -mno-sse -mno-sse2)
+elseif("${SERENITY_ARCH}" STREQUAL "aarch64")
+    add_compile_options(-mgeneral-regs-only)
 endif()
+
 add_compile_options(-fno-asynchronous-unwind-tables)
 add_compile_options(-fstack-protector-strong)
 add_compile_options(-fno-exceptions)
 # FIXME: remove -nodefaultlibs after the next toolchain update
 add_compile_options(-nodefaultlibs -nostdlib)
+
+# Auto initialize trivial types on the stack, we use "pattern" as 
+# it's the only option portable across compilers going forward.
+#
+# This is designed to help avoid uninitialized variables bugs and
+# information disclosures coming from the kernel stack. 
+#
+# FIXME: It appears to conflict with something during the boot of the
+# aarch64 kernel, we should investigate and remove this special case.
+if (NOT "${SERENITY_ARCH}" STREQUAL "aarch64")
+    add_compile_options(-ftrivial-auto-var-init=pattern)
+endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     # Apply any flags that are only available on >= GCC 11.1
@@ -482,7 +562,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 
 
     # Prevent naively implemented string functions (like strlen) from being "optimized" into a call to themselves.
-    set_source_files_properties(MiniStdlib.cpp
+    set_source_files_properties(MiniStdLib.cpp
         PROPERTIES COMPILE_FLAGS "-fno-tree-loop-distribution -fno-tree-loop-distribute-patterns")
 
     add_link_options(LINKER:-z,pack-relative-relocs)
@@ -507,7 +587,7 @@ endmacro()
 if ("${SERENITY_ARCH}" STREQUAL "x86_64")
     add_compile_options(-mcmodel=large -mno-red-zone)
     set_new_alignment(8)
-else()
+elseif ("${SERENITY_ARCH}" STREQUAL "i686")
     set_new_alignment(4)
 endif()
 
@@ -546,8 +626,10 @@ elseif (ENABLE_USERSPACE_COVERAGE_COLLECTION)
     add_compile_definitions(SKIP_PATH_VALIDATION_FOR_COVERAGE_INSTRUMENTATION)
 endif()
 
-# Kernel Undefined Behavior Sanitizer (KUBSAN)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined")
+if (ENABLE_KERNEL_UNDEFINED_SANITIZER)
+    # Kernel Undefined Behavior Sanitizer (KUBSAN)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined")
+endif()
 
 # Kernel Address Sanitize (KASAN) implementation is still a work in progress, this option
 # is not currently meant to be used, besides when developing Kernel ASAN support.
@@ -604,8 +686,8 @@ endif()
 
 add_custom_command(
         TARGET Kernel POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E env NM=${CMAKE_NM} sh ${CMAKE_CURRENT_SOURCE_DIR}/mkmap.sh
-        COMMAND ${CMAKE_COMMAND} -E env OBJCOPY=${CMAKE_OBJCOPY} sh ${CMAKE_CURRENT_SOURCE_DIR}/embedmap.sh
+        COMMAND "${CMAKE_COMMAND}" -E env NM=${CMAKE_NM} sh ${CMAKE_CURRENT_SOURCE_DIR}/mkmap.sh
+        COMMAND "${CMAKE_COMMAND}" -E env OBJCOPY=${CMAKE_OBJCOPY} sh ${CMAKE_CURRENT_SOURCE_DIR}/embedmap.sh
         COMMAND ${CMAKE_OBJCOPY} --only-keep-debug Kernel Kernel.debug
         COMMAND ${CMAKE_OBJCOPY} --strip-debug Kernel
         COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=Kernel.debug Kernel

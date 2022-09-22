@@ -104,15 +104,19 @@ fi
     fi
 }
 
+SERENITY_QEMU_MIN_REQ_MAJOR_VERSION=6
+SERENITY_QEMU_MIN_REQ_MINOR_VERSION=2
+SERENITY_QEMU_MIN_REQ_VERSION="$SERENITY_QEMU_MIN_REQ_MAJOR_VERSION.$SERENITY_QEMU_MIN_REQ_MINOR_VERSION"
 if ! command -v "$SERENITY_QEMU_BIN" >/dev/null 2>&1 ; then
-    die "Please install QEMU version 5.0 or newer or use the Toolchain/BuildQemu.sh script."
+    die "Please install QEMU version $SERENITY_QEMU_MIN_REQ_VERSION or newer or use the Toolchain/BuildQemu.sh script."
 fi
 
-SERENITY_QEMU_MIN_REQ_VERSION=5
 installed_major_version=$("$SERENITY_QEMU_BIN" -version | head -n 1 | sed -E 's/QEMU emulator version ([1-9][0-9]*|0).*/\1/')
 installed_minor_version=$("$SERENITY_QEMU_BIN" -version | head -n 1 | sed -E 's/QEMU emulator version [0-9]+\.([1-9][0-9]*|0).*/\1/')
-if [ "$installed_major_version" -lt "$SERENITY_QEMU_MIN_REQ_VERSION" ]; then
-    echo "Required QEMU >= 5.0! Found $($SERENITY_QEMU_BIN -version | head -n 1)"
+if [ "$installed_major_version" -lt "$SERENITY_QEMU_MIN_REQ_MAJOR_VERSION" ] ||
+   { [ "$installed_major_version" -eq "$SERENITY_QEMU_MIN_REQ_MAJOR_VERSION" ] &&
+     [ "$installed_minor_version" -lt "$SERENITY_QEMU_MIN_REQ_MINOR_VERSION" ]; }; then
+    echo "Required QEMU >= $SERENITY_QEMU_MIN_REQ_VERSION! Found $($SERENITY_QEMU_BIN -version | head -n 1)"
     echo "Please install a newer version of QEMU or use the Toolchain/BuildQemu.sh script."
     die
 fi
@@ -319,6 +323,7 @@ $SERENITY_EXTRA_QEMU_ARGS
 -cpu pentium3
 -machine isapc
 -d guest_errors
+-device isa-vga
 -chardev stdio,id=stdout,mux=on
 -device isa-debugcon,chardev=stdout
 $SERENITY_BOOT_DRIVE
@@ -332,7 +337,7 @@ $SERENITY_EXTRA_QEMU_ARGS
 -d guest_errors
 -chardev stdio,id=stdout,mux=on
 -device isa-debugcon,chardev=stdout
--device isa-cirrus-vga
+-device isa-vga
 -device isa-ide
 $SERENITY_BOOT_DRIVE
 -device i8042 
@@ -370,7 +375,6 @@ $SERENITY_EXTRA_QEMU_ARGS
 -device pci-bridge,chassis_nr=1,id=bridge1,bus=pcie.4,addr=0x3.0x0
 -device sdhci-pci,bus=bridge1,addr=0x1.0x0
 -display $SERENITY_QEMU_DISPLAY_BACKEND
--device ahci,id=ahci
 -device virtio-serial
 -chardev stdio,id=stdout,mux=on
 -device virtconsole,chardev=stdout

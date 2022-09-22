@@ -210,15 +210,18 @@ Optional<u32> HTMLTokenizer::next_code_point()
 
 void HTMLTokenizer::skip(size_t count)
 {
-    m_source_positions.append(m_source_positions.last());
+    if (!m_source_positions.is_empty())
+        m_source_positions.append(m_source_positions.last());
     for (size_t i = 0; i < count; ++i) {
         m_prev_utf8_iterator = m_utf8_iterator;
         auto code_point = *m_utf8_iterator;
-        if (code_point == '\n') {
-            m_source_positions.last().column = 0;
-            m_source_positions.last().line++;
-        } else {
-            m_source_positions.last().column++;
+        if (!m_source_positions.is_empty()) {
+            if (code_point == '\n') {
+                m_source_positions.last().column = 0;
+                m_source_positions.last().line++;
+            } else {
+                m_source_positions.last().column++;
+            }
         }
         ++m_utf8_iterator;
     }
@@ -245,7 +248,7 @@ HTMLToken::Position HTMLTokenizer::nth_last_position(size_t n)
 
 Optional<HTMLToken> HTMLTokenizer::next_token()
 {
-    {
+    if (!m_source_positions.is_empty()) {
         auto last_position = m_source_positions.last();
         m_source_positions.clear_with_capacity();
         m_source_positions.append(move(last_position));
@@ -253,6 +256,9 @@ Optional<HTMLToken> HTMLTokenizer::next_token()
 _StartOfFunction:
     if (!m_queued_tokens.is_empty())
         return m_queued_tokens.dequeue();
+
+    if (m_aborted)
+        return {};
 
     for (;;) {
         auto current_input_character = next_code_point();
@@ -404,22 +410,22 @@ _StartOfFunction:
             BEGIN_STATE(MarkupDeclarationOpen)
             {
                 DONT_CONSUME_NEXT_INPUT_CHARACTER;
-                if (consume_next_if_match("--")) {
+                if (consume_next_if_match("--"sv)) {
                     create_new_token(HTMLToken::Type::Comment);
                     m_current_token.set_start_position({}, nth_last_position(3));
                     SWITCH_TO(CommentStart);
                 }
-                if (consume_next_if_match("DOCTYPE", CaseSensitivity::CaseInsensitive)) {
+                if (consume_next_if_match("DOCTYPE"sv, CaseSensitivity::CaseInsensitive)) {
                     SWITCH_TO(DOCTYPE);
                 }
-                if (consume_next_if_match("[CDATA[")) {
+                if (consume_next_if_match("[CDATA["sv)) {
                     // We keep the parser optional so that syntax highlighting can be lexer-only.
                     // The parser registers itself with the lexer it creates.
                     if (m_parser != nullptr && m_parser->adjusted_current_node().namespace_() != Namespace::HTML) {
                         SWITCH_TO(CDATASection);
                     } else {
                         create_new_token(HTMLToken::Type::Comment);
-                        m_current_builder.append("[CDATA[");
+                        m_current_builder.append("[CDATA["sv);
                         SWITCH_TO_WITH_UNCLEAN_BUILDER(BogusComment);
                     }
                 }
@@ -592,10 +598,10 @@ _StartOfFunction:
                 }
                 ANYTHING_ELSE
                 {
-                    if (to_ascii_uppercase(current_input_character.value()) == 'P' && consume_next_if_match("UBLIC", CaseSensitivity::CaseInsensitive)) {
+                    if (to_ascii_uppercase(current_input_character.value()) == 'P' && consume_next_if_match("UBLIC"sv, CaseSensitivity::CaseInsensitive)) {
                         SWITCH_TO(AfterDOCTYPEPublicKeyword);
                     }
-                    if (to_ascii_uppercase(current_input_character.value()) == 'S' && consume_next_if_match("YSTEM", CaseSensitivity::CaseInsensitive)) {
+                    if (to_ascii_uppercase(current_input_character.value()) == 'S' && consume_next_if_match("YSTEM"sv, CaseSensitivity::CaseInsensitive)) {
                         SWITCH_TO(AfterDOCTYPESystemKeyword);
                     }
                     log_parse_error();
@@ -1190,7 +1196,8 @@ _StartOfFunction:
                 ANYTHING_ELSE
                 {
                     m_current_token.add_attribute({});
-                    m_current_token.last_attribute().name_start_position = m_source_positions.last();
+                    if (!m_source_positions.is_empty())
+                        m_current_token.last_attribute().name_start_position = m_source_positions.last();
                     RECONSUME_IN(AttributeName);
                 }
             }
@@ -1483,7 +1490,7 @@ _StartOfFunction:
                 }
                 ANYTHING_ELSE
                 {
-                    m_current_builder.append("--");
+                    m_current_builder.append("--"sv);
                     RECONSUME_IN(Comment);
                 }
             }
@@ -1494,7 +1501,7 @@ _StartOfFunction:
             {
                 ON('-')
                 {
-                    m_current_builder.append("--!");
+                    m_current_builder.append("--!"sv);
                     SWITCH_TO_WITH_UNCLEAN_BUILDER(CommentEndDash);
                 }
                 ON('>')
@@ -1511,7 +1518,7 @@ _StartOfFunction:
                 }
                 ANYTHING_ELSE
                 {
-                    m_current_builder.append("--!");
+                    m_current_builder.append("--!"sv);
                     RECONSUME_IN(Comment);
                 }
             }
@@ -2867,8 +2874,10 @@ void HTMLTokenizer::restore_to(Utf8CodePointIterator const& new_iterator)
 {
     auto diff = m_utf8_iterator - new_iterator;
     if (diff > 0) {
-        for (ssize_t i = 0; i < diff; ++i)
-            m_source_positions.take_last();
+        for (ssize_t i = 0; i < diff; ++i) {
+            if (!m_source_positions.is_empty())
+                m_source_positions.take_last();
+        }
     } else {
         // Going forwards...?
         TODO();

@@ -9,17 +9,14 @@
 
 namespace Kernel::USB {
 
-ErrorOr<NonnullRefPtr<Transfer>> Transfer::try_create(Pipe& pipe, u16 length)
+ErrorOr<NonnullLockRefPtr<Transfer>> Transfer::try_create(Pipe& pipe, u16 length, Memory::Region& dma_buffer)
 {
-    // Initialize data buffer for transfer
-    // This will definitely need to be refactored in the future, I doubt this will scale well...
-    auto region = TRY(MM.allocate_kernel_region(PAGE_SIZE, "USB Transfer Buffer", Memory::Region::Access::ReadWrite));
-    return adopt_nonnull_ref_or_enomem(new (nothrow) Transfer(pipe, length, move(region)));
+    return adopt_nonnull_lock_ref_or_enomem(new (nothrow) Transfer(pipe, length, dma_buffer));
 }
 
-Transfer::Transfer(Pipe& pipe, u16 len, NonnullOwnPtr<Memory::Region> data_buffer)
+Transfer::Transfer(Pipe& pipe, u16 len, Memory::Region& dma_buffer)
     : m_pipe(pipe)
-    , m_data_buffer(move(data_buffer))
+    , m_dma_buffer(dma_buffer)
     , m_transfer_data_size(len)
 {
 }
@@ -41,6 +38,15 @@ void Transfer::set_setup_packet(USBRequestData const& request)
     request_data->length = request.length;
 
     m_request = request;
+}
+
+ErrorOr<void> Transfer::write_buffer(u16 len, void* data)
+{
+    VERIFY(len <= m_dma_buffer.size());
+    m_transfer_data_size = len;
+    memcpy(buffer().as_ptr(), data, len);
+
+    return {};
 }
 
 }

@@ -8,8 +8,10 @@
 #include <AK/ScopedValueRollback.h>
 #include <AK/String.h>
 #include <AK/Vector.h>
+#include <LibCore/File.h>
 #include <alloca.h>
 #include <assert.h>
+#include <bits/pthread_cancel.h>
 #include <bits/pthread_integration.h>
 #include <dirent.h>
 #include <errno.h>
@@ -177,15 +179,18 @@ int execve(char const* filename, char* const argv[], char* const envp[])
     __RETURN_WITH_ERRNO(rc, rc, -1);
 }
 
+// https://linux.die.net/man/3/execvpe (GNU extension)
 int execvpe(char const* filename, char* const argv[], char* const envp[])
 {
     if (strchr(filename, '/'))
         return execve(filename, argv, envp);
 
     ScopedValueRollback errno_rollback(errno);
+
+    // TODO: Make this use the PATH search implementation from Core::File.
     String path = getenv("PATH");
     if (path.is_empty())
-        path = "/bin:/usr/bin";
+        path = DEFAULT_PATH;
     auto parts = path.split(':');
     for (auto& part : parts) {
         auto candidate = String::formatted("{}/{}", part, filename);
@@ -374,6 +379,8 @@ pid_t getpgrp()
 // https://pubs.opengroup.org/onlinepubs/9699919799/functions/read.html
 ssize_t read(int fd, void* buf, size_t count)
 {
+    __pthread_maybe_cancel();
+
     int rc = syscall(SC_read, fd, buf, count);
     __RETURN_WITH_ERRNO(rc, rc, -1);
 }
@@ -381,6 +388,8 @@ ssize_t read(int fd, void* buf, size_t count)
 // https://pubs.opengroup.org/onlinepubs/9699919799/functions/pread.html
 ssize_t pread(int fd, void* buf, size_t count, off_t offset)
 {
+    __pthread_maybe_cancel();
+
     int rc = syscall(SC_pread, fd, buf, count, &offset);
     __RETURN_WITH_ERRNO(rc, rc, -1);
 }
@@ -388,6 +397,8 @@ ssize_t pread(int fd, void* buf, size_t count, off_t offset)
 // https://pubs.opengroup.org/onlinepubs/9699919799/functions/write.html
 ssize_t write(int fd, void const* buf, size_t count)
 {
+    __pthread_maybe_cancel();
+
     int rc = syscall(SC_write, fd, buf, count);
     __RETURN_WITH_ERRNO(rc, rc, -1);
 }
@@ -395,6 +406,8 @@ ssize_t write(int fd, void const* buf, size_t count)
 // https://pubs.opengroup.org/onlinepubs/9699919799/functions/pwrite.html
 ssize_t pwrite(int fd, void const* buf, size_t count, off_t offset)
 {
+    __pthread_maybe_cancel();
+
     // FIXME: This is not thread safe and should be implemented in the kernel instead.
     off_t old_offset = lseek(fd, 0, SEEK_CUR);
     lseek(fd, offset, SEEK_SET);
@@ -484,6 +497,8 @@ char* ttyname(int fd)
 // https://pubs.opengroup.org/onlinepubs/9699919799/functions/close.html
 int close(int fd)
 {
+    __pthread_maybe_cancel();
+
     int rc = syscall(SC_close, fd);
     __RETURN_WITH_ERRNO(rc, rc, -1);
 }
@@ -891,6 +906,8 @@ int sysbeep()
 // https://pubs.opengroup.org/onlinepubs/9699919799/functions/fsync.html
 int fsync(int fd)
 {
+    __pthread_maybe_cancel();
+
     int rc = syscall(SC_fsync, fd);
     __RETURN_WITH_ERRNO(rc, rc, -1);
 }
@@ -994,5 +1011,26 @@ int getdtablesize()
     rlimit dtablesize;
     int rc = getrlimit(RLIMIT_NOFILE, &dtablesize);
     __RETURN_WITH_ERRNO(rc, dtablesize.rlim_cur, rc);
+}
+
+// https://pubs.opengroup.org/onlinepubs/007904975/functions/nice.html
+int nice(int incr)
+{
+    dbgln("FIXME: nice was called with: {}, not implemented", incr);
+    return incr;
+}
+
+int brk(void* addr)
+{
+    dbgln("TODO: brk({:#x})", addr);
+    errno = ENOMEM;
+    return -1;
+}
+
+void* sbrk(intptr_t incr)
+{
+    dbgln("TODO: sbrk({:#x})", incr);
+    errno = ENOMEM;
+    return reinterpret_cast<void*>(-1);
 }
 }

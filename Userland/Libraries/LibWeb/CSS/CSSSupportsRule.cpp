@@ -6,13 +6,20 @@
 
 #include <LibWeb/CSS/CSSSupportsRule.h>
 #include <LibWeb/CSS/Parser/Parser.h>
+#include <LibWeb/HTML/Window.h>
 
 namespace Web::CSS {
 
-CSSSupportsRule::CSSSupportsRule(NonnullRefPtr<Supports>&& supports, NonnullRefPtrVector<CSSRule>&& rules)
-    : CSSConditionRule(move(rules))
+CSSSupportsRule* CSSSupportsRule::create(HTML::Window& window_object, NonnullRefPtr<Supports>&& supports, CSSRuleList& rules)
+{
+    return window_object.heap().allocate<CSSSupportsRule>(window_object.realm(), window_object, move(supports), rules);
+}
+
+CSSSupportsRule::CSSSupportsRule(HTML::Window& window_object, NonnullRefPtr<Supports>&& supports, CSSRuleList& rules)
+    : CSSConditionRule(window_object, rules)
     , m_supports(move(supports))
 {
+    set_prototype(&window_object.cached_web_prototype("CSSSupportsRule"));
 }
 
 String CSSSupportsRule::condition_text() const
@@ -34,17 +41,17 @@ String CSSSupportsRule::serialized() const
 
     StringBuilder builder;
 
-    builder.append("@supports ");
+    builder.append("@supports "sv);
     builder.append(condition_text());
-    builder.append(" {\n");
+    builder.append(" {\n"sv);
     for (size_t i = 0; i < css_rules().length(); i++) {
         auto rule = css_rules().item(i);
         if (i != 0)
-            builder.append("\n");
-        builder.append("  ");
+            builder.append("\n"sv);
+        builder.append("  "sv);
         builder.append(rule->css_text());
     }
-    builder.append("\n}");
+    builder.append("\n}"sv);
 
     return builder.to_string();
 }

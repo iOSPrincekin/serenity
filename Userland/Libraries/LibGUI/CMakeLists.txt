@@ -1,3 +1,4 @@
+compile_gml(EmojiInputDialog.gml EmojiInputDialogGML.h emoji_input_dialog_gml)
 compile_gml(FontPickerDialog.gml FontPickerDialogGML.h font_picker_dialog_gml)
 compile_gml(FilePickerDialog.gml FilePickerDialogGML.h file_picker_dialog_gml)
 compile_gml(PasswordInputDialog.gml PasswordInputDialogGML.h password_input_dialog_gml)
@@ -8,9 +9,9 @@ set(SOURCES
     AbstractScrollableWidget.cpp
     AbstractSlider.cpp
     AbstractTableView.cpp
+    AbstractThemePreview.cpp
     AbstractView.cpp
     AbstractZoomPanWidget.cpp
-    AbstractThemePreview.cpp
     Action.cpp
     ActionGroup.cpp
     Application.cpp
@@ -24,16 +25,19 @@ set(SOURCES
     ColorInput.cpp
     ColorPicker.cpp
     ColumnsView.cpp
-    CommonActions.cpp
-    CommonLocationsProvider.cpp
     ComboBox.cpp
     CommandPalette.cpp
+    CommonActions.cpp
+    CommonLocationsProvider.cpp
+    ConnectionToWindowManagerServer.cpp
+    ConnectionToWindowServer.cpp
     Desktop.cpp
     Dialog.cpp
     DisplayLink.cpp
     DragOperation.cpp
     EditingEngine.cpp
     EmojiInputDialog.cpp
+    EmojiInputDialogGML.h
     Event.cpp
     FileIconProvider.cpp
     FilePicker.cpp
@@ -52,11 +56,11 @@ set(SOURCES
     GML/SyntaxHighlighter.cpp
     GroupBox.cpp
     HeaderView.cpp
-    INILexer.cpp
-    INISyntaxHighlighter.cpp
     Icon.cpp
     IconView.cpp
     ImageWidget.cpp
+    INILexer.cpp
+    INISyntaxHighlighter.cpp
     InputBox.cpp
     JsonArrayModel.cpp
     Label.cpp
@@ -65,8 +69,8 @@ set(SOURCES
     LinkLabel.cpp
     ListView.cpp
     Menu.cpp
-    MenuItem.cpp
     Menubar.cpp
+    MenuItem.cpp
     MessageBox.cpp
     Model.cpp
     ModelIndex.cpp
@@ -79,6 +83,7 @@ set(SOURCES
     PasswordInputDialog.cpp
     PasswordInputDialogGML.h
     PersistentModelIndex.cpp
+    Process.cpp
     ProcessChooser.cpp
     Progressbar.cpp
     RadioButton.cpp
@@ -97,8 +102,8 @@ set(SOURCES
     Splitter.cpp
     StackWidget.cpp
     Statusbar.cpp
-    TabWidget.cpp
     TableView.cpp
+    TabWidget.cpp
     TextBox.cpp
     TextDocument.cpp
     TextEditor.cpp
@@ -113,11 +118,9 @@ set(SOURCES
     VimEditingEngine.cpp
     Widget.cpp
     Window.cpp
-    ConnectionToWindowServer.cpp
-    ConnectionToWindowMangerServer.cpp
-    Wizards/WizardDialog.cpp
     Wizards/AbstractWizardPage.cpp
     Wizards/CoverWizardPage.cpp
+    Wizards/WizardDialog.cpp
     Wizards/WizardPage.cpp
 )
 
@@ -133,4 +136,4 @@ set(GENERATED_SOURCES
 )
 
 serenity_lib(LibGUI gui)
-target_link_libraries(LibGUI LibCore LibGfx LibIPC LibThreading LibRegex LibSyntax LibConfig)
+target_link_libraries(LibGUI LibCore LibGfx LibIPC LibThreading LibRegex LibSyntax LibConfig LibUnicode)

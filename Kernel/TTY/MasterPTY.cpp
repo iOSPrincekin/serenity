@@ -5,7 +5,7 @@
  */
 
 #include <Kernel/API/POSIX/errno.h>
-#include <Kernel/Arch/x86/InterruptDisabler.h>
+#include <Kernel/Arch/InterruptDisabler.h>
 #include <Kernel/Debug.h>
 #include <Kernel/Process.h>
 #include <Kernel/TTY/MasterPTY.h>
@@ -16,11 +16,11 @@
 
 namespace Kernel {
 
-ErrorOr<NonnullRefPtr<MasterPTY>> MasterPTY::try_create(unsigned int index)
+ErrorOr<NonnullLockRefPtr<MasterPTY>> MasterPTY::try_create(unsigned int index)
 {
-    auto buffer = TRY(DoubleBuffer::try_create());
-    auto master_pty = TRY(adopt_nonnull_ref_or_enomem(new (nothrow) MasterPTY(index, move(buffer))));
-    auto slave_pty = TRY(adopt_nonnull_ref_or_enomem(new (nothrow) SlavePTY(*master_pty, index)));
+    auto buffer = TRY(DoubleBuffer::try_create("MasterPTY: Buffer"sv));
+    auto master_pty = TRY(adopt_nonnull_lock_ref_or_enomem(new (nothrow) MasterPTY(index, move(buffer))));
+    auto slave_pty = TRY(adopt_nonnull_lock_ref_or_enomem(new (nothrow) SlavePTY(*master_pty, index)));
     master_pty->m_slave = slave_pty;
     master_pty->after_inserting();
     slave_pty->after_inserting();
@@ -33,8 +33,9 @@ MasterPTY::MasterPTY(unsigned index, NonnullOwnPtr<DoubleBuffer> buffer)
     , m_buffer(move(buffer))
 {
     auto& process = Process::current();
-    set_uid(process.uid());
-    set_gid(process.gid());
+    auto credentials = process.credentials();
+    set_uid(credentials->uid());
+    set_gid(credentials->gid());
 
     m_buffer->set_unblock_callback([this]() {
         if (m_slave)

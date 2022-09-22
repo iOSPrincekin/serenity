@@ -37,6 +37,8 @@ struct TransitionKey {
 class Shape final
     : public Cell
     , public Weakable<Shape> {
+    JS_CELL(Shape, Cell);
+
 public:
     virtual ~Shape() override = default;
 
@@ -46,13 +48,6 @@ public:
         Configure,
         Prototype,
     };
-
-    enum class ShapeWithoutGlobalObjectTag { Tag };
-
-    explicit Shape(ShapeWithoutGlobalObjectTag) {};
-    explicit Shape(Object& global_object);
-    Shape(Shape& previous_shape, StringOrSymbol const& property_key, PropertyAttributes attributes, TransitionType);
-    Shape(Shape& previous_shape, Object* new_prototype);
 
     Shape* create_put_transition(StringOrSymbol const&, PropertyAttributes attributes);
     Shape* create_configure_transition(StringOrSymbol const&, PropertyAttributes attributes);
@@ -64,7 +59,7 @@ public:
     bool is_unique() const { return m_unique; }
     Shape* create_unique_clone() const;
 
-    GlobalObject* global_object() const;
+    Realm& realm() const { return m_realm; }
 
     Object* prototype() { return m_prototype; }
     Object const* prototype() const { return m_prototype; }
@@ -87,7 +82,10 @@ public:
     void reconfigure_property_in_unique_shape(StringOrSymbol const& property_key, PropertyAttributes attributes);
 
 private:
-    virtual StringView class_name() const override { return "Shape"sv; }
+    explicit Shape(Realm&);
+    Shape(Shape& previous_shape, StringOrSymbol const& property_key, PropertyAttributes attributes, TransitionType);
+    Shape(Shape& previous_shape, Object* new_prototype);
+
     virtual void visit_edges(Visitor&) override;
 
     Shape* get_or_prune_cached_forward_transition(TransitionKey const&);
@@ -95,7 +93,7 @@ private:
 
     void ensure_property_table() const;
 
-    Object* m_global_object { nullptr };
+    Realm& m_realm;
 
     mutable OwnPtr<HashMap<StringOrSymbol, PropertyMetadata>> m_property_table;
 

@@ -6,6 +6,7 @@
  */
 
 #include <LibWeb/CSS/Parser/Parser.h>
+#include <LibWeb/HTML/Window.h>
 #include <LibWeb/Layout/Node.h>
 #include <LibWeb/SVG/SVGGraphicsElement.h>
 #include <LibWeb/SVG/SVGSVGElement.h>
@@ -15,24 +16,25 @@ namespace Web::SVG {
 SVGGraphicsElement::SVGGraphicsElement(DOM::Document& document, DOM::QualifiedName qualified_name)
     : SVGElement(document, move(qualified_name))
 {
+    set_prototype(&window().cached_web_prototype("SVGGraphicsElement"));
 }
 
 void SVGGraphicsElement::apply_presentational_hints(CSS::StyleProperties& style) const
 {
     CSS::Parser::ParsingContext parsing_context { document() };
     for_each_attribute([&](auto& name, auto& value) {
-        if (name.equals_ignoring_case("fill")) {
+        if (name.equals_ignoring_case("fill"sv)) {
             // FIXME: The `fill` attribute and CSS `fill` property are not the same! But our support is limited enough that they are equivalent for now.
             if (auto fill_value = parse_css_value(parsing_context, value, CSS::PropertyID::Fill))
                 style.set_property(CSS::PropertyID::Fill, fill_value.release_nonnull());
-        } else if (name.equals_ignoring_case("stroke")) {
+        } else if (name.equals_ignoring_case("stroke"sv)) {
             // FIXME: The `stroke` attribute and CSS `stroke` property are not the same! But our support is limited enough that they are equivalent for now.
             if (auto stroke_value = parse_css_value(parsing_context, value, CSS::PropertyID::Stroke))
                 style.set_property(CSS::PropertyID::Stroke, stroke_value.release_nonnull());
-        } else if (name.equals_ignoring_case("stroke-width")) {
+        } else if (name.equals_ignoring_case("stroke-width"sv)) {
             if (auto stroke_width_value = parse_css_value(parsing_context, value, CSS::PropertyID::StrokeWidth))
                 style.set_property(CSS::PropertyID::StrokeWidth, stroke_width_value.release_nonnull());
-        } else if (name.equals_ignoring_case("transform")) {
+        } else if (name.equals_ignoring_case("transform"sv)) {
             if (auto transform = parse_css_value(parsing_context, value, CSS::PropertyID::Transform))
                 style.set_property(CSS::PropertyID::Transform, transform.release_nonnull());
         }
@@ -70,8 +72,8 @@ Optional<float> SVGGraphicsElement::stroke_width() const
         float viewport_height = 0;
         if (auto* svg_svg_element = first_ancestor_of_type<SVGSVGElement>()) {
             if (auto* svg_svg_layout_node = svg_svg_element->layout_node()) {
-                viewport_width = svg_svg_layout_node->computed_values().width().value().resolved(*svg_svg_layout_node, { 0, CSS::Length::Type::Px }).to_px(*svg_svg_layout_node);
-                viewport_height = svg_svg_layout_node->computed_values().height().value().resolved(*svg_svg_layout_node, { 0, CSS::Length::Type::Px }).to_px(*svg_svg_layout_node);
+                viewport_width = svg_svg_layout_node->computed_values().width().resolved(*svg_svg_layout_node, { 0, CSS::Length::Type::Px }).to_px(*svg_svg_layout_node);
+                viewport_height = svg_svg_layout_node->computed_values().height().resolved(*svg_svg_layout_node, { 0, CSS::Length::Type::Px }).to_px(*svg_svg_layout_node);
             }
         }
         auto scaled_viewport_size = CSS::Length::make_px((viewport_width + viewport_height) * 0.5f);

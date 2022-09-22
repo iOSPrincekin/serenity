@@ -6,9 +6,10 @@
 
 #pragma once
 
-#include <AK/NonnullRefPtr.h>
+#include <AK/RefPtr.h>
 #include <Kernel/FileSystem/Custody.h>
 #include <Kernel/Forward.h>
+#include <Kernel/Library/NonnullLockRefPtr.h>
 
 namespace Kernel {
 
@@ -17,8 +18,8 @@ public:
     Mount(FileSystem&, Custody* host_custody, int flags);
     Mount(Inode& source, Custody& host_custody, int flags);
 
-    Inode const* host() const;
-    Inode* host();
+    LockRefPtr<Inode const> host() const;
+    LockRefPtr<Inode> host();
 
     Inode const& guest() const { return *m_guest; }
     Inode& guest() { return *m_guest; }
@@ -32,9 +33,9 @@ public:
     void set_flags(int flags) { m_flags = flags; }
 
 private:
-    NonnullRefPtr<Inode> m_guest;
-    NonnullRefPtr<FileSystem> m_guest_fs;
-    RefPtr<Custody> m_host_custody;
+    NonnullLockRefPtr<Inode> m_guest;
+    NonnullLockRefPtr<FileSystem> m_guest_fs;
+    SpinlockProtected<RefPtr<Custody>> m_host_custody;
     int m_flags;
 };
 

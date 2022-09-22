@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2018-2021, Andreas Kling <kling@serenityos.org>
- * Copyright (c) 2021, Jakob-Niklas See <git@nwex.de>
+ * Copyright (c) 2021, networkException <networkexception@serenityos.org>
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
@@ -60,10 +60,6 @@ public:
     Window const* active_input_window() const { return m_active_input_window; }
     void set_active_input_window(Window* window) { m_active_input_window = window; }
 
-    Window* active_input_tracking_window() { return m_active_input_tracking_window; }
-    Window const* active_input_tracking_window() const { return m_active_input_tracking_window; }
-    void set_active_input_tracking_window(Window* window) { m_active_input_tracking_window = window; }
-
     Optional<HitTestResult> hit_test(Gfx::IntPoint const&) const;
 
     unsigned row() const { return m_row; }
@@ -84,7 +80,6 @@ public:
 private:
     WeakPtr<Window> m_active_window;
     WeakPtr<Window> m_active_input_window;
-    WeakPtr<Window> m_active_input_tracking_window;
 
     Window::List m_windows;
     unsigned m_row { 0 };

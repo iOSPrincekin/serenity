@@ -14,13 +14,14 @@
 #include <LibJS/Runtime/Realm.h>
 #include <LibWeb/HTML/BrowsingContext.h>
 #include <LibWeb/HTML/EventLoop/EventLoop.h>
-#include <LibWeb/Origin.h>
+#include <LibWeb/HTML/Origin.h>
 
 namespace Web::HTML {
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#environment
 struct Environment {
-    // FIXME: An id https://html.spec.whatwg.org/multipage/webappapis.html#concept-environment-id
+    // An id https://html.spec.whatwg.org/multipage/webappapis.html#concept-environment-id
+    String id;
 
     // https://html.spec.whatwg.org/multipage/webappapis.html#concept-environment-creation-url
     AK::URL creation_url;
@@ -62,7 +63,7 @@ struct EnvironmentSettingsObject
     // FIXME: A module map https://html.spec.whatwg.org/multipage/webappapis.html#concept-settings-object-module-map
 
     // https://html.spec.whatwg.org/multipage/webappapis.html#responsible-document
-    virtual RefPtr<DOM::Document> responsible_document() = 0;
+    virtual JS::GCPtr<DOM::Document> responsible_document() = 0;
 
     // https://html.spec.whatwg.org/multipage/webappapis.html#api-url-character-encoding
     virtual String api_url_character_encoding() = 0;
@@ -79,7 +80,7 @@ struct EnvironmentSettingsObject
     virtual CanUseCrossOriginIsolatedAPIs cross_origin_isolated_capability() = 0;
 
     JS::Realm& realm();
-    JS::GlobalObject& global_object();
+    JS::Object& global_object();
     EventLoop& responsible_event_loop();
 
     RunScriptDecision can_run_script();
@@ -105,10 +106,10 @@ struct EnvironmentSettingsObject
     bool is_scripting_disabled() const;
 
 protected:
-    explicit EnvironmentSettingsObject(JS::ExecutionContext& realm_execution_context);
+    explicit EnvironmentSettingsObject(NonnullOwnPtr<JS::ExecutionContext>);
 
 private:
-    JS::ExecutionContext& m_realm_execution_context;
+    NonnullOwnPtr<JS::ExecutionContext> m_realm_execution_context;
     EventLoop* m_responsible_event_loop { nullptr };
 
     // https://html.spec.whatwg.org/multipage/webappapis.html#outstanding-rejected-promises-weak-set
@@ -121,11 +122,12 @@ private:
 
 EnvironmentSettingsObject& incumbent_settings_object();
 JS::Realm& incumbent_realm();
-JS::GlobalObject& incumbent_global_object();
+JS::Object& incumbent_global_object();
 EnvironmentSettingsObject& current_settings_object();
-JS::GlobalObject& current_global_object();
+JS::Object& current_global_object();
 JS::Realm& relevant_realm(JS::Object const&);
 EnvironmentSettingsObject& relevant_settings_object(JS::Object const&);
-JS::GlobalObject& relevant_global_object(JS::Object const&);
+EnvironmentSettingsObject& relevant_settings_object(DOM::Node const&);
+JS::Object& relevant_global_object(JS::Object const&);
 
 }

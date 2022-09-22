@@ -63,7 +63,6 @@ void WMConnectionFromClient::set_active_window(i32 client_id, i32 window_id)
         return;
     }
     auto& window = *(*it).value;
-    WindowManager::the().minimize_windows(window, false);
     WindowManager::the().move_to_front_and_make_active(window);
 }
 
@@ -181,6 +180,11 @@ void WMConnectionFromClient::set_window_taskbar_rect(i32 client_id, i32 window_i
 
     auto& window = *(*it).value;
     window.set_taskbar_rect(rect);
+}
+
+void WMConnectionFromClient::set_keymap(String const& keymap)
+{
+    WindowManager::the().keymap_switcher()->set_keymap(keymap);
 }
 
 }

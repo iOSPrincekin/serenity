@@ -26,8 +26,10 @@ public:
         FirstLine,
         FirstLetter,
         Marker,
+        ProgressValue,
+        ProgressBar
     };
-    static auto constexpr PseudoElementCount = to_underlying(PseudoElement::Marker) + 1;
+    static auto constexpr PseudoElementCount = to_underlying(PseudoElement::ProgressBar) + 1;
 
     struct SimpleSelector {
         enum class Type {
@@ -58,10 +60,10 @@ public:
                 // 3.
                 // - A is 1: Append "n" to result.
                 if (step_size == 1)
-                    result.append("n");
+                    result.append('n');
                 // - A is -1: Append "-n" to result.
                 else if (step_size == -1)
-                    result.append("-n");
+                    result.append("-n"sv);
                 // - A is non-zero: Serialize A and append it to result, then append "n" to result.
                 else if (step_size != 0)
                     result.appendff("{}n", step_size);
@@ -140,8 +142,19 @@ public:
             CaseType case_type;
         };
 
+        struct Name {
+            Name(FlyString n)
+                : name(move(n))
+                , lowercase_name(name.to_lowercase())
+            {
+            }
+
+            FlyString name;
+            FlyString lowercase_name;
+        };
+
         Type type;
-        Variant<Empty, Attribute, PseudoClass, PseudoElement, FlyString> value {};
+        Variant<Empty, Attribute, PseudoClass, PseudoElement, Name> value {};
 
         Attribute const& attribute() const { return value.get<Attribute>(); }
         Attribute& attribute() { return value.get<Attribute>(); }
@@ -149,8 +162,11 @@ public:
         PseudoClass& pseudo_class() { return value.get<PseudoClass>(); }
         PseudoElement const& pseudo_element() const { return value.get<PseudoElement>(); }
         PseudoElement& pseudo_element() { return value.get<PseudoElement>(); }
-        FlyString const& name() const { return value.get<FlyString>(); }
-        FlyString& name() { return value.get<FlyString>(); }
+
+        FlyString const& name() const { return value.get<Name>().name; }
+        FlyString& name() { return value.get<Name>().name; }
+        FlyString const& lowercase_name() const { return value.get<Name>().lowercase_name; }
+        FlyString& lowercase_name() { return value.get<Name>().lowercase_name; }
 
         String serialize() const;
     };
@@ -204,6 +220,10 @@ constexpr StringView pseudo_element_name(Selector::PseudoElement pseudo_element)
         return "first-letter"sv;
     case Selector::PseudoElement::Marker:
         return "marker"sv;
+    case Selector::PseudoElement::ProgressBar:
+        return "-webkit-progress-bar"sv;
+    case Selector::PseudoElement::ProgressValue:
+        return "-webkit-progress-value"sv;
     }
     VERIFY_NOT_REACHED();
 }

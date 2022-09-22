@@ -5,12 +5,14 @@
  */
 
 #include <LibWeb/HTML/HTMLHtmlElement.h>
+#include <LibWeb/HTML/Window.h>
 
 namespace Web::HTML {
 
 HTMLHtmlElement::HTMLHtmlElement(DOM::Document& document, DOM::QualifiedName qualified_name)
     : HTMLElement(document, move(qualified_name))
 {
+    set_prototype(&window().cached_web_prototype("HTMLHtmlElement"));
 }
 
 HTMLHtmlElement::~HTMLHtmlElement() = default;
@@ -21,7 +23,7 @@ bool HTMLHtmlElement::should_use_body_background_properties() const
     auto const& background_layers = layout_node()->background_layers();
 
     for (auto& layer : background_layers) {
-        if (layer.image)
+        if (layer.background_image)
             return false;
     }
 

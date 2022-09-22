@@ -4,47 +4,94 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <Kernel/FileSystem/SysFS/Subsystems/DeviceIdentifiers/CharacterDevicesDirectory.h>
+#include <Kernel/FileSystem/SysFS/Subsystems/Devices/Graphics/DisplayConnector/DeviceDirectory.h>
+#include <Kernel/FileSystem/SysFS/Subsystems/Devices/Graphics/DisplayConnector/Directory.h>
 #include <Kernel/Graphics/DisplayConnector.h>
 #include <Kernel/Graphics/GraphicsManagement.h>
+#include <Kernel/Memory/MemoryManager.h>
 #include <LibC/sys/ioctl_numbers.h>
 
 namespace Kernel {
 
-DisplayConnector::DisplayConnector()
+DisplayConnector::DisplayConnector(PhysicalAddress framebuffer_address, size_t framebuffer_resource_size, bool enable_write_combine_optimization)
     : CharacterDevice(226, GraphicsManagement::the().allocate_minor_device_number())
+    , m_enable_write_combine_optimization(enable_write_combine_optimization)
+    , m_framebuffer_at_arbitrary_physical_range(false)
+    , m_framebuffer_address(framebuffer_address)
+    , m_framebuffer_resource_size(framebuffer_resource_size)
 {
 }
 
-ErrorOr<Memory::Region*> DisplayConnector::mmap(Process&, OpenFileDescription&, Memory::VirtualRange const&, u64, int, bool)
+DisplayConnector::DisplayConnector(size_t framebuffer_resource_size, bool enable_write_combine_optimization)
+    : CharacterDevice(226, GraphicsManagement::the().allocate_minor_device_number())
+    , m_enable_write_combine_optimization(enable_write_combine_optimization)
+    , m_framebuffer_at_arbitrary_physical_range(true)
+    , m_framebuffer_address({})
+    , m_framebuffer_resource_size(framebuffer_resource_size)
 {
-    return Error::from_errno(ENOTSUP);
+}
+
+ErrorOr<NonnullLockRefPtr<Memory::VMObject>> DisplayConnector::vmobject_for_mmap(Process&, Memory::VirtualRange const&, u64& offset, bool)
+{
+    VERIFY(m_shared_framebuffer_vmobject);
+    if (offset != 0)
+        return Error::from_errno(ENOTSUP);
+
+    return *m_shared_framebuffer_vmobject;
 }
 
 ErrorOr<size_t> DisplayConnector::read(OpenFileDescription&, u64, UserOrKernelBuffer&, size_t)
 {
     return Error::from_errno(ENOTIMPL);
 }
-ErrorOr<size_t> DisplayConnector::write(OpenFileDescription&, u64 offset, UserOrKernelBuffer const& framebuffer_data, size_t length)
+
+ErrorOr<size_t> DisplayConnector::write(OpenFileDescription&, u64, UserOrKernelBuffer const&, size_t)
 {
-    SpinlockLocker locker(m_control_lock);
-    // FIXME: We silently ignore the request if we are in console mode.
-    // WindowServer is not ready yet to handle errors such as EBUSY currently.
-    if (console_mode()) {
-        return length;
-    }
-    return write_to_first_surface(offset, framebuffer_data, length);
+    return Error::from_errno(ENOTIMPL);
 }
 
 void DisplayConnector::will_be_destroyed()
 {
     GraphicsManagement::the().detach_display_connector({}, *this);
-    Device::will_be_destroyed();
+
+    VERIFY(m_symlink_sysfs_component);
+    before_will_be_destroyed_remove_symlink_from_device_identifier_directory();
+
+    m_symlink_sysfs_component.clear();
+    SysFSDisplayConnectorsDirectory::the().unplug({}, *m_sysfs_device_directory);
+    before_will_be_destroyed_remove_from_device_management();
 }
 
 void DisplayConnector::after_inserting()
 {
-    Device::after_inserting();
+    after_inserting_add_to_device_management();
+    auto sysfs_display_connector_device_directory = DisplayConnectorSysFSDirectory::create(SysFSDisplayConnectorsDirectory::the(), *this);
+    m_sysfs_device_directory = sysfs_display_connector_device_directory;
+    SysFSDisplayConnectorsDirectory::the().plug({}, *sysfs_display_connector_device_directory);
+    VERIFY(!m_symlink_sysfs_component);
+    auto sys_fs_component = MUST(SysFSSymbolicLinkDeviceComponent::try_create(SysFSCharacterDevicesDirectory::the(), *this, *m_sysfs_device_directory));
+    m_symlink_sysfs_component = sys_fs_component;
+    after_inserting_add_symlink_to_device_identifier_directory();
+
+    auto rounded_size = MUST(Memory::page_round_up(m_framebuffer_resource_size));
+
+    if (!m_framebuffer_at_arbitrary_physical_range) {
+        VERIFY(m_framebuffer_address.value().page_base() == m_framebuffer_address.value());
+        m_shared_framebuffer_vmobject = MUST(Memory::SharedFramebufferVMObject::try_create_for_physical_range(m_framebuffer_address.value(), rounded_size));
+        m_framebuffer_region = MUST(MM.allocate_kernel_region(m_framebuffer_address.value().page_base(), rounded_size, "Framebuffer"sv, Memory::Region::Access::ReadWrite));
+    } else {
+        m_shared_framebuffer_vmobject = MUST(Memory::SharedFramebufferVMObject::try_create_at_arbitrary_physical_range(rounded_size));
+        m_framebuffer_region = MUST(MM.allocate_kernel_region_with_vmobject(m_shared_framebuffer_vmobject->real_writes_framebuffer_vmobject(), rounded_size, "Framebuffer"sv, Memory::Region::Access::ReadWrite));
+    }
+
+    m_framebuffer_data = m_framebuffer_region->vaddr().as_ptr();
+    m_fake_writes_framebuffer_region = MUST(MM.allocate_kernel_region_with_vmobject(m_shared_framebuffer_vmobject->fake_writes_framebuffer_vmobject(), rounded_size, "Fake Writes Framebuffer"sv, Memory::Region::Access::ReadWrite));
+
     GraphicsManagement::the().attach_new_display_connector({}, *this);
+    if (m_enable_write_combine_optimization) {
+        [[maybe_unused]] auto result = m_framebuffer_region->set_write_combine(true);
+    }
 }
 
 bool DisplayConnector::console_mode() const
@@ -56,22 +103,41 @@ bool DisplayConnector::console_mode() const
 void DisplayConnector::set_display_mode(Badge<GraphicsManagement>, DisplayMode mode)
 {
     SpinlockLocker locker(m_control_lock);
+
     {
         SpinlockLocker locker(m_modeset_lock);
         [[maybe_unused]] auto result = set_y_offset(0);
     }
+
     m_console_mode = mode == DisplayMode::Console ? true : false;
-    if (m_console_mode)
+    if (m_console_mode) {
+        VERIFY(m_framebuffer_region->size() == m_fake_writes_framebuffer_region->size());
+        memcpy(m_fake_writes_framebuffer_region->vaddr().as_ptr(), m_framebuffer_region->vaddr().as_ptr(), m_framebuffer_region->size());
+        m_shared_framebuffer_vmobject->switch_to_fake_sink_framebuffer_writes({});
         enable_console();
-    else
+    } else {
         disable_console();
+        m_shared_framebuffer_vmobject->switch_to_real_framebuffer_writes({});
+        VERIFY(m_framebuffer_region->size() == m_fake_writes_framebuffer_region->size());
+        memcpy(m_framebuffer_region->vaddr().as_ptr(), m_fake_writes_framebuffer_region->vaddr().as_ptr(), m_framebuffer_region->size());
+    }
 }
 
-ErrorOr<void> DisplayConnector::initialize_edid_for_generic_monitor()
+ErrorOr<void> DisplayConnector::initialize_edid_for_generic_monitor(Optional<Array<u8, 3>> possible_manufacturer_id_string)
 {
+    u8 raw_manufacturer_id[2] = { 0x0, 0x0 };
+    if (possible_manufacturer_id_string.has_value()) {
+        Array<u8, 3> manufacturer_id_string = possible_manufacturer_id_string.release_value();
+        u8 byte1 = (((static_cast<u8>(manufacturer_id_string[0]) - '@') & 0x1f) << 2) | (((static_cast<u8>(manufacturer_id_string[1]) - '@') >> 3) & 3);
+        u8 byte2 = ((static_cast<u8>(manufacturer_id_string[2]) - '@') & 0x1f) | (((static_cast<u8>(manufacturer_id_string[1]) - '@') << 5) & 0xe0);
+        Array<u8, 2> manufacturer_id_string_packed_bytes = { byte1, byte2 };
+        raw_manufacturer_id[0] = manufacturer_id_string_packed_bytes[1];
+        raw_manufacturer_id[1] = manufacturer_id_string_packed_bytes[0];
+    }
+
     Array<u8, 128> virtual_monitor_edid = {
         0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, /* header */
-        0x0, 0x0,                                       /* manufacturer */
+        raw_manufacturer_id[1], raw_manufacturer_id[0], /* manufacturer */
         0x00, 0x00,                                     /* product code */
         0x00, 0x00, 0x00, 0x00,                         /* serial number goes here */
         0x01,                                           /* week of manufacture */
@@ -110,6 +176,14 @@ ErrorOr<void> DisplayConnector::initialize_edid_for_generic_monitor()
         0x00, /* number of extensions */
         0x00  /* checksum goes here */
     };
+    // Note: Fix checksum to avoid warnings about checksum mismatch.
+    size_t checksum = 0;
+    // Note: Read all 127 bytes to add them to the checksum. Byte 128 is zeroed so
+    // we could technically add it to the sum result, but it could lead to an error if it contained
+    // a non-zero value, so we are not using it.
+    for (size_t index = 0; index < sizeof(virtual_monitor_edid) - 1; index++)
+        checksum += virtual_monitor_edid[index];
+    virtual_monitor_edid[127] = 0x100 - checksum;
     set_edid_bytes(virtual_monitor_edid);
     return {};
 }
@@ -151,16 +225,81 @@ ErrorOr<ByteBuffer> DisplayConnector::get_edid() const
     return ByteBuffer::copy(m_edid_bytes, sizeof(m_edid_bytes));
 }
 
+struct GraphicsIOCtlChecker {
+    unsigned ioctl_number;
+    StringView name;
+    bool requires_ownership { false };
+};
+
+static constexpr GraphicsIOCtlChecker s_checkers[] = {
+    { GRAPHICS_IOCTL_GET_PROPERTIES, "GRAPHICS_IOCTL_GET_PROPERTIES"sv, false },
+    { GRAPHICS_IOCTL_SET_HEAD_VERTICAL_OFFSET_BUFFER, "GRAPHICS_IOCTL_SET_HEAD_VERTICAL_OFFSET_BUFFER"sv, true },
+    { GRAPHICS_IOCTL_GET_HEAD_VERTICAL_OFFSET_BUFFER, "GRAPHICS_IOCTL_GET_HEAD_VERTICAL_OFFSET_BUFFER"sv, false },
+    { GRAPHICS_IOCTL_FLUSH_HEAD_BUFFERS, "GRAPHICS_IOCTL_FLUSH_HEAD_BUFFERS"sv, true },
+    { GRAPHICS_IOCTL_FLUSH_HEAD, "GRAPHICS_IOCTL_FLUSH_HEAD"sv, true },
+    { GRAPHICS_IOCTL_SET_HEAD_MODE_SETTING, "GRAPHICS_IOCTL_SET_HEAD_MODE_SETTING"sv, true },
+    { GRAPHICS_IOCTL_GET_HEAD_MODE_SETTING, "GRAPHICS_IOCTL_GET_HEAD_MODE_SETTING"sv, false },
+    { GRAPHICS_IOCTL_SET_SAFE_HEAD_MODE_SETTING, "GRAPHICS_IOCTL_SET_SAFE_HEAD_MODE_SETTING"sv, true },
+    { GRAPHICS_IOCTL_SET_RESPONSIBLE, "GRAPHICS_IOCTL_SET_RESPONSIBLE"sv, false },
+    { GRAPHICS_IOCTL_UNSET_RESPONSIBLE, "GRAPHICS_IOCTL_UNSET_RESPONSIBLE"sv, true },
+};
+
+static StringView ioctl_to_stringview(unsigned request)
+{
+    for (auto& checker : s_checkers) {
+        if (checker.ioctl_number == request)
+            return checker.name;
+    }
+    VERIFY_NOT_REACHED();
+}
+
+bool DisplayConnector::ioctl_requires_ownership(unsigned request) const
+{
+    for (auto& checker : s_checkers) {
+        if (checker.ioctl_number == request)
+            return checker.requires_ownership;
+    }
+    VERIFY_NOT_REACHED();
+}
+
 ErrorOr<void> DisplayConnector::ioctl(OpenFileDescription&, unsigned request, Userspace<void*> arg)
 {
-    if (request != GRAPHICS_IOCTL_GET_HEAD_EDID) {
-        // Allow anyone to query the EDID. Eventually we'll publish the current EDID on /sys
-        // so it doesn't really make sense to require the video pledge to query it.
-        TRY(Process::current().require_promise(Pledge::video));
+    TRY(Process::current().require_promise(Pledge::video));
+
+    // Note: We only allow to set responsibility on a DisplayConnector,
+    // get the current ModeSetting or the hardware framebuffer properties without the
+    // need of having an established responsibility on a DisplayConnector.
+    if (ioctl_requires_ownership(request)) {
+        auto process = m_responsible_process.strong_ref();
+        if (!process || process.ptr() != &Process::current()) {
+            dbgln("DisplayConnector::ioctl: {} requires ownership over the device", ioctl_to_stringview(request));
+            return Error::from_errno(EPERM);
+        }
     }
 
-    // TODO: We really should have ioctls for destroying resources as well
     switch (request) {
+    case GRAPHICS_IOCTL_SET_RESPONSIBLE: {
+        SpinlockLocker locker(m_responsible_process_lock);
+        auto process = m_responsible_process.strong_ref();
+        // Note: If there's already a process being responsible, just return an error.
+        // We could technically return 0 if the the requesting process is already
+        // was set to be responsible for this DisplayConnector, but it servicing no
+        // no good purpose and should be considered a bug if this happens anyway.
+        if (process)
+            return Error::from_errno(EPERM);
+        m_responsible_process = Process::current();
+        return {};
+    }
+    case GRAPHICS_IOCTL_UNSET_RESPONSIBLE: {
+        SpinlockLocker locker(m_responsible_process_lock);
+        auto process = m_responsible_process.strong_ref();
+        if (!process)
+            return Error::from_errno(ESRCH);
+        if (process.ptr() != &Process::current())
+            return Error::from_errno(EPERM);
+        m_responsible_process.clear();
+        return {};
+    }
     case GRAPHICS_IOCTL_GET_PROPERTIES: {
         auto user_properties = static_ptr_cast<GraphicsConnectorProperties*>(arg);
         GraphicsConnectorProperties properties {};
@@ -191,25 +330,6 @@ ErrorOr<void> DisplayConnector::ioctl(OpenFileDescription&, unsigned request, Us
             head_mode_setting.vertical_offset = m_current_mode_setting.vertical_offset;
         }
         return copy_to_user(user_head_mode_setting, &head_mode_setting);
-    }
-    case GRAPHICS_IOCTL_GET_HEAD_EDID: {
-        auto user_head_edid = static_ptr_cast<GraphicsHeadEDID*>(arg);
-        GraphicsHeadEDID head_edid {};
-        TRY(copy_from_user(&head_edid, user_head_edid));
-
-        auto edid_bytes = TRY(get_edid());
-        if (head_edid.bytes != nullptr) {
-            // Only return the EDID if a buffer was provided. Either way,
-            // we'll write back the bytes_size with the actual size
-            if (head_edid.bytes_size < edid_bytes.size()) {
-                head_edid.bytes_size = edid_bytes.size();
-                TRY(copy_to_user(user_head_edid, &head_edid));
-                return Error::from_errno(EOVERFLOW);
-            }
-            TRY(copy_to_user(head_edid.bytes, (void const*)edid_bytes.data(), edid_bytes.size()));
-        }
-        head_edid.bytes_size = edid_bytes.size();
-        return copy_to_user(user_head_edid, &head_edid);
     }
     case GRAPHICS_IOCTL_SET_HEAD_MODE_SETTING: {
         auto user_mode_setting = static_ptr_cast<GraphicsHeadModeSetting const*>(arg);

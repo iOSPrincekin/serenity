@@ -93,15 +93,15 @@ public:
     [[nodiscard]] static ErrorOr<NonnullRefPtr<Bitmap>> try_create(BitmapFormat, IntSize const&, int intrinsic_scale = 1);
     [[nodiscard]] static ErrorOr<NonnullRefPtr<Bitmap>> try_create_shareable(BitmapFormat, IntSize const&, int intrinsic_scale = 1);
     [[nodiscard]] static ErrorOr<NonnullRefPtr<Bitmap>> try_create_wrapper(BitmapFormat, IntSize const&, int intrinsic_scale, size_t pitch, void*);
-    [[nodiscard]] static ErrorOr<NonnullRefPtr<Bitmap>> try_load_from_file(String const& path, int scale_factor = 1);
-    [[nodiscard]] static ErrorOr<NonnullRefPtr<Bitmap>> try_load_from_fd_and_close(int fd, String const& path);
+    [[nodiscard]] static ErrorOr<NonnullRefPtr<Bitmap>> try_load_from_file(StringView path, int scale_factor = 1);
+    [[nodiscard]] static ErrorOr<NonnullRefPtr<Bitmap>> try_load_from_fd_and_close(int fd, StringView path);
     [[nodiscard]] static ErrorOr<NonnullRefPtr<Bitmap>> try_create_with_anonymous_buffer(BitmapFormat, Core::AnonymousBuffer, IntSize const&, int intrinsic_scale, Vector<ARGB32> const& palette);
     static ErrorOr<NonnullRefPtr<Bitmap>> try_create_from_serialized_byte_buffer(ByteBuffer&&);
 
     static bool is_path_a_supported_image_format(StringView path)
     {
-#define __ENUMERATE_IMAGE_FORMAT(Name, Ext)                    \
-    if (path.ends_with(Ext, CaseSensitivity::CaseInsensitive)) \
+#define __ENUMERATE_IMAGE_FORMAT(Name, Ext)                        \
+    if (path.ends_with(Ext##sv, CaseSensitivity::CaseInsensitive)) \
         return true;
         ENUMERATE_IMAGE_FORMATS
 #undef __ENUMERATE_IMAGE_FORMAT
@@ -115,11 +115,13 @@ public:
     ErrorOr<NonnullRefPtr<Gfx::Bitmap>> flipped(Gfx::Orientation) const;
     ErrorOr<NonnullRefPtr<Gfx::Bitmap>> scaled(int sx, int sy) const;
     ErrorOr<NonnullRefPtr<Gfx::Bitmap>> scaled(float sx, float sy) const;
-    ErrorOr<NonnullRefPtr<Gfx::Bitmap>> cropped(Gfx::IntRect) const;
+    ErrorOr<NonnullRefPtr<Gfx::Bitmap>> cropped(Gfx::IntRect, Optional<BitmapFormat> new_bitmap_format = {}) const;
     ErrorOr<NonnullRefPtr<Gfx::Bitmap>> to_bitmap_backed_by_anonymous_buffer() const;
     [[nodiscard]] ByteBuffer serialize_to_byte_buffer() const;
 
     [[nodiscard]] ShareableBitmap to_shareable_bitmap() const;
+
+    void invert();
 
     ~Bitmap();
 
@@ -237,6 +239,8 @@ public:
     [[nodiscard]] Core::AnonymousBuffer const& anonymous_buffer() const { return m_buffer; }
 
     [[nodiscard]] bool visually_equals(Bitmap const&) const;
+
+    [[nodiscard]] Optional<Color> solid_color(u8 alpha_threshold = 0) const;
 
 private:
     Bitmap(BitmapFormat, IntSize const&, int, BackingStore const&);

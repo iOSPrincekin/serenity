@@ -25,6 +25,7 @@ class ComboBoxEditor final : public TextEditor {
 
 public:
     Function<void(int delta)> on_mousewheel;
+    Function<void(KeyEvent& event)> on_keypress;
 
 private:
     ComboBoxEditor()
@@ -46,8 +47,10 @@ private:
             if (is_focused())
                 set_focus(false);
             event.accept();
-        } else
+        } else {
+            on_keypress(event);
             TextEditor::keydown_event(event);
+        }
     }
 };
 
@@ -56,8 +59,8 @@ ComboBox::ComboBox()
     REGISTER_STRING_PROPERTY("placeholder", editor_placeholder, set_editor_placeholder);
     REGISTER_BOOL_PROPERTY("model_only", only_allow_values_from_model, set_only_allow_values_from_model);
 
-    set_min_width(32);
-    set_fixed_height(22);
+    set_min_size({ 40, 22 });
+    set_preferred_size({ SpecialDimension::OpportunisticGrow, 22 });
 
     m_editor = add<ComboBoxEditor>();
     m_editor->set_frame_thickness(0);
@@ -86,10 +89,16 @@ ComboBox::ComboBox()
         if (only_allow_values_from_model())
             m_open_button->click();
     };
+    m_editor->on_keypress = [this](KeyEvent& event) {
+        if (!m_list_window->is_visible() && event.key() <= Key_Z && event.key() >= Key_A) {
+            open();
+            m_list_window->event(event);
+        }
+    };
 
     m_open_button = add<Button>();
     m_open_button->set_button_style(Gfx::ButtonStyle::ThickCap);
-    m_open_button->set_icon(Gfx::Bitmap::try_load_from_file("/res/icons/16x16/downward-triangle.png").release_value_but_fixme_should_propagate_errors());
+    m_open_button->set_icon(Gfx::Bitmap::try_load_from_file("/res/icons/16x16/downward-triangle.png"sv).release_value_but_fixme_should_propagate_errors());
     m_open_button->set_focus_policy(GUI::FocusPolicy::NoFocus);
     m_open_button->on_click = [this](auto) {
         if (m_list_window->is_visible())
@@ -100,7 +109,7 @@ ComboBox::ComboBox()
 
     m_list_window = add<Window>(window());
     m_list_window->set_frameless(true);
-    m_list_window->set_accessory(true);
+    m_list_window->set_window_mode(WindowMode::CaptureInput);
     m_list_window->on_active_input_change = [this](bool is_active_input) {
         if (!is_active_input) {
             m_open_button->set_enabled(false);
@@ -108,6 +117,7 @@ ComboBox::ComboBox()
         }
         m_open_button->set_enabled(true);
     };
+    m_list_window->on_input_preemption = [this](auto) { close(); };
 
     m_list_view = m_list_window->set_main_widget<ListView>();
     m_list_view->horizontal_scrollbar().set_visible(false);
@@ -200,13 +210,22 @@ void ComboBox::set_model(NonnullRefPtr<Model> model)
     m_list_view->set_model(move(model));
 }
 
+void ComboBox::clear_selection()
+{
+    m_selected_index.clear();
+    m_editor->clear_selection();
+    m_editor->clear();
+}
+
 void ComboBox::set_selected_index(size_t index, AllowCallback allow_callback)
 {
     if (!m_list_view->model())
         return;
     size_t previous_index = selected_index();
     TemporaryChange change(m_updating_model, true);
-    m_list_view->set_cursor(m_list_view->model()->index(index, 0), AbstractView::SelectionUpdate::Set);
+    auto model_index = m_list_view->model()->index(index, 0);
+    m_list_view->set_cursor(model_index, AbstractView::SelectionUpdate::Set);
+    selection_updated(model_index);
     if (previous_index != selected_index() && on_change && allow_callback == AllowCallback::Yes)
         on_change(m_editor->text(), m_list_view->cursor_index());
 }

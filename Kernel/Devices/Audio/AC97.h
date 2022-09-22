@@ -13,6 +13,7 @@
 #include <Kernel/Devices/Audio/Controller.h>
 #include <Kernel/Devices/CharacterDevice.h>
 #include <Kernel/Interrupts/IRQHandler.h>
+#include <Kernel/Locking/SpinlockProtected.h>
 
 namespace Kernel {
 
@@ -25,7 +26,7 @@ class AC97 final
     , public IRQHandler {
 
 public:
-    static ErrorOr<NonnullRefPtr<AC97>> try_create(PCI::DeviceIdentifier const&);
+    static ErrorOr<NonnullLockRefPtr<AC97>> try_create(PCI::DeviceIdentifier const&);
 
     virtual ~AC97() override;
 
@@ -129,7 +130,10 @@ private:
         {
         }
 
-        bool dma_running() const { return m_dma_running; }
+        bool dma_running() const
+        {
+            return m_dma_running.with([](auto value) { return value; });
+        }
         void handle_dma_stopped();
         StringView name() const { return m_name; }
         IOAddress reg(Register reg) const { return m_channel_base.offset(reg); }
@@ -140,7 +144,7 @@ private:
     private:
         IOAddress m_channel_base;
         AC97& m_device;
-        bool m_dma_running { false };
+        SpinlockProtected<bool> m_dma_running { LockRank::None, false };
         StringView m_name;
     };
 
@@ -157,7 +161,7 @@ private:
     ErrorOr<void> write_single_buffer(UserOrKernelBuffer const&, size_t, size_t);
 
     // ^AudioController
-    virtual RefPtr<AudioChannel> audio_channel(u32 index) const override;
+    virtual LockRefPtr<AudioChannel> audio_channel(u32 index) const override;
     virtual ErrorOr<size_t> write(size_t channel_index, UserOrKernelBuffer const& data, size_t length) override;
     virtual void detect_hardware_audio_channels(Badge<AudioManagement>) override;
     virtual ErrorOr<void> set_pcm_output_sample_rate(size_t channel_index, u32 samples_per_second_rate) override;
@@ -176,7 +180,7 @@ private:
     AC97Channel m_pcm_out_channel;
     u32 m_sample_rate { 0 };
     bool m_variable_rate_pcm_supported { false };
-    RefPtr<AudioChannel> m_audio_channel;
+    LockRefPtr<AudioChannel> m_audio_channel;
 };
 
 }

@@ -99,7 +99,7 @@ public:
             return QueueStatus::Full;
         auto our_tail = m_queue->m_queue->m_tail.load() % Size;
         m_queue->m_queue->m_data[our_tail] = to_insert;
-        ++m_queue->m_queue->m_tail;
+        m_queue->m_queue->m_tail.fetch_add(1);
 
         return {};
     }
@@ -118,7 +118,7 @@ public:
             if (!result.is_error())
                 break;
             if (result.error() != QueueStatus::Full)
-                return Error::from_string_literal("Unexpected error while enqueuing"sv);
+                return Error::from_string_literal("Unexpected error while enqueuing");
 
             wait_function();
         }
@@ -129,14 +129,15 @@ public:
     {
         VERIFY(!m_queue.is_null());
         while (true) {
-            // The >= is not strictly necessary, but it feels safer :^)
-            if (head() >= m_queue->m_queue->m_tail.load())
-                return QueueStatus::Empty;
-
             // This CAS only succeeds if nobody is currently dequeuing.
             auto size_max = NumericLimits<size_t>::max();
             if (m_queue->m_queue->m_head_protector.compare_exchange_strong(size_max, m_queue->m_queue->m_head.load())) {
                 auto old_head = m_queue->m_queue->m_head.load();
+                // This check looks like it's in a weird place (especially since we have to roll back the protector), but it's actually protecting against a race between multiple dequeuers.
+                if (old_head >= m_queue->m_queue->m_tail.load()) {
+                    m_queue->m_queue->m_head_protector.store(NumericLimits<size_t>::max(), AK::MemoryOrder::memory_order_release);
+                    return QueueStatus::Empty;
+                }
                 auto data = move(m_queue->m_queue->m_data[old_head % Size]);
                 m_queue->m_queue->m_head.fetch_add(1);
                 m_queue->m_queue->m_head_protector.store(NumericLimits<size_t>::max(), AK::MemoryOrder::memory_order_release);
@@ -168,9 +169,9 @@ private:
         // A full queue is signalled with:  head - 1 mod size = tail mod size  (i.e. head and tail point to the same index in the data array)
         // FIXME: These invariants aren't proven to be correct after each successful completion of each operation where it is relevant.
         //        The work could be put in but for now I think the algorithmic correctness proofs of the functions are enough.
-        CACHE_ALIGNED Atomic<size_t, AK::MemoryOrder::memory_order_seq_cst> m_tail { 0 };
-        CACHE_ALIGNED Atomic<size_t, AK::MemoryOrder::memory_order_seq_cst> m_head { 0 };
-        CACHE_ALIGNED Atomic<size_t, AK::MemoryOrder::memory_order_seq_cst> m_head_protector { NumericLimits<size_t>::max() };
+        AK_CACHE_ALIGNED Atomic<size_t, AK::MemoryOrder::memory_order_seq_cst> m_tail { 0 };
+        AK_CACHE_ALIGNED Atomic<size_t, AK::MemoryOrder::memory_order_seq_cst> m_head { 0 };
+        AK_CACHE_ALIGNED Atomic<size_t, AK::MemoryOrder::memory_order_seq_cst> m_head_protector { NumericLimits<size_t>::max() };
 
         alignas(ValueType) Array<ValueType, Size> m_data;
     };
@@ -208,7 +209,7 @@ private:
         SharedMemorySPCQ* shared_queue = is_new ? new (raw_mapping) SharedMemorySPCQ() : reinterpret_cast<SharedMemorySPCQ*>(raw_mapping);
 
         if (!shared_queue)
-            return Error::from_string_literal("Unexpected error when creating shared queue from raw memory"sv);
+            return Error::from_string_literal("Unexpected error when creating shared queue from raw memory");
 
         return SharedSingleProducerCircularQueue<T, Size> { move(name), adopt_ref(*new (nothrow) RefCountedSharedMemorySPCQ(shared_queue, fd)) };
     }

@@ -14,7 +14,7 @@
 #include "WindowManager.h"
 #include <AK/Debug.h>
 #include <AK/Format.h>
-#include <Kernel/API/FB.h>
+#include <Kernel/API/Graphics.h>
 #include <Kernel/API/MousePacket.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -556,11 +556,6 @@ void Screen::flush_display(int buffer_index)
 
     flush_rects.too_many_pending_flush_rects = false;
     flush_rects.pending_flush_rects.clear_with_capacity();
-}
-
-void Screen::write_all_display_contents()
-{
-    MUST(m_backend->write_all_contents(m_physical_rect));
 }
 
 void Screen::flush_display_entire_framebuffer()

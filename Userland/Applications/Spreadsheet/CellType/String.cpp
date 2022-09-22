@@ -11,13 +11,14 @@
 namespace Spreadsheet {
 
 StringCell::StringCell()
-    : CellType("String")
+    : CellType("String"sv)
 {
 }
 
 JS::ThrowCompletionOr<String> StringCell::display(Cell& cell, CellTypeMetadata const& metadata) const
 {
-    auto string = TRY(cell.js_data().to_string(cell.sheet().global_object()));
+    auto& vm = cell.sheet().global_object().vm();
+    auto string = TRY(cell.js_data().to_string(vm));
     if (metadata.length >= 0)
         return string.substring(0, metadata.length);
 

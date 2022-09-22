@@ -27,6 +27,7 @@
 #include <LibWeb/FontCache.h>
 #include <LibWeb/HTML/HTMLHtmlElement.h>
 #include <LibWeb/Loader/ResourceLoader.h>
+#include <LibWeb/Platform/FontPlugin.h>
 #include <stdio.h>
 
 namespace Web::CSS {
@@ -108,24 +109,24 @@ private:
     HashMap<float, NonnullRefPtr<Gfx::ScaledFont>> mutable m_cached_fonts;
 };
 
-static StyleSheet& default_stylesheet()
+static CSSStyleSheet& default_stylesheet()
 {
-    static StyleSheet* sheet;
-    if (!sheet) {
+    static JS::Handle<CSSStyleSheet> sheet;
+    if (!sheet.cell()) {
         extern char const default_stylesheet_source[];
         String css = default_stylesheet_source;
-        sheet = parse_css_stylesheet(CSS::Parser::ParsingContext(), css).leak_ref();
+        sheet = JS::make_handle(parse_css_stylesheet(CSS::Parser::ParsingContext(), css));
     }
     return *sheet;
 }
 
-static StyleSheet& quirks_mode_stylesheet()
+static CSSStyleSheet& quirks_mode_stylesheet()
 {
-    static StyleSheet* sheet;
-    if (!sheet) {
+    static JS::Handle<CSSStyleSheet> sheet;
+    if (!sheet.cell()) {
         extern char const quirks_mode_stylesheet_source[];
         String css = quirks_mode_stylesheet_source;
-        sheet = parse_css_stylesheet(CSS::Parser::ParsingContext(), css).leak_ref();
+        sheet = JS::make_handle(parse_css_stylesheet(CSS::Parser::ParsingContext(), css));
     }
     return *sheet;
 }
@@ -140,7 +141,7 @@ void StyleComputer::for_each_stylesheet(CascadeOrigin cascade_origin, Callback c
     }
     if (cascade_origin == CascadeOrigin::Author) {
         for (auto const& sheet : document().style_sheets().sheets()) {
-            callback(sheet);
+            callback(*sheet);
         }
     }
 }
@@ -180,11 +181,11 @@ Vector<MatchingRule> StyleComputer::collect_matching_rules(DOM::Element const& e
     size_t style_sheet_index = 0;
     for_each_stylesheet(cascade_origin, [&](auto& sheet) {
         size_t rule_index = 0;
-        static_cast<CSSStyleSheet const&>(sheet).for_each_effective_style_rule([&](auto const& rule) {
+        sheet.for_each_effective_style_rule([&](auto const& rule) {
             size_t selector_index = 0;
             for (auto& selector : rule.selectors()) {
                 if (SelectorEngine::matches(selector, element, pseudo_element)) {
-                    matching_rules.append({ rule, style_sheet_index, rule_index, selector_index, selector.specificity() });
+                    matching_rules.append({ &rule, style_sheet_index, rule_index, selector_index, selector.specificity() });
                     break;
                 }
                 ++selector_index;
@@ -517,6 +518,32 @@ static void set_property_expanding_shorthands(StyleProperties& style, CSS::Prope
         return;
     }
 
+    if (property_id == CSS::PropertyID::GridColumn) {
+        if (value.is_grid_track_placement_shorthand()) {
+            auto const& shorthand = value.as_grid_track_placement_shorthand();
+            style.set_property(CSS::PropertyID::GridColumnStart, shorthand.start());
+            style.set_property(CSS::PropertyID::GridColumnEnd, shorthand.end());
+            return;
+        }
+
+        style.set_property(CSS::PropertyID::GridColumnStart, value);
+        style.set_property(CSS::PropertyID::GridColumnEnd, value);
+        return;
+    }
+
+    if (property_id == CSS::PropertyID::GridRow) {
+        if (value.is_grid_track_placement_shorthand()) {
+            auto const& shorthand = value.as_grid_track_placement_shorthand();
+            style.set_property(CSS::PropertyID::GridRowStart, shorthand.start());
+            style.set_property(CSS::PropertyID::GridRowEnd, shorthand.end());
+            return;
+        }
+
+        style.set_property(CSS::PropertyID::GridRowStart, value);
+        style.set_property(CSS::PropertyID::GridRowEnd, value);
+        return;
+    }
+
     style.set_property(property_id, value);
 }
 
@@ -563,7 +590,7 @@ bool StyleComputer::expand_unresolved_values(DOM::Element& element, StringView p
                 if (!custom_property_name_token.is(Parser::Token::Type::Ident))
                     return false;
                 auto custom_property_name = custom_property_name_token.token().ident();
-                if (!custom_property_name.starts_with("--"))
+                if (!custom_property_name.starts_with("--"sv))
                     return false;
 
                 // Detect dependency cycles. https://www.w3.org/TR/css-variables-1/#cycles
@@ -828,7 +855,7 @@ void StyleComputer::compute_defaulted_values(StyleProperties& style, DOM::Elemen
 
 float StyleComputer::root_element_font_size() const
 {
-    constexpr float default_root_element_font_size = 10;
+    constexpr float default_root_element_font_size = 16;
 
     auto const* root_element = m_document.first_child_of_type<HTML::HTMLHtmlElement>();
     if (!root_element)
@@ -894,7 +921,7 @@ void StyleComputer::compute_font(StyleProperties& style, DOM::Element const* ele
 
     bool bold = weight > Gfx::FontWeight::Regular;
 
-    float font_size_in_px = 10;
+    float font_size_in_px = 16;
 
     if (font_size->is_identifier()) {
         switch (static_cast<IdentifierStyleValue const&>(*font_size).id()) {
@@ -903,7 +930,7 @@ void StyleComputer::compute_font(StyleProperties& style, DOM::Element const* ele
         case CSS::ValueID::Small:
         case CSS::ValueID::Medium:
             // FIXME: Should be based on "user's default font size"
-            font_size_in_px = 10;
+            font_size_in_px = 16;
             break;
         case CSS::ValueID::Large:
         case CSS::ValueID::XLarge:
@@ -926,7 +953,7 @@ void StyleComputer::compute_font(StyleProperties& style, DOM::Element const* ele
         if (parent_element && parent_element->computed_css_values())
             font_metrics = parent_element->computed_css_values()->computed_font().pixel_metrics();
         else
-            font_metrics = Gfx::FontDatabase::default_font().pixel_metrics();
+            font_metrics = Platform::FontPlugin::the().default_font().pixel_metrics();
 
         auto parent_font_size = [&]() -> float {
             if (!parent_element || !parent_element->computed_css_values())
@@ -962,15 +989,15 @@ void StyleComputer::compute_font(StyleProperties& style, DOM::Element const* ele
         }
     }
 
-    int slope = Gfx::name_to_slope("Normal");
+    int slope = Gfx::name_to_slope("Normal"sv);
     // FIXME: Implement oblique <angle>
     if (font_style->is_identifier()) {
         switch (static_cast<IdentifierStyleValue const&>(*font_style).id()) {
         case CSS::ValueID::Italic:
-            slope = Gfx::name_to_slope("Italic");
+            slope = Gfx::name_to_slope("Italic"sv);
             break;
         case CSS::ValueID::Oblique:
-            slope = Gfx::name_to_slope("Oblique");
+            slope = Gfx::name_to_slope("Oblique"sv);
             break;
         case CSS::ValueID::Normal:
         default:
@@ -1003,28 +1030,39 @@ void StyleComputer::compute_font(StyleProperties& style, DOM::Element const* ele
         return {};
     };
 
-    // FIXME: Replace hard-coded font names with a relevant call to FontDatabase.
-    // Currently, we cannot request the default font's name, or request it at a specific size and weight.
-    // So, hard-coded font names it is.
     auto find_generic_font = [&](ValueID font_id) -> RefPtr<Gfx::Font> {
+        Platform::GenericFont generic_font {};
         switch (font_id) {
         case ValueID::Monospace:
         case ValueID::UiMonospace:
+            generic_font = Platform::GenericFont::Monospace;
             monospace = true;
-            return find_font("Csilla");
+            break;
         case ValueID::Serif:
-            return find_font("Roman");
+            generic_font = Platform::GenericFont::Serif;
+            break;
         case ValueID::Fantasy:
-            return find_font("Comic Book");
+            generic_font = Platform::GenericFont::Fantasy;
+            break;
         case ValueID::SansSerif:
+            generic_font = Platform::GenericFont::SansSerif;
+            break;
         case ValueID::Cursive:
+            generic_font = Platform::GenericFont::Cursive;
+            break;
         case ValueID::UiSerif:
+            generic_font = Platform::GenericFont::UiSerif;
+            break;
         case ValueID::UiSansSerif:
+            generic_font = Platform::GenericFont::UiSansSerif;
+            break;
         case ValueID::UiRounded:
-            return find_font("Katica");
+            generic_font = Platform::GenericFont::UiRounded;
+            break;
         default:
             return {};
         }
+        return find_font(Platform::FontPlugin::the().generic_font_name(generic_font));
     };
 
     RefPtr<Gfx::Font> found_font;
@@ -1132,8 +1170,15 @@ void StyleComputer::transform_box_type_if_needed(StyleProperties& style, DOM::El
     case BoxTypeTransformation::None:
         break;
     case BoxTypeTransformation::Blockify:
-        if (!display.is_block_outside())
-            style.set_property(CSS::PropertyID::Display, IdentifierStyleValue::create(CSS::ValueID::Block));
+        if (!display.is_block_outside()) {
+            // FIXME: We only want to change the outer display type here, but we don't have a nice API
+            //        to do that specifically. For now, we simply check for "inline-flex" and convert
+            //        that to "flex".
+            if (display.is_flex_inside())
+                style.set_property(CSS::PropertyID::Display, IdentifierStyleValue::create(CSS::ValueID::Flex));
+            else
+                style.set_property(CSS::PropertyID::Display, IdentifierStyleValue::create(CSS::ValueID::Block));
+        }
         break;
     case BoxTypeTransformation::Inlinify:
         if (!display.is_inline_outside())
@@ -1228,10 +1273,10 @@ void StyleComputer::build_rule_cache()
     size_t style_sheet_index = 0;
     for_each_stylesheet(CascadeOrigin::Author, [&](auto& sheet) {
         size_t rule_index = 0;
-        static_cast<CSSStyleSheet const&>(sheet).for_each_effective_style_rule([&](auto const& rule) {
+        sheet.for_each_effective_style_rule([&](auto const& rule) {
             size_t selector_index = 0;
             for (CSS::Selector const& selector : rule.selectors()) {
-                MatchingRule matching_rule { rule, style_sheet_index, rule_index, selector_index, selector.specificity() };
+                MatchingRule matching_rule { &rule, style_sheet_index, rule_index, selector_index, selector.specificity() };
 
                 bool added_to_bucket = false;
                 for (auto const& simple_selector : selector.compound_selectors().last().simple_selectors) {
@@ -1299,7 +1344,7 @@ Gfx::IntRect StyleComputer::viewport_rect() const
 
 void StyleComputer::did_load_font([[maybe_unused]] FlyString const& family_name)
 {
-    document().invalidate_style();
+    document().invalidate_layout();
 }
 
 void StyleComputer::load_fonts_from_sheet(CSSStyleSheet const& sheet)
@@ -1313,8 +1358,31 @@ void StyleComputer::load_fonts_from_sheet(CSSStyleSheet const& sheet)
         if (m_loaded_fonts.contains(font_face.font_family()))
             continue;
 
+        // NOTE: This is rather ad-hoc, we just look for the first valid
+        //       source URL that's either a WOFF or TTF file and try loading that.
+        // FIXME: Find out exactly which resources we need to load and how.
+        Optional<AK::URL> candidate_url;
+        for (auto& source : font_face.sources()) {
+            if (!source.url.is_valid())
+                continue;
+
+            if (source.url.protocol() != "data") {
+                auto path = source.url.path();
+                if (!path.ends_with(".woff"sv, AK::CaseSensitivity::CaseInsensitive)
+                    && !path.ends_with(".ttf"sv, AK::CaseSensitivity::CaseInsensitive)) {
+                    continue;
+                }
+            }
+
+            candidate_url = source.url;
+            break;
+        }
+
+        if (!candidate_url.has_value())
+            continue;
+
         LoadRequest request;
-        auto url = m_document.parse_url(font_face.sources().first().url.to_string());
+        auto url = m_document.parse_url(candidate_url.value().to_string());
         auto loader = make<FontLoader>(const_cast<StyleComputer&>(*this), font_face.font_family(), move(url));
         const_cast<StyleComputer&>(*this).m_loaded_fonts.set(font_face.font_family(), move(loader));
     }

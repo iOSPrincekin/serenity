@@ -7,10 +7,10 @@
 
 #include <AK/ScopeGuard.h>
 #include <AK/TemporaryChange.h>
-#include <AK/WeakPtr.h>
 #include <Kernel/Debug.h>
 #include <Kernel/FileSystem/Custody.h>
 #include <Kernel/FileSystem/OpenFileDescription.h>
+#include <Kernel/Library/LockWeakPtr.h>
 #include <Kernel/Memory/AllocationStrategy.h>
 #include <Kernel/Memory/MemoryManager.h>
 #include <Kernel/Memory/PageDirectory.h>
@@ -36,10 +36,10 @@ struct LoadResult {
     FlatPtr load_base { 0 };
     FlatPtr entry_eip { 0 };
     size_t size { 0 };
-    WeakPtr<Memory::Region> tls_region;
+    LockWeakPtr<Memory::Region> tls_region;
     size_t tls_size { 0 };
     size_t tls_alignment { 0 };
-    WeakPtr<Memory::Region> stack_region;
+    LockWeakPtr<Memory::Region> stack_region;
 };
 
 static constexpr size_t auxiliary_vector_size = 15;
@@ -149,10 +149,12 @@ static ErrorOr<FlatPtr> make_userspace_context_for_main_thread([[maybe_unused]] 
     push_on_new_stack(envp);
     push_on_new_stack(argv);
     push_on_new_stack(argv_entries.size());
-#else
+#elif ARCH(X86_64)
     regs.rdi = argv_entries.size();
     regs.rsi = argv;
     regs.rdx = envp;
+#else
+#    error Unknown architecture
 #endif
 
     VERIFY(new_sp % 16 == 0);
@@ -173,7 +175,7 @@ static ErrorOr<RequiredLoadRange> get_required_load_range(OpenFileDescription& p
 
     size_t executable_size = inode.size();
     size_t rounded_executable_size = TRY(Memory::page_round_up(executable_size));
-    auto region = TRY(MM.allocate_kernel_region_with_vmobject(*vmobject, rounded_executable_size, "ELF memory range calculation", Memory::Region::Access::Read));
+    auto region = TRY(MM.allocate_kernel_region_with_vmobject(*vmobject, rounded_executable_size, "ELF memory range calculation"sv, Memory::Region::Access::Read));
     auto elf_image = ELF::Image(region->vaddr().as_ptr(), executable_size);
     if (!elf_image.is_valid()) {
         return EINVAL;
@@ -269,7 +271,7 @@ static ErrorOr<LoadResult> load_elf_object(NonnullOwnPtr<Memory::AddressSpace> n
     size_t executable_size = inode.size();
     size_t rounded_executable_size = TRY(Memory::page_round_up(executable_size));
 
-    auto executable_region = TRY(MM.allocate_kernel_region_with_vmobject(*vmobject, rounded_executable_size, "ELF loading", Memory::Region::Access::Read));
+    auto executable_region = TRY(MM.allocate_kernel_region_with_vmobject(*vmobject, rounded_executable_size, "ELF loading"sv, Memory::Region::Access::Read));
     auto elf_image = ELF::Image(executable_region->vaddr().as_ptr(), executable_size);
 
     if (!elf_image.is_valid())
@@ -392,7 +394,7 @@ static ErrorOr<LoadResult> load_elf_object(NonnullOwnPtr<Memory::AddressSpace> n
         return ENOEXEC;
     }
 
-    auto* stack_region = TRY(new_space->allocate_region(Memory::RandomizeVirtualAddress::Yes, {}, Thread::default_userspace_stack_size, PAGE_SIZE, "Stack (Main thread)", PROT_READ | PROT_WRITE, AllocationStrategy::Reserve));
+    auto* stack_region = TRY(new_space->allocate_region(Memory::RandomizeVirtualAddress::Yes, {}, Thread::default_userspace_stack_size, PAGE_SIZE, "Stack (Main thread)"sv, PROT_READ | PROT_WRITE, AllocationStrategy::Reserve));
     stack_region->set_stack(true);
 
     return LoadResult {
@@ -408,8 +410,8 @@ static ErrorOr<LoadResult> load_elf_object(NonnullOwnPtr<Memory::AddressSpace> n
 }
 
 ErrorOr<LoadResult>
-Process::load(NonnullRefPtr<OpenFileDescription> main_program_description,
-    RefPtr<OpenFileDescription> interpreter_description, const ElfW(Ehdr) & main_program_header)
+Process::load(NonnullLockRefPtr<OpenFileDescription> main_program_description,
+    LockRefPtr<OpenFileDescription> interpreter_description, const ElfW(Ehdr) & main_program_header)
 {
     auto new_space = TRY(Memory::AddressSpace::try_create(nullptr));
 
@@ -437,8 +439,27 @@ Process::load(NonnullRefPtr<OpenFileDescription> main_program_description,
     return interpreter_load_result;
 }
 
-ErrorOr<void> Process::do_exec(NonnullRefPtr<OpenFileDescription> main_program_description, NonnullOwnPtrVector<KString> arguments, NonnullOwnPtrVector<KString> environment,
-    RefPtr<OpenFileDescription> interpreter_description, Thread*& new_main_thread, u32& prev_flags, const ElfW(Ehdr) & main_program_header)
+void Process::clear_signal_handlers_for_exec()
+{
+    // Comments are as they are presented in the POSIX specification, but slightly out of order.
+    for (size_t signal = 0; signal < m_signal_action_data.size(); signal++) {
+        // Except for SIGCHLD, signals set to be ignored by the calling process image shall be set to be ignored by the new process image.
+        // If the SIGCHLD signal is set to be ignored by the calling process image, it is unspecified whether the SIGCHLD signal is set
+        // to be ignored or to the default action in the new process image.
+        if (signal != SIGCHLD && m_signal_action_data[signal].handler_or_sigaction.get() == reinterpret_cast<FlatPtr>(SIG_IGN)) {
+            m_signal_action_data[signal] = {};
+            m_signal_action_data[signal].handler_or_sigaction.set(reinterpret_cast<FlatPtr>(SIG_IGN));
+            continue;
+        }
+
+        // Signals set to the default action in the calling process image shall be set to the default action in the new process image.
+        // Signals set to be caught by the calling process image shall be set to the default action in the new process image.
+        m_signal_action_data[signal] = {};
+    }
+}
+
+ErrorOr<void> Process::do_exec(NonnullLockRefPtr<OpenFileDescription> main_program_description, NonnullOwnPtrVector<KString> arguments, NonnullOwnPtrVector<KString> environment,
+    LockRefPtr<OpenFileDescription> interpreter_description, Thread*& new_main_thread, u32& prev_flags, const ElfW(Ehdr) & main_program_header)
 {
     VERIFY(is_user_process());
     VERIFY(!Processor::in_critical());
@@ -452,12 +473,9 @@ ErrorOr<void> Process::do_exec(NonnullRefPtr<OpenFileDescription> main_program_d
     if (!validate_stack_size(arguments, environment))
         return E2BIG;
 
-    // FIXME: split_view() currently allocates (Vector) without checking for failure.
-    auto parts = path->view().split_view('/');
-    if (parts.is_empty())
-        return ENOENT;
+    auto last_part = path->view().find_last_split_view('/');
 
-    auto new_process_name = TRY(KString::try_create(parts.last()));
+    auto new_process_name = TRY(KString::try_create(last_part));
     auto new_main_thread_name = TRY(new_process_name->try_clone());
 
     auto load_result = TRY(load(main_program_description, interpreter_description, main_program_header));
@@ -469,13 +487,49 @@ ErrorOr<void> Process::do_exec(NonnullRefPtr<OpenFileDescription> main_program_d
     bool has_interpreter = interpreter_description;
     interpreter_description = nullptr;
 
-    auto* signal_trampoline_region = TRY(load_result.space->allocate_region_with_vmobject(Memory::RandomizeVirtualAddress::Yes, {}, PAGE_SIZE, PAGE_SIZE, g_signal_trampoline_region->vmobject(), 0, "Signal trampoline", PROT_READ | PROT_EXEC, true));
+    auto* signal_trampoline_region = TRY(load_result.space->allocate_region_with_vmobject(Memory::RandomizeVirtualAddress::Yes, {}, PAGE_SIZE, PAGE_SIZE, g_signal_trampoline_region->vmobject(), 0, "Signal trampoline"sv, PROT_READ | PROT_EXEC, true));
     signal_trampoline_region->set_syscall_region(true);
 
     // (For dynamically linked executable) Allocate an FD for passing the main executable to the dynamic loader.
     Optional<ScopedDescriptionAllocation> main_program_fd_allocation;
     if (has_interpreter)
         main_program_fd_allocation = TRY(allocate_fd());
+
+    auto old_credentials = this->credentials();
+    auto new_credentials = old_credentials;
+
+    bool executable_is_setid = false;
+
+    if (!(main_program_description->custody()->mount_flags() & MS_NOSUID)) {
+        auto main_program_metadata = main_program_description->metadata();
+
+        auto new_euid = old_credentials->euid();
+        auto new_egid = old_credentials->egid();
+        auto new_suid = old_credentials->suid();
+        auto new_sgid = old_credentials->sgid();
+
+        if (main_program_metadata.is_setuid()) {
+            executable_is_setid = true;
+            new_euid = main_program_metadata.uid;
+            new_suid = main_program_metadata.uid;
+        }
+        if (main_program_metadata.is_setgid()) {
+            executable_is_setid = true;
+            new_egid = main_program_metadata.gid;
+            new_sgid = main_program_metadata.gid;
+        }
+
+        if (executable_is_setid) {
+            new_credentials = TRY(Credentials::create(
+                old_credentials->uid(),
+                old_credentials->gid(),
+                new_euid,
+                new_egid,
+                new_suid,
+                new_sgid,
+                old_credentials->extra_gids()));
+        }
+    }
 
     // We commit to the new executable at this point. There is no turning back!
 
@@ -488,33 +542,18 @@ ErrorOr<void> Process::do_exec(NonnullRefPtr<OpenFileDescription> main_program_d
 
     kill_threads_except_self();
 
-    bool executable_is_setid = false;
-
-    if (!(main_program_description->custody()->mount_flags() & MS_NOSUID)) {
-        auto main_program_metadata = main_program_description->metadata();
-        if (main_program_metadata.is_setuid()) {
-            executable_is_setid = true;
-            ProtectedDataMutationScope scope { *this };
-            m_protected_values.euid = main_program_metadata.uid;
-            m_protected_values.suid = main_program_metadata.uid;
-        }
-        if (main_program_metadata.is_setgid()) {
-            executable_is_setid = true;
-            ProtectedDataMutationScope scope { *this };
-            m_protected_values.egid = main_program_metadata.gid;
-            m_protected_values.sgid = main_program_metadata.gid;
-        }
-    }
-
-    set_dumpable(!executable_is_setid);
+    with_mutable_protected_data([&](auto& protected_data) {
+        protected_data.credentials = move(new_credentials);
+        protected_data.dumpable = !executable_is_setid;
+    });
 
     // We make sure to enter the new address space before destroying the old one.
     // This ensures that the process always has a valid page directory.
     Memory::MemoryManager::enter_address_space(*load_result.space);
 
-    m_space = load_result.space.release_nonnull();
+    m_space.with([&](auto& space) { space = load_result.space.release_nonnull(); });
 
-    m_executable = main_program_description->custody();
+    m_executable.with([&](auto& executable) { executable = main_program_description->custody(); });
     m_arguments = move(arguments);
     m_environment = move(environment);
 
@@ -531,6 +570,8 @@ ErrorOr<void> Process::do_exec(NonnullRefPtr<OpenFileDescription> main_program_d
 
     auto* current_thread = Thread::current();
     current_thread->reset_signals_for_exec();
+
+    clear_signal_handlers_for_exec();
 
     clear_futex_queues_on_exec();
 
@@ -557,7 +598,8 @@ ErrorOr<void> Process::do_exec(NonnullRefPtr<OpenFileDescription> main_program_d
     }
     VERIFY(new_main_thread);
 
-    auto auxv = generate_auxiliary_vector(load_result.load_base, load_result.entry_eip, uid(), euid(), gid(), egid(), path->view(), main_program_fd_allocation);
+    auto credentials = this->credentials();
+    auto auxv = generate_auxiliary_vector(load_result.load_base, load_result.entry_eip, credentials->uid(), credentials->euid(), credentials->gid(), credentials->egid(), path->view(), main_program_fd_allocation);
 
     // NOTE: We create the new stack before disabling interrupts since it will zero-fault
     //       and we don't want to deal with faults after this point.
@@ -585,19 +627,18 @@ ErrorOr<void> Process::do_exec(NonnullRefPtr<OpenFileDescription> main_program_d
 
     // NOTE: Be careful to not trigger any page faults below!
 
-    {
-        ProtectedDataMutationScope scope { *this };
-        m_protected_values.promises = m_protected_values.execpromises.load();
-        m_protected_values.has_promises = m_protected_values.has_execpromises.load();
+    with_mutable_protected_data([&](auto& protected_data) {
+        protected_data.promises = protected_data.execpromises.load();
+        protected_data.has_promises = protected_data.has_execpromises.load();
 
-        m_protected_values.execpromises = 0;
-        m_protected_values.has_execpromises = false;
+        protected_data.execpromises = 0;
+        protected_data.has_execpromises = false;
 
-        m_protected_values.signal_trampoline = signal_trampoline_region->vaddr();
+        protected_data.signal_trampoline = signal_trampoline_region->vaddr();
 
         // FIXME: PID/TID ISSUE
-        m_protected_values.pid = new_main_thread->tid().value();
-    }
+        protected_data.pid = new_main_thread->tid().value();
+    });
 
     auto tsr_result = new_main_thread->make_thread_specific_region({});
     if (tsr_result.is_error()) {
@@ -620,7 +661,7 @@ ErrorOr<void> Process::do_exec(NonnullRefPtr<OpenFileDescription> main_program_d
     regs.rip = load_result.entry_eip;
     regs.rsp = new_userspace_sp;
 #endif
-    regs.cr3 = address_space().page_directory().cr3();
+    regs.cr3 = address_space().with([](auto& space) { return space->page_directory().cr3(); });
 
     {
         TemporaryChange profiling_disabler(m_profiling, was_profiling);
@@ -706,7 +747,7 @@ static ErrorOr<NonnullOwnPtrVector<KString>> find_shebang_interpreter_for_execut
     return ENOEXEC;
 }
 
-ErrorOr<RefPtr<OpenFileDescription>> Process::find_elf_interpreter_for_executable(StringView path, ElfW(Ehdr) const& main_executable_header, size_t main_executable_header_size, size_t file_size)
+ErrorOr<LockRefPtr<OpenFileDescription>> Process::find_elf_interpreter_for_executable(StringView path, ElfW(Ehdr) const& main_executable_header, size_t main_executable_header_size, size_t file_size)
 {
     // Not using ErrorOr here because we'll want to do the same thing in userspace in the RTLD
     StringBuilder interpreter_path_builder;
@@ -718,7 +759,7 @@ ErrorOr<RefPtr<OpenFileDescription>> Process::find_elf_interpreter_for_executabl
 
     if (!interpreter_path.is_empty()) {
         dbgln_if(EXEC_DEBUG, "exec({}): Using program interpreter {}", path, interpreter_path);
-        auto interpreter_description = TRY(VirtualFileSystem::the().open(interpreter_path, O_EXEC, 0, current_directory()));
+        auto interpreter_description = TRY(VirtualFileSystem::the().open(credentials(), interpreter_path, O_EXEC, 0, current_directory()));
         auto interp_metadata = interpreter_description->metadata();
 
         VERIFY(interpreter_description->inode());
@@ -787,7 +828,7 @@ ErrorOr<void> Process::exec(NonnullOwnPtr<KString> path, NonnullOwnPtrVector<KSt
     //        * ET_EXEC binary that just gets loaded
     //        * ET_DYN binary that requires a program interpreter
     //
-    auto description = TRY(VirtualFileSystem::the().open(path->view(), O_EXEC, 0, current_directory()));
+    auto description = TRY(VirtualFileSystem::the().open(credentials(), path->view(), O_EXEC, 0, current_directory()));
     auto metadata = description->metadata();
 
     if (!metadata.is_regular_file())

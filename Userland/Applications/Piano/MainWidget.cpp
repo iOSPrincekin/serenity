@@ -46,7 +46,7 @@ MainWidget::MainWidget(TrackManager& track_manager, AudioPlayerLoop& loop)
     m_keys_and_knobs_container->set_fixed_height(130);
     m_keys_and_knobs_container->set_fill_with_background_color(true);
 
-    m_keys_widget = m_keys_and_knobs_container->add<KeysWidget>(track_manager);
+    m_keys_widget = m_keys_and_knobs_container->add<KeysWidget>(track_manager.keyboard());
 
     m_knobs_widget = m_keys_and_knobs_container->add<KnobsWidget>(track_manager, *this);
 
@@ -55,11 +55,11 @@ MainWidget::MainWidget(TrackManager& track_manager, AudioPlayerLoop& loop)
 
 void MainWidget::add_track_actions(GUI::Menu& menu)
 {
-    menu.add_action(GUI::Action::create("&Add Track", { Mod_Ctrl, Key_T }, Gfx::Bitmap::try_load_from_file("/res/icons/16x16/plus.png").release_value_but_fixme_should_propagate_errors(), [&](auto&) {
+    menu.add_action(GUI::Action::create("&Add Track", { Mod_Ctrl, Key_T }, Gfx::Bitmap::try_load_from_file("/res/icons/16x16/plus.png"sv).release_value_but_fixme_should_propagate_errors(), [&](auto&) {
         m_player_widget->add_track();
     }));
 
-    menu.add_action(GUI::Action::create("&Next Track", { Mod_Ctrl, Key_N }, Gfx::Bitmap::try_load_from_file("/res/icons/16x16/go-last.png").release_value_but_fixme_should_propagate_errors(), [&](auto&) {
+    menu.add_action(GUI::Action::create("&Next Track", { Mod_Ctrl, Key_N }, Gfx::Bitmap::try_load_from_file("/res/icons/16x16/go-last.png"sv).release_value_but_fixme_should_propagate_errors(), [&](auto&) {
         turn_off_pressed_keys();
         m_player_widget->next_track();
         turn_on_pressed_keys();
@@ -85,7 +85,7 @@ void MainWidget::keydown_event(GUI::KeyEvent& event)
     else
         m_keys_pressed[event.key()] = true;
 
-    note_key_action(event.key(), On);
+    note_key_action(event.key(), DSP::Keyboard::Switch::On);
     special_key_action(event.key());
     m_keys_widget->update();
 }
@@ -94,27 +94,26 @@ void MainWidget::keyup_event(GUI::KeyEvent& event)
 {
     m_keys_pressed[event.key()] = false;
 
-    note_key_action(event.key(), Off);
+    note_key_action(event.key(), DSP::Keyboard::Switch::Off);
     m_keys_widget->update();
 }
 
-void MainWidget::note_key_action(int key_code, Switch switch_note)
+void MainWidget::note_key_action(int key_code, DSP::Keyboard::Switch switch_note)
 {
-    int key = m_keys_widget->key_code_to_key(key_code);
-    m_keys_widget->set_key(key, switch_note);
+    auto key = m_keys_widget->key_code_to_key(key_code);
+    if (key == -1)
+        return;
+    m_track_manager.keyboard()->set_keyboard_note_in_active_octave(key, switch_note);
 }
 
 void MainWidget::special_key_action(int key_code)
 {
     switch (key_code) {
     case Key_Z:
-        set_octave_and_ensure_note_change(Down);
+        set_octave_and_ensure_note_change(DSP::Keyboard::Direction::Down);
         break;
     case Key_X:
-        set_octave_and_ensure_note_change(Up);
-        break;
-    case Key_C:
-        m_knobs_widget->cycle_waveform();
+        set_octave_and_ensure_note_change(DSP::Keyboard::Direction::Up);
         break;
     case Key_Space:
         m_player_widget->toggle_paused();
@@ -124,36 +123,38 @@ void MainWidget::special_key_action(int key_code)
 
 void MainWidget::turn_off_pressed_keys()
 {
-    m_keys_widget->set_key(m_keys_widget->mouse_note(), Off);
+    if (m_keys_widget->mouse_note() != -1)
+        m_track_manager.keyboard()->set_keyboard_note_in_active_octave(m_keys_widget->mouse_note(), DSP::Keyboard::Switch::Off);
     for (int i = 0; i < key_code_count; ++i) {
         if (m_keys_pressed[i])
-            note_key_action(i, Off);
+            note_key_action(i, DSP::Keyboard::Switch::Off);
     }
 }
 
 void MainWidget::turn_on_pressed_keys()
 {
-    m_keys_widget->set_key(m_keys_widget->mouse_note(), On);
+    if (m_keys_widget->mouse_note() != -1)
+        m_track_manager.keyboard()->set_keyboard_note_in_active_octave(m_keys_widget->mouse_note(), DSP::Keyboard::Switch::On);
     for (int i = 0; i < key_code_count; ++i) {
         if (m_keys_pressed[i])
-            note_key_action(i, On);
+            note_key_action(i, DSP::Keyboard::Switch::On);
     }
 }
 
 void MainWidget::set_octave_and_ensure_note_change(int octave)
 {
     turn_off_pressed_keys();
-    m_track_manager.set_octave(octave);
+    MUST(m_track_manager.keyboard()->set_virtual_keyboard_octave(octave));
     turn_on_pressed_keys();
 
     m_knobs_widget->update_knobs();
     m_keys_widget->update();
 }
 
-void MainWidget::set_octave_and_ensure_note_change(Direction direction)
+void MainWidget::set_octave_and_ensure_note_change(DSP::Keyboard::Direction direction)
 {
     turn_off_pressed_keys();
-    m_track_manager.set_octave(direction);
+    m_track_manager.keyboard()->change_virtual_keyboard_octave(direction);
     turn_on_pressed_keys();
 
     m_knobs_widget->update_knobs();
