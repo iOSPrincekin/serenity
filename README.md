@@ -155,3 +155,17 @@ CMake Error at CMakeLists.txt:23 (message):
   1. Build/superbuild-i686
   2. Meta/serenity.sh run
 
+
+### 4.clion gdb 搭配
+
+gdbserver args:
+
+```
+-ex "set arch i386:intel" -ex "show remotetimeout" -ex "set remotetimeout 15000" -ex "show remotetimeout" -ex "set confirm off" -ex "add-symbol-file /Users/lee/Desktop/Computer_Systems/serenity/Meta/../cmake-build-default/Kernel/Kernel -o 0xc0200000" -ex "--eval-command=\"shell sleep 5\"" -ex "file /Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/Kernel/Prekernel/Prekernel32"
+
+```
+
+
+
+
+![](./pic/4_1.png)
