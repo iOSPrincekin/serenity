@@ -121,7 +121,7 @@ SerenityOS is licensed under a 2-clause BSD license.
 
 
 
-## Usage:
+## macos Usage:
 
 ### 1.ninja setup-and-run
 
@@ -138,3 +138,20 @@ osascript -e 'tell application "Terminal" to activate'  -e 'tell application "Te
 
 
 ### 2.使用  `qemu-system-i386 -s -S -kernel Prekernel` +  `lldb Prekernel` 进行调试
+
+
+### 3.编译的优化和调试信息
+#### 1.添加 -O2 编译优化
+add_compile_options(-O2)
+#### 2.添加 -g1 会使 qemu-system-i386 调试 .cpp 文件失败
+add_compile_options(-g1)
+
+### 4.solve the 'version () does not match expected compiler version (14.0.1).'
+CMake Error at CMakeLists.txt:23 (message):
+   version () does not match expected compiler version (14.0.1).
+
+  Please rebuild the Toolchain
+
+  1. Build/superbuild-i686
+  2. Meta/serenity.sh run
+
