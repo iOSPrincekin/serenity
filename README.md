@@ -158,6 +158,7 @@ CMake Error at CMakeLists.txt:23 (message):
 
 ### 4.clion gdb 搭配
 
+#### 4.1
 gdbserver args:
 
 ```
@@ -169,3 +170,9 @@ gdbserver args:
 
 
 ![](./pic/4_1.png)
+
+
+#### 4.2 修改 Clion 默认端口号 1234 -》 1230
+
+
+![](./pic/4_2.png)
