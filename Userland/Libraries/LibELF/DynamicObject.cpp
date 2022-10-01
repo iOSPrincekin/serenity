@@ -502,9 +502,9 @@ VirtualAddress DynamicObject::patch_plt_entry(u32 relocation_offset)
         dbgln("did not find symbol while doing relocations for library {}: {}", m_filename, symbol.name());
         VERIFY_NOT_REACHED();
     }
-
+#if 0
     dbgln_if(DYNAMIC_LOAD_DEBUG, "DynamicLoader: Jump slot relocation: putting {} ({}) into PLT at {}", symbol.name(), symbol_location, (void*)relocation_address);
-
+#endif
     *relocation_address = symbol_location.get();
 
     return symbol_location;

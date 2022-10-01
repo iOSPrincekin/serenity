@@ -133,6 +133,8 @@ FlatPtr Processor::init_context(Thread& thread, bool leave_crit)
         iretframe.userspace_ss = regs.ss;
     }
 
+    dbgln("Processor::init_context,iretframe.eip:{:04x})", iretframe.eip);
+
     // make space for a trap frame
     stack_top -= sizeof(TrapFrame);
     TrapFrame& trap = *reinterpret_cast<TrapFrame*>(stack_top);
@@ -189,6 +191,7 @@ void Processor::switch_context(Thread*& from_thread, Thread*& to_thread)
 
     // m_in_critical is restored in enter_thread_context
     from_thread->save_critical(m_in_critical);
+    //dbgln("from_thread->regs().eip:{:04x},to_thread->regs().eip:{:04x}", from_thread->regs().eip,to_thread->regs().eip);
 
     // clang-format off
     // Switch to new thread context, passing from_thread and to_thread
@@ -245,6 +248,7 @@ UNMAP_AFTER_INIT void Processor::initialize_context_switching(Thread& initial_th
     m_tss.ss0 = GDT_SELECTOR_DATA0;
 
     m_scheduler_initialized = true;
+    dbgln("initialize_context_switching,eip {:04x}", regs.eip);
 
     // clang-format off
     asm volatile(

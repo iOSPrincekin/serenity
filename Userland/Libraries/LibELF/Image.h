@@ -227,7 +227,12 @@ public:
     bool is_relocatable() const { return header().e_type == ET_REL; }
     bool is_dynamic() const { return header().e_type == ET_DYN; }
 
-    VirtualAddress entry() const { return VirtualAddress(header().e_entry); }
+    VirtualAddress entry() const {
+        const Elf32_Ehdr head = header();
+        Elf32_Addr e_entry = head.e_entry;
+        dbgln("Image,e_entry:{:04x}",e_entry);
+        return VirtualAddress(e_entry);
+    }
     FlatPtr base_address() const { return (FlatPtr)m_buffer; }
     size_t size() const { return m_size; }
 

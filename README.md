@@ -176,3 +176,19 @@ gdbserver args:
 
 
 ![](./pic/4_2.png)
+
+
+
+#### 4.3 显示gdb 加载的符号
+
+```
+
+info files
+
+```
+
+### 5.关于图形窗口 WindowServer
+
+#### 5.1 写入方法为 ErrorOr<void> HardwareScreenBackend::write_all_contents(Gfx::IntRect const& virtual_rect)
+
+m_framebuffer_fd 句柄为 10

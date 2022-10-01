@@ -394,6 +394,7 @@ static ErrorOr<LoadResult> load_elf_object(NonnullOwnPtr<Memory::AddressSpace> n
 
     auto* stack_region = TRY(new_space->allocate_region(Memory::RandomizeVirtualAddress::Yes, {}, Thread::default_userspace_stack_size, PAGE_SIZE, "Stack (Main thread)", PROT_READ | PROT_WRITE, AllocationStrategy::Reserve));
     stack_region->set_stack(true);
+    dbgln("load_elf_object,load_offset:{:04x},elf_image.entry():{:04x},eip:{:04x})",load_offset,elf_image.entry().get(),elf_image.entry().offset(load_offset).get());
 
     return LoadResult {
         move(new_space),
@@ -433,6 +434,8 @@ Process::load(NonnullRefPtr<OpenFileDescription> main_program_description,
     VERIFY(!interpreter_load_result.tls_region);
     VERIFY(!interpreter_load_result.tls_alignment);
     VERIFY(!interpreter_load_result.tls_size);
+
+    dbgln("interpreter_load_result.load_base({:04x}),.entry_eip({:04x}):", interpreter_load_result.load_base,interpreter_load_result.entry_eip);
 
     return interpreter_load_result;
 }
@@ -775,6 +778,7 @@ ErrorOr<RefPtr<OpenFileDescription>> Process::find_elf_interpreter_for_executabl
 
 ErrorOr<void> Process::exec(NonnullOwnPtr<KString> path, NonnullOwnPtrVector<KString> arguments, NonnullOwnPtrVector<KString> environment, Thread*& new_main_thread, u32& prev_flags, int recursion_depth)
 {
+    dbgln("Process::exec({}):", path);
     if (recursion_depth > 2) {
         dbgln("exec({}): SHENANIGANS! recursed too far trying to find #! interpreter", path);
         return ELOOP;
