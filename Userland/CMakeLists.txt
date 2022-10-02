@@ -1,6 +1,9 @@
-#add_compile_options(-O2)
-add_compile_options(-Og)
-add_compile_options(-ggdb3)
+if (ENABLE_EXTRA_KERNEL_DEBUG_SYMBOLS)
+    add_compile_options(-Og)
+    add_compile_options(-ggdb3)
+else()
+    add_compile_options(-O2)
+endif()
 
 # Escape hatch target to prevent runtime startup libraries from having coverage enabled
 # at awkward points in program initialization

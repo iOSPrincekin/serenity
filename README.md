@@ -192,3 +192,9 @@ info files
 #### 5.1 写入方法为 ErrorOr<void> HardwareScreenBackend::write_all_contents(Gfx::IntRect const& virtual_rect)
 
 m_framebuffer_fd 句柄为 10
+
+#### 5.2 记录配置
+
+-GNinja -DDYNAMIC_LOAD_DEBUG=ON -DENABLE_EXTRA_KERNEL_DEBUG_SYMBOLS=ON -DCMAKE_TOOLCHAIN_FILE=$CMakeProjectDir$/Build/i686/CMakeToolchain.txt -DCMAKE_PREFIX_PATH=$CMakeProjectDir$/Build/lagom-install -DSERENITY_ARCH=i686
+
+
