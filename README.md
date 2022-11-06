@@ -197,4 +197,37 @@ m_framebuffer_fd 句柄为 10
 
 -GNinja -DDYNAMIC_LOAD_DEBUG=ON -DENABLE_EXTRA_KERNEL_DEBUG_SYMBOLS=ON -DCMAKE_TOOLCHAIN_FILE=$CMakeProjectDir$/Build/i686/CMakeToolchain.txt -DCMAKE_PREFIX_PATH=$CMakeProjectDir$/Build/lagom-install -DSERENITY_ARCH=i686
 
+### gdb调试
 
+#### 
+
+```
+Process::do_exec,m_name:SystemServer,(16557000),.entry_eip(1655cb99):
+
+```
+地址0x16557000并不是SystemServer的offset，而是 Loader.so 的offset
+
+需要再gdb中执行如下操作，然后跳转到 _start、_entry中再次获取SystemServer的真实地址
+
+```
+add-symbol-file /Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/Root/usr/lib/Loader.so -o 0x16557000
+
+```
+
+```
+
+11.681 SystemServer(6:6): linker_main,name:/bin/SystemServer,base_address: 0x1531a000
+11.707 SystemServer(6:6): Jumping to entry point: 0x15320850
+
+
+```
+
+gdb中执行如下操作
+
+```
+
+add-symbol-file /Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/Root/bin/SystemServer -o 0x1531a000
+
+```
+
+才可以正确加载用户程序的调试信息，进行调试SystemServer程序

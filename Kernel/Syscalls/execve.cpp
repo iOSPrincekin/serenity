@@ -629,6 +629,7 @@ ErrorOr<void> Process::do_exec(NonnullRefPtr<OpenFileDescription> main_program_d
         TemporaryChange profiling_disabler(m_profiling, was_profiling);
         PerformanceManager::add_process_exec_event(*this);
     }
+    dbgln("Process::do_exec,m_name:{},({:04x}),.entry_eip({:04x}):",m_name,load_result.load_base,load_result.entry_eip);
 
     u32 lock_count_to_restore;
     [[maybe_unused]] auto rc = big_lock().force_unlock_exclusive_if_locked(lock_count_to_restore);
