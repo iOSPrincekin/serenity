@@ -55,7 +55,14 @@ Result<NonnullRefPtr<DynamicLoader>, DlErrorMessage> DynamicLoader::try_create(i
         return DlErrorMessage { "DynamicLoader::try_create mmap" };
     }
 
+    dbgln("DynamicLoader::try_create,filename:{},data:{:04x},size:{:04x}",filename,data,size);
+
     auto loader = adopt_ref(*new DynamicLoader(fd, move(filename), data, size, filepath));
+
+    FlatPtr base_address = loader->base_address().get();
+
+    dbgln("DynamicLoader::try_create,filename:{},base_address:{:04x}",filepath,base_address);
+
     if (!loader->is_valid())
         return DlErrorMessage { "ELF image validation failed" };
     return loader;

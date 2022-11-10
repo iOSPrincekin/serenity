@@ -74,27 +74,45 @@ bool perform_relative_relocations(FlatPtr base_address)
         }
         __builtin_memcpy(patch_address, &relocated_address, sizeof(relocated_address));
     }
-
+//#define TEST_patch_relr
+#ifdef TEST_patch_relr
+#else
     auto patch_relr = [base_address](FlatPtr* patch_ptr) {
         FlatPtr relocated_address;
         __builtin_memcpy(&relocated_address, patch_ptr, sizeof(FlatPtr));
         relocated_address += base_address;
         __builtin_memcpy(patch_ptr, &relocated_address, sizeof(FlatPtr));
     };
-
+#endif
     auto* entries = reinterpret_cast<ElfW(Relr)*>(relr_relocation_section_addr);
     FlatPtr* patch_ptr = nullptr;
 
     for (unsigned i = 0; i < relr_relocation_table_size / sizeof(FlatPtr); ++i) {
         if ((entries[i] & 1u) == 0) {
             patch_ptr = reinterpret_cast<FlatPtr*>(base_address + entries[i]);
+#ifdef TEST_patch_relr
+            FlatPtr relocated_address;
+            __builtin_memcpy(&relocated_address, patch_ptr, sizeof(FlatPtr));
+            relocated_address += base_address;
+            __builtin_memcpy(patch_ptr, &relocated_address, sizeof(FlatPtr));
+#else
             patch_relr(patch_ptr);
+#endif
             ++patch_ptr;
         } else {
             unsigned j = 0;
             for (auto bitmap = entries[i]; (bitmap >>= 1u) != 0; ++j)
                 if (bitmap & 1u)
-                    patch_relr(patch_ptr + j);
+                {
+#ifdef TEST_patch_relr
+                    FlatPtr relocated_address;
+                    __builtin_memcpy(&relocated_address, patch_ptr, sizeof(FlatPtr));
+                    relocated_address += base_address;
+                    __builtin_memcpy(patch_ptr, &relocated_address, sizeof(FlatPtr));
+#else
+                    patch_relr(patch_ptr);
+#endif
+                }
 
             patch_ptr += 8 * sizeof(FlatPtr) - 1;
         }

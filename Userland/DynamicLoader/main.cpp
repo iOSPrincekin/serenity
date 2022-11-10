@@ -22,6 +22,7 @@ static void init_libc()
     __libc_init();
 }
 
+// Loader.so 文件自己重定位
 static void perform_self_relocations(auxv_t* auxvp)
 {
     // We need to relocate ourselves.
