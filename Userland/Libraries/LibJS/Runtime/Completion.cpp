@@ -6,12 +6,11 @@
  */
 
 #include <AK/TypeCasts.h>
-#include <LibCore/EventLoop.h>
 #include <LibJS/Runtime/Completion.h>
-#include <LibJS/Runtime/GlobalObject.h>
 #include <LibJS/Runtime/NativeFunction.h>
+#include <LibJS/Runtime/Promise.h>
+#include <LibJS/Runtime/PromiseCapability.h>
 #include <LibJS/Runtime/PromiseConstructor.h>
-#include <LibJS/Runtime/PromiseReaction.h>
 #include <LibJS/Runtime/VM.h>
 #include <LibJS/Runtime/Value.h>
 
@@ -119,6 +118,12 @@ ThrowCompletionOr<Value> await(VM& vm, Value value)
     if (success.value())
         return result;
     return throw_completion(result);
+}
+
+// 6.2.3.3 ThrowCompletion ( value ), https://tc39.es/ecma262/#sec-throwcompletion
+Completion throw_completion(Value value)
+{
+    return { Completion::Type::Throw, value, {} };
 }
 
 }

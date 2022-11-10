@@ -754,13 +754,10 @@ void TextEditor::paint_event(PaintEvent& event)
 
 Optional<UISize> TextEditor::calculated_min_size() const
 {
-    auto margins = content_margins();
-    int horizontal = margins.left() + margins.right(),
-        vertical = margins.top() + margins.bottom();
-    int vertical_content_size = font().glyph_height() + 4;
-    if (!is_multi_line() && m_icon)
-        vertical_content_size = max(vertical_content_size, icon_size() + 2);
-    return UISize(horizontal, vertical);
+    if (is_multi_line())
+        return AbstractScrollableWidget::calculated_min_size();
+    auto m = content_margins();
+    return UISize { m.left() + m.right(), m.top() + m.bottom() };
 }
 
 void TextEditor::select_all()
@@ -921,6 +918,11 @@ void TextEditor::keydown_event(KeyEvent& event)
                 indent_selection();
                 return;
             }
+        } else {
+            if (event.modifiers() == Mod_Shift) {
+                unindent_line();
+                return;
+            }
         }
     }
 
@@ -1050,6 +1052,18 @@ void TextEditor::unindent_selection()
             m_selection.set_end({ selection_end.line(), selection_end.column() - current_line().leading_spaces() });
         }
         execute<UnindentSelection>(m_soft_tab_width, TextRange(selection_start, selection_end));
+    }
+}
+
+void TextEditor::unindent_line()
+{
+    if (current_line().first_non_whitespace_column() != 0) {
+        auto const unindent_size = current_line().leading_spaces() < m_soft_tab_width ? current_line().leading_spaces() : m_soft_tab_width;
+        auto const temp_column = m_cursor.column();
+
+        execute<UnindentSelection>(unindent_size, TextRange({ m_cursor.line(), 0 }, { m_cursor.line(), line(m_cursor.line()).length() }));
+
+        set_cursor({ m_cursor.line(), temp_column <= unindent_size ? 0 : temp_column - unindent_size });
     }
 }
 

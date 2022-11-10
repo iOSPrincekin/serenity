@@ -9,6 +9,7 @@
 #include <LibWeb/HTML/BrowsingContext.h>
 #include <LibWeb/HTML/HTMLIFrameElement.h>
 #include <LibWeb/HTML/Origin.h>
+#include <LibWeb/HTML/Parser/HTMLParser.h>
 #include <LibWeb/Layout/FrameBox.h>
 
 namespace Web::HTML {
@@ -16,14 +17,14 @@ namespace Web::HTML {
 HTMLIFrameElement::HTMLIFrameElement(DOM::Document& document, DOM::QualifiedName qualified_name)
     : BrowsingContextContainer(document, move(qualified_name))
 {
-    set_prototype(&document.window().cached_web_prototype("HTMLIFrameElement"));
+    set_prototype(&Bindings::cached_web_prototype(realm(), "HTMLIFrameElement"));
 }
 
 HTMLIFrameElement::~HTMLIFrameElement() = default;
 
-RefPtr<Layout::Node> HTMLIFrameElement::create_layout_node(NonnullRefPtr<CSS::StyleProperties> style)
+JS::GCPtr<Layout::Node> HTMLIFrameElement::create_layout_node(NonnullRefPtr<CSS::StyleProperties> style)
 {
-    return adopt_ref(*new Layout::FrameBox(document(), *this, move(style)));
+    return heap().allocate_without_realm<Layout::FrameBox>(document(), *this, move(style));
 }
 
 void HTMLIFrameElement::parse_attribute(FlyString const& name, String const& value)
@@ -47,7 +48,6 @@ void HTMLIFrameElement::inserted()
 
         // 3. Process the iframe attributes for element, with initialInsertion set to true.
         process_the_iframe_attributes(true);
-        load_src(attribute(HTML::AttributeNames::src));
     }
 }
 
@@ -117,13 +117,27 @@ void HTMLIFrameElement::load_src(String const& value)
         dbgln("iframe failed to load URL: Invalid URL: {}", value);
         return;
     }
-    if (url.protocol() == "file" && document().origin().protocol() != "file") {
+    if (url.scheme() == "file" && document().origin().scheme() != "file") {
         dbgln("iframe failed to load URL: Security violation: {} may not load {}", document().url(), url);
         return;
     }
 
     dbgln("Loading iframe document from {}", value);
     m_nested_browsing_context->loader().load(url, FrameLoader::Type::IFrame);
+}
+
+// https://html.spec.whatwg.org/multipage/rendering.html#attributes-for-embedded-content-and-images
+void HTMLIFrameElement::apply_presentational_hints(CSS::StyleProperties& style) const
+{
+    for_each_attribute([&](auto& name, auto& value) {
+        if (name == HTML::AttributeNames::width) {
+            if (auto parsed_value = parse_dimension_value(value))
+                style.set_property(CSS::PropertyID::Width, parsed_value.release_nonnull());
+        } else if (name == HTML::AttributeNames::height) {
+            if (auto parsed_value = parse_dimension_value(value))
+                style.set_property(CSS::PropertyID::Height, parsed_value.release_nonnull());
+        }
+    });
 }
 
 // https://html.spec.whatwg.org/multipage/iframe-embed-object.html#iframe-load-event-steps
@@ -144,9 +158,16 @@ void run_iframe_load_event_steps(HTML::HTMLIFrameElement& element)
     // FIXME: 4. Set childDocument's iframe load in progress flag.
 
     // 5. Fire an event named load at element.
-    element.dispatch_event(*DOM::Event::create(element.document().window(), HTML::EventNames::load));
+    element.dispatch_event(*DOM::Event::create(element.realm(), HTML::EventNames::load));
 
     // FIXME: 6. Unset childDocument's iframe load in progress flag.
+}
+
+// https://html.spec.whatwg.org/multipage/interaction.html#dom-tabindex
+i32 HTMLIFrameElement::default_tab_index_value() const
+{
+    // See the base function for the spec comments.
+    return 0;
 }
 
 }

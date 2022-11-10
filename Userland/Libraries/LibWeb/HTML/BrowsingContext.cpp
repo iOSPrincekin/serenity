@@ -19,11 +19,13 @@
 #include <LibWeb/HTML/SandboxingFlagSet.h>
 #include <LibWeb/HTML/Scripting/WindowEnvironmentSettingsObject.h>
 #include <LibWeb/HTML/Window.h>
-#include <LibWeb/HighResolutionTime/CoarsenTime.h>
+#include <LibWeb/HTML/WindowProxy.h>
+#include <LibWeb/HighResolutionTime/TimeOrigin.h>
 #include <LibWeb/Layout/BreakNode.h>
 #include <LibWeb/Layout/InitialContainingBlock.h>
 #include <LibWeb/Layout/TextNode.h>
 #include <LibWeb/Page/Page.h>
+#include <LibWeb/URL/URL.h>
 
 namespace Web::HTML {
 
@@ -36,30 +38,6 @@ static bool url_matches_about_blank(AK::URL const& url)
         && url.username().is_empty()
         && url.password().is_empty()
         && url.host().is_null();
-}
-
-// https://url.spec.whatwg.org/#concept-url-origin
-static HTML::Origin url_origin(AK::URL const& url)
-{
-    // FIXME: Move this whole function somewhere better.
-
-    if (url.scheme() == "blob"sv) {
-        // FIXME: Implement
-        return HTML::Origin {};
-    }
-
-    if (url.scheme().is_one_of("ftp"sv, "http"sv, "https"sv, "ws"sv, "wss"sv)) {
-        // Return the tuple origin (url’s scheme, url’s host, url’s port, null).
-        return HTML::Origin(url.scheme(), url.host(), url.port().value_or(0));
-    }
-
-    if (url.scheme() == "file"sv) {
-        // Unfortunate as it is, this is left as an exercise to the reader. When in doubt, return a new opaque origin.
-        // Note: We must return an origin with the `file://' protocol for `file://' iframes to work from `file://' pages.
-        return HTML::Origin(url.protocol(), String(), 0);
-    }
-
-    return HTML::Origin {};
 }
 
 // https://html.spec.whatwg.org/multipage/browsers.html#determining-the-origin
@@ -87,28 +65,28 @@ HTML::Origin determine_the_origin(BrowsingContext const& browsing_context, Optio
     }
 
     // 5. Return url's origin.
-    return url_origin(*url);
+    return URL::url_origin(*url);
 }
 
 // https://html.spec.whatwg.org/multipage/browsers.html#creating-a-new-top-level-browsing-context
-NonnullRefPtr<BrowsingContext> BrowsingContext::create_a_new_top_level_browsing_context(Web::Page& page)
+JS::NonnullGCPtr<BrowsingContext> BrowsingContext::create_a_new_top_level_browsing_context(Web::Page& page)
 {
     // 1. Let group be the result of creating a new browsing context group.
     auto group = BrowsingContextGroup::create_a_new_browsing_context_group(page);
 
     // 2. Return group's browsing context set[0].
-    return *group->browsing_context_set().begin();
+    return *(*group->browsing_context_set().begin());
 }
 
 // https://html.spec.whatwg.org/multipage/browsers.html#creating-a-new-browsing-context
-NonnullRefPtr<BrowsingContext> BrowsingContext::create_a_new_browsing_context(Page& page, JS::GCPtr<DOM::Document> creator, JS::GCPtr<DOM::Element> embedder, BrowsingContextGroup&)
+JS::NonnullGCPtr<BrowsingContext> BrowsingContext::create_a_new_browsing_context(Page& page, JS::GCPtr<DOM::Document> creator, JS::GCPtr<DOM::Element> embedder, BrowsingContextGroup&)
 {
     // 1. Let browsingContext be a new browsing context.
     BrowsingContextContainer* container = (embedder && is<BrowsingContextContainer>(*embedder)) ? static_cast<BrowsingContextContainer*>(embedder.ptr()) : nullptr;
-    auto browsing_context = adopt_ref(*new BrowsingContext(page, container));
+    auto browsing_context = Bindings::main_thread_vm().heap().allocate_without_realm<BrowsingContext>(page, container);
 
     // 2. Let unsafeContextCreationTime be the unsafe shared current time.
-    [[maybe_unused]] auto unsafe_context_creation_time = HTML::main_thread_event_loop().unsafe_shared_current_time();
+    [[maybe_unused]] auto unsafe_context_creation_time = HighResolutionTime::unsafe_shared_current_time();
 
     // 3. If creator is non-null, then set browsingContext's creator origin to return creator's origin,
     //    browsingContext's creator URL to return creator's URL,
@@ -124,7 +102,7 @@ NonnullRefPtr<BrowsingContext> BrowsingContext::create_a_new_browsing_context(Pa
     SandboxingFlagSet sandbox_flags;
 
     // 5. Let origin be the result of determining the origin given browsingContext, about:blank, sandboxFlags, and browsingContext's creator origin.
-    auto origin = determine_the_origin(browsing_context, AK::URL("about:blank"), sandbox_flags, browsing_context->m_creator_origin);
+    auto origin = determine_the_origin(*browsing_context, AK::URL("about:blank"), sandbox_flags, browsing_context->m_creator_origin);
 
     // FIXME: 6. Let permissionsPolicy be the result of creating a permissions policy given browsingContext and origin. [PERMISSIONSPOLICY]
 
@@ -136,13 +114,15 @@ NonnullRefPtr<BrowsingContext> BrowsingContext::create_a_new_browsing_context(Pa
     auto realm_execution_context = Bindings::create_a_new_javascript_realm(
         Bindings::main_thread_vm(),
         [&](JS::Realm& realm) -> JS::Object* {
+            browsing_context->m_window_proxy = realm.heap().allocate<WindowProxy>(realm, realm);
+
             // - For the global object, create a new Window object.
             window = HTML::Window::create(realm);
             return window.ptr();
         },
-        [](JS::Realm&) -> JS::Object* {
-            // FIXME: - For the global this binding, use browsingContext's WindowProxy object.
-            return nullptr;
+        [&](JS::Realm&) -> JS::Object* {
+            // - For the global this binding, use browsingContext's WindowProxy object.
+            return browsing_context->m_window_proxy;
         });
 
     // 9. Let topLevelCreationURL be about:blank if embedder is null; otherwise embedder's relevant settings object's top-level creation URL.
@@ -164,7 +144,7 @@ NonnullRefPtr<BrowsingContext> BrowsingContext::create_a_new_browsing_context(Pa
     auto load_timing_info = DOM::DocumentLoadTimingInfo();
     load_timing_info.navigation_start_time = HighResolutionTime::coarsen_time(
         unsafe_context_creation_time,
-        verify_cast<WindowEnvironmentSettingsObject>(window->realm().host_defined())->cross_origin_isolated_capability() == CanUseCrossOriginIsolatedAPIs::Yes);
+        verify_cast<WindowEnvironmentSettingsObject>(Bindings::host_defined_environment_settings_object(window->realm())).cross_origin_isolated_capability() == CanUseCrossOriginIsolatedAPIs::Yes);
 
     // 13. Let coop be a new cross-origin opener policy.
     auto coop = CrossOriginOpenerPolicy {};
@@ -187,7 +167,7 @@ NonnullRefPtr<BrowsingContext> BrowsingContext::create_a_new_browsing_context(Pa
     //     load timing info is loadTimingInfo,
     //     FIXME: navigation id is null,
     //     and which is ready for post-load tasks.
-    auto document = DOM::Document::create(*window);
+    auto document = DOM::Document::create(window->realm());
 
     // Non-standard
     document->set_window({}, *window);
@@ -208,9 +188,9 @@ NonnullRefPtr<BrowsingContext> BrowsingContext::create_a_new_browsing_context(Pa
 
     // 18. Ensure that document has a single child html node, which itself has two empty child nodes: a head element, and a body element.
     auto html_node = document->create_element(HTML::TagNames::html).release_value();
-    html_node->append_child(document->create_element(HTML::TagNames::head).release_value());
-    html_node->append_child(document->create_element(HTML::TagNames::body).release_value());
-    document->append_child(html_node);
+    MUST(html_node->append_child(document->create_element(HTML::TagNames::head).release_value()));
+    MUST(html_node->append_child(document->create_element(HTML::TagNames::body).release_value()));
+    MUST(document->append_child(html_node));
 
     // 19. Set the active document of browsingContext to document.
     browsing_context->set_active_document(*document);
@@ -237,7 +217,7 @@ NonnullRefPtr<BrowsingContext> BrowsingContext::create_a_new_browsing_context(Pa
     document->completely_finish_loading();
 
     // 24. Return browsingContext.
-    return browsing_context;
+    return *browsing_context;
 }
 
 BrowsingContext::BrowsingContext(Page& page, HTML::BrowsingContextContainer* container)
@@ -257,6 +237,22 @@ BrowsingContext::BrowsingContext(Page& page, HTML::BrowsingContextContainer* con
 }
 
 BrowsingContext::~BrowsingContext() = default;
+
+void BrowsingContext::visit_edges(Cell::Visitor& visitor)
+{
+    Base::visit_edges(visitor);
+
+    for (auto& entry : m_session_history)
+        visitor.visit(entry.document);
+    visitor.visit(m_container);
+    visitor.visit(m_window_proxy);
+    visitor.visit(m_group);
+    visitor.visit(m_parent);
+    visitor.visit(m_first_child);
+    visitor.visit(m_last_child);
+    visitor.visit(m_next_sibling);
+    visitor.visit(m_previous_sibling);
+}
 
 void BrowsingContext::did_edit(Badge<EditEventHandler>)
 {
@@ -292,6 +288,8 @@ bool BrowsingContext::is_focused_context() const
 // https://html.spec.whatwg.org/multipage/browsers.html#set-the-active-document
 void BrowsingContext::set_active_document(JS::NonnullGCPtr<DOM::Document> document)
 {
+    auto previously_active_document = active_document();
+
     // 1. Let window be document's relevant global object.
     auto& window = verify_cast<HTML::Window>(relevant_global_object(document));
 
@@ -299,7 +297,7 @@ void BrowsingContext::set_active_document(JS::NonnullGCPtr<DOM::Document> docume
     document->set_visibility_state({}, top_level_browsing_context().system_visibility_state());
 
     // 3. Set browsingContext's active window to window.
-    m_active_window = window;
+    m_window_proxy->set_window({}, window);
 
     // 4. Set window's associated Document to document.
     window.set_associated_document(document);
@@ -312,6 +310,9 @@ void BrowsingContext::set_active_document(JS::NonnullGCPtr<DOM::Document> docume
 
     if (m_page && is_top_level())
         m_page->client().page_did_change_title(document->title());
+
+    if (previously_active_document && previously_active_document != document.ptr())
+        previously_active_document->did_stop_being_active_document_in_browsing_context({});
 }
 
 void BrowsingContext::set_viewport_rect(Gfx::IntRect const& rect)
@@ -392,12 +393,13 @@ void BrowsingContext::scroll_to(Gfx::IntPoint const& position)
 
 void BrowsingContext::scroll_to_anchor(String const& fragment)
 {
-    if (!active_document())
+    JS::GCPtr<DOM::Document> document = active_document();
+    if (!document)
         return;
 
-    auto element = active_document()->get_element_by_id(fragment);
+    auto element = document->get_element_by_id(fragment);
     if (!element) {
-        auto candidates = active_document()->get_elements_by_name(fragment);
+        auto candidates = document->get_elements_by_name(fragment);
         for (auto& candidate : candidates->collect_matching_elements()) {
             if (is<HTML::HTMLAnchorElement>(*candidate)) {
                 element = &verify_cast<HTML::HTMLAnchorElement>(*candidate);
@@ -406,9 +408,12 @@ void BrowsingContext::scroll_to_anchor(String const& fragment)
         }
     }
 
-    active_document()->force_layout();
+    if (!element)
+        return;
 
-    if (!element || !element->layout_node())
+    document->force_layout();
+
+    if (!element->layout_node())
         return;
 
     auto& layout_node = *element->layout_node();
@@ -434,7 +439,7 @@ Gfx::IntRect BrowsingContext::to_top_level_rect(Gfx::IntRect const& a_rect)
 Gfx::IntPoint BrowsingContext::to_top_level_position(Gfx::IntPoint const& a_position)
 {
     auto position = a_position;
-    for (auto* ancestor = parent(); ancestor; ancestor = ancestor->parent()) {
+    for (auto ancestor = parent(); ancestor; ancestor = ancestor->parent()) {
         if (ancestor->is_top_level())
             break;
         if (!ancestor->container())
@@ -475,7 +480,7 @@ String BrowsingContext::selected_text() const
 
     auto selection = layout_root->selection().normalized();
 
-    if (selection.start().layout_node == selection.end().layout_node) {
+    if (selection.start().layout_node.ptr() == selection.end().layout_node) {
         if (!is<Layout::TextNode>(*selection.start().layout_node))
             return "";
         return verify_cast<Layout::TextNode>(*selection.start().layout_node).text_for_rendering().substring(selection.start().index_in_node, selection.end().index_in_node - selection.start().index_in_node);
@@ -490,7 +495,7 @@ String BrowsingContext::selected_text() const
 
     // Middle nodes
     layout_node = layout_node->next_in_pre_order();
-    while (layout_node && layout_node != selection.end().layout_node) {
+    while (layout_node && layout_node.ptr() != selection.end().layout_node) {
         if (is<Layout::TextNode>(*layout_node))
             builder.append(verify_cast<Layout::TextNode>(*layout_node).text_for_rendering());
         else if (is<Layout::BreakNode>(*layout_node) || is<Layout::BlockContainer>(*layout_node))
@@ -500,7 +505,7 @@ String BrowsingContext::selected_text() const
     }
 
     // End node
-    VERIFY(layout_node == selection.end().layout_node);
+    VERIFY(layout_node.ptr() == selection.end().layout_node);
     if (is<Layout::TextNode>(*layout_node)) {
         auto& text = verify_cast<Layout::TextNode>(*layout_node).text_for_rendering();
         builder.append(text.substring(0, selection.end().index_in_node));
@@ -545,7 +550,13 @@ void BrowsingContext::select_all()
             last_layout_node_index_in_node = text_for_rendering.length() - 1;
     }
 
-    layout_root->set_selection({ { first_layout_node, 0 }, { last_layout_node, last_layout_node_index_in_node } });
+    auto start = Layout::LayoutPosition {
+        JS::make_handle(const_cast<Layout::Node*>(first_layout_node)), 0
+    };
+    auto end = Layout::LayoutPosition {
+        JS::make_handle(const_cast<Layout::Node*>(last_layout_node)), last_layout_node_index_in_node
+    };
+    layout_root->set_selection({ move(start), move(end) });
 }
 
 void BrowsingContext::register_viewport_client(ViewportClient& client)
@@ -645,7 +656,7 @@ BrowsingContext* BrowsingContext::choose_a_browsing_context(StringView name, boo
     // name, a browsing context current, and a boolean noopener are as follows:
 
     // 1. Let chosen be null.
-    BrowsingContext* chosen = nullptr;
+    JS::GCPtr<BrowsingContext> chosen = nullptr;
 
     // FIXME: 2. Let windowType be "existing or none".
 
@@ -660,7 +671,7 @@ BrowsingContext* BrowsingContext::choose_a_browsing_context(StringView name, boo
     // set chosen to current's parent browsing context, if any, and current
     // otherwise.
     if (name.equals_ignoring_case("_parent"sv)) {
-        if (auto* parent = this->parent())
+        if (auto parent = this->parent())
             chosen = parent;
         else
             chosen = this;
@@ -788,26 +799,40 @@ bool BrowsingContext::still_on_its_initial_about_blank_document() const
 
 DOM::Document const* BrowsingContext::active_document() const
 {
-    if (!m_active_window)
+    auto* window = active_window();
+    if (!window)
         return nullptr;
-    return &m_active_window->associated_document();
+    return &window->associated_document();
 }
 
 DOM::Document* BrowsingContext::active_document()
 {
-    if (!m_active_window)
+    auto* window = active_window();
+    if (!window)
         return nullptr;
-    return &m_active_window->associated_document();
+    return &window->associated_document();
 }
 
+// https://html.spec.whatwg.org/multipage/browsers.html#active-window
 HTML::Window* BrowsingContext::active_window()
 {
-    return m_active_window;
+    return m_window_proxy->window();
 }
 
+// https://html.spec.whatwg.org/multipage/browsers.html#active-window
 HTML::Window const* BrowsingContext::active_window() const
 {
-    return m_active_window;
+    return m_window_proxy->window();
+}
+
+HTML::WindowProxy* BrowsingContext::window_proxy()
+{
+    return m_window_proxy.ptr();
+}
+
+HTML::WindowProxy const* BrowsingContext::window_proxy() const
+{
+    return m_window_proxy.ptr();
 }
 
 void BrowsingContext::scroll_offset_did_change()
@@ -846,42 +871,42 @@ void BrowsingContext::remove()
     VERIFY(group());
 
     // 2. Let group be browsingContext's group.
-    NonnullRefPtr<BrowsingContextGroup> group = *this->group();
+    JS::NonnullGCPtr<BrowsingContextGroup> group = *this->group();
 
     // 3. Set browsingContext's group to null.
     set_group(nullptr);
 
     // 4. Remove browsingContext from group's browsing context set.
-    group->browsing_context_set().remove(*this);
+    group->browsing_context_set().remove(this);
 
     // 5. If group's browsing context set is empty, then remove group from the user agent's browsing context group set.
     // NOTE: This is done by ~BrowsingContextGroup() when the refcount reaches 0.
 }
 
 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate
-DOM::ExceptionOr<void> BrowsingContext::navigate(
-    Fetch::Infrastructure::Request resource,
+WebIDL::ExceptionOr<void> BrowsingContext::navigate(
+    JS::NonnullGCPtr<Fetch::Infrastructure::Request> resource,
     BrowsingContext& source_browsing_context,
     bool exceptions_enabled,
     HistoryHandlingBehavior history_handling,
     Optional<PolicyContainer> history_policy_container,
     String navigation_type,
     Optional<String> navigation_id,
-    Function<void(NonnullOwnPtr<Fetch::Infrastructure::Response>)> process_response_end_of_body)
+    Function<void(JS::NonnullGCPtr<Fetch::Infrastructure::Response>)> process_response_end_of_body)
 {
     // 1. If resource is a URL, then set resource to a new request whose URL is resource.
     // NOTE: This function only accepts resources that are already a request, so this is irrelevant.
 
     // 2. If resource is a request and historyHandling is "reload", then set resource's reload-navigation flag.
     if (history_handling == HistoryHandlingBehavior::Reload)
-        resource.set_reload_navigation(true);
+        resource->set_reload_navigation(true);
 
     // 3. If the source browsing context is not allowed to navigate browsingContext, then:
     if (!source_browsing_context.is_allowed_to_navigate(*this)) {
         // 1. If exceptionsEnabled is given and is true, then throw a "SecurityError" DOMException.
         if (exceptions_enabled) {
             VERIFY(source_browsing_context.active_document());
-            return DOM::SecurityError::create(source_browsing_context.active_document()->global_object(), "Source browsing context not allowed to navigate"sv);
+            return WebIDL::SecurityError::create(source_browsing_context.active_document()->realm(), "Source browsing context not allowed to navigate"sv);
         }
 
         // FIXME: 2. Otherwise, the user agent may instead offer to open resource in a new top-level browsing context
@@ -914,8 +939,8 @@ DOM::ExceptionOr<void> BrowsingContext::navigate(
     //    - resource is a request whose URL's scheme is "javascript"
     if (history_handling == HistoryHandlingBehavior::Default
         && (still_on_its_initial_about_blank_document()
-            || resource.url().equals(active_document()->url())
-            || resource.url().scheme() == "javascript"sv)) {
+            || resource->url().equals(active_document()->url())
+            || resource->url().scheme() == "javascript"sv)) {
         // then set historyHandling to "replace".
         history_handling = HistoryHandlingBehavior::Replace;
     }
@@ -924,10 +949,10 @@ DOM::ExceptionOr<void> BrowsingContext::navigate(
     //    resource's URL equals browsingContext's active document's URL with exclude fragments set to true,
     //    and resource's URL's fragment is non-null, then:
     if (history_handling != HistoryHandlingBehavior::Reload
-        && resource.url().equals(active_document()->url(), AK::URL::ExcludeFragment::Yes)
-        && !resource.url().fragment().is_null()) {
+        && resource->url().equals(active_document()->url(), AK::URL::ExcludeFragment::Yes)
+        && !resource->url().fragment().is_null()) {
         // 1. Navigate to a fragment given browsingContext, resource's URL, historyHandling, and navigationId.
-        navigate_to_a_fragment(resource.url(), history_handling, *navigation_id);
+        TRY(navigate_to_a_fragment(resource->url(), history_handling, *navigation_id));
 
         // 2. Return.
         return {};
@@ -978,12 +1003,12 @@ DOM::ExceptionOr<void> BrowsingContext::navigate(
     (void)process_response_end_of_body;
 
     // AD-HOC:
-    loader().load(resource.url(), FrameLoader::Type::IFrame);
+    loader().load(resource->url(), FrameLoader::Type::IFrame);
     return {};
 }
 
 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate-fragid
-DOM::ExceptionOr<void> BrowsingContext::navigate_to_a_fragment(AK::URL const& url, HistoryHandlingBehavior history_handling, String navigation_id)
+WebIDL::ExceptionOr<void> BrowsingContext::navigate_to_a_fragment(AK::URL const& url, HistoryHandlingBehavior history_handling, String navigation_id)
 {
     // 1. If historyHandling is not "replace",
     if (history_handling != HistoryHandlingBehavior::Replace) {
@@ -1025,7 +1050,7 @@ DOM::ExceptionOr<void> BrowsingContext::navigate_to_a_fragment(AK::URL const& ur
 }
 
 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#traverse-the-history
-DOM::ExceptionOr<void> BrowsingContext::traverse_the_history(size_t entry_index, HistoryHandlingBehavior history_handling, bool explicit_history_navigation)
+WebIDL::ExceptionOr<void> BrowsingContext::traverse_the_history(size_t entry_index, HistoryHandlingBehavior history_handling, bool explicit_history_navigation)
 {
     auto* entry = &m_session_history[entry_index];
 
@@ -1035,12 +1060,13 @@ DOM::ExceptionOr<void> BrowsingContext::traverse_the_history(size_t entry_index,
         VERIFY(history_handling == HistoryHandlingBehavior::Default);
 
         // 2. Let request be a new request whose URL is entry's URL.
-        auto request = Fetch::Infrastructure::Request();
-        request.set_url(entry->url);
+        auto& vm = Bindings::main_thread_vm();
+        auto request = Fetch::Infrastructure::Request::create(vm);
+        request->set_url(entry->url);
 
         // 3. If explicitHistoryNavigation is true, then set request's history-navigation flag.
         if (explicit_history_navigation)
-            request.set_history_navigation(true);
+            request->set_history_navigation(true);
 
         // 4. Navigate the browsing context to request with historyHandling set to "entry update"
         //    and with historyPolicyContainer set to entry's policy container.
@@ -1105,7 +1131,7 @@ DOM::ExceptionOr<void> BrowsingContext::traverse_the_history(size_t entry_index,
     if (new_document->ready_state() == "complete"sv) {
         // then queue a global task on the DOM manipulation task source given newDocument's relevant global object to run the following steps:
 
-        queue_global_task(Task::Source::DOMManipulation, relevant_global_object(*new_document), [new_document = JS::make_handle(*new_document)]() mutable {
+        queue_global_task(Task::Source::DOMManipulation, relevant_global_object(*new_document), [new_document]() mutable {
             // 1. If newDocument's page showing flag is true, then abort these steps.
             if (new_document->page_showing())
                 return;
@@ -1174,13 +1200,13 @@ DOM::ExceptionOr<void> BrowsingContext::traverse_the_history(size_t entry_index,
     // 20. If hashChanged is true,
     if (hash_changed) {
         // then queue a global task on the DOM manipulation task source given newDocument's relevant global object
-        queue_global_task(Task::Source::DOMManipulation, relevant_global_object(*new_document), [new_document = JS::make_handle(*new_document)]() mutable {
+        queue_global_task(Task::Source::DOMManipulation, relevant_global_object(*new_document), [new_document]() mutable {
             // to fire an event named hashchange at newDocument's relevant global object,
             // using HashChangeEvent, with the oldURL attribute initialized to oldURL
             // and the newURL attribute initialized to newURL.
 
             // FIXME: Implement a proper HashChangeEvent class.
-            auto event = DOM::Event::create(verify_cast<HTML::Window>(relevant_global_object(*new_document)), HTML::EventNames::hashchange);
+            auto event = DOM::Event::create(verify_cast<HTML::Window>(relevant_global_object(*new_document)).realm(), HTML::EventNames::hashchange);
             new_document->dispatch_event(event);
         });
     }
@@ -1255,7 +1281,7 @@ Vector<JS::Handle<DOM::Document>> BrowsingContext::document_family() const
     for (auto& entry : m_session_history) {
         if (!entry.document)
             continue;
-        if (documents.set(entry.document.ptr()) == AK::HashSetResult::ReplacedExistingEntry)
+        if (documents.set(const_cast<DOM::Document*>(entry.document.ptr())) == AK::HashSetResult::ReplacedExistingEntry)
             continue;
         for (auto& context : entry.document->list_of_descendant_browsing_contexts()) {
             for (auto& document : context->document_family()) {
@@ -1303,6 +1329,8 @@ void BrowsingContext::set_system_visibility_state(VisibilityState visibility_sta
 // https://html.spec.whatwg.org/multipage/window-object.html#a-browsing-context-is-discarded
 void BrowsingContext::discard()
 {
+    m_has_been_discarded = true;
+
     // 1. Discard all Document objects for all the entries in browsingContext's session history.
     for (auto& entry : m_session_history) {
         if (entry.document)
@@ -1339,6 +1367,58 @@ void BrowsingContext::close()
 
     // 4. Discard browsingContext.
     discard();
+}
+
+void BrowsingContext::append_child(JS::NonnullGCPtr<BrowsingContext> child)
+{
+    VERIFY(!child->m_parent);
+
+    if (m_last_child)
+        m_last_child->m_next_sibling = child;
+    child->m_previous_sibling = m_last_child;
+    child->m_parent = this;
+    m_last_child = child;
+    if (!m_first_child)
+        m_first_child = m_last_child;
+}
+
+void BrowsingContext::remove_child(JS::NonnullGCPtr<BrowsingContext> child)
+{
+    VERIFY(child->m_parent.ptr() == this);
+
+    if (m_first_child == child)
+        m_first_child = child->m_next_sibling;
+
+    if (m_last_child == child)
+        m_last_child = child->m_previous_sibling;
+
+    if (child->m_next_sibling)
+        child->m_next_sibling->m_previous_sibling = child->m_previous_sibling;
+
+    if (child->m_previous_sibling)
+        child->m_previous_sibling->m_next_sibling = child->m_next_sibling;
+
+    child->m_next_sibling = nullptr;
+    child->m_previous_sibling = nullptr;
+    child->m_parent = nullptr;
+}
+
+JS::GCPtr<BrowsingContext> BrowsingContext::first_child() const
+{
+    return m_first_child;
+}
+JS::GCPtr<BrowsingContext> BrowsingContext::next_sibling() const
+{
+    return m_next_sibling;
+}
+
+bool BrowsingContext::is_ancestor_of(BrowsingContext const& other) const
+{
+    for (auto ancestor = other.parent(); ancestor; ancestor = ancestor->parent()) {
+        if (ancestor == this)
+            return true;
+    }
+    return false;
 }
 
 }

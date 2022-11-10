@@ -1,0 +1,39 @@
+#include <AK/URL.h>
+#include <AK/Vector.h>
+#include <LibGfx/Point.h>
+#include <LibGfx/Rect.h>
+#include <LibGfx/ShareableBitmap.h>
+#include <LibGfx/Size.h>
+#include <LibWeb/Cookie/Cookie.h>
+#include <LibWeb/Cookie/ParsedCookie.h>
+#include <LibWeb/WebDriver/ExecuteScript.h>
+
+// FIXME: This isn't used here, but the generated IPC fails to compile without this include.
+#include <LibWeb/WebDriver/Response.h>
+
+endpoint WebDriverSessionClient {
+    quit() =|
+
+    get_title() => (String title)
+    refresh() =|
+    back() =|
+    forward() =|
+    serialize_source() => (String source)
+    execute_script(String body, Vector<String> json_arguments, Optional<u64> timeout, bool async) => (Web::WebDriver::ExecuteScriptResultType result_type, String json_result)
+    get_all_cookies() => (Vector<Web::Cookie::Cookie> cookies)
+    get_named_cookie(String name) => (Optional<Web::Cookie::Cookie> cookie)
+    add_cookie(Web::Cookie::ParsedCookie cookie) =|
+    update_cookie(Web::Cookie::Cookie cookie) =|
+    scroll_element_into_view(i32 element_id) => ()
+    is_element_selected(i32 element_id) => (bool selected)
+    get_element_attribute(i32 element_id, String name) => (Optional<String> atttibute)
+    get_element_property(i32 element_id, String name) => (Optional<String> property)
+    get_active_documents_type() => (String type)
+    get_computed_value_for_element(i32 element_id, String property_name) => (String computed_value)
+    get_element_text(i32 element_id) => (String text)
+    get_element_tag_name(i32 element_id) => (String tag_name)
+    get_element_rect(i32 element_id) => (Gfx::IntRect rect)
+    is_element_enabled(i32 element_id) => (bool enabled)
+    take_screenshot() => (Gfx::ShareableBitmap data)
+    take_element_screenshot(i32 element_id) => (Gfx::ShareableBitmap data)
+}

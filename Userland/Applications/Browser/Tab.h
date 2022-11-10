@@ -8,6 +8,7 @@
 #pragma once
 
 #include "History.h"
+#include "WebDriverEndpoints.h"
 #include <AK/Optional.h>
 #include <AK/URL.h>
 #include <LibGUI/ActionGroup.h>
@@ -56,6 +57,9 @@ public:
     void action_entered(GUI::Action&);
     void action_left(GUI::Action&);
 
+    void window_position_changed(Gfx::IntPoint const&);
+    void window_size_changed(Gfx::IntSize const&);
+
     Function<void(String const&)> on_title_change;
     Function<void(const URL&)> on_tab_open_request;
     Function<void(Tab&)> on_tab_close_request;
@@ -64,9 +68,14 @@ public:
     Function<String(const URL&, Web::Cookie::Source source)> on_get_cookie;
     Function<void(const URL&, Web::Cookie::ParsedCookie const& cookie, Web::Cookie::Source source)> on_set_cookie;
     Function<void()> on_dump_cookies;
+    Function<void(URL const&, Web::Cookie::Cookie)> on_update_cookie;
     Function<Vector<Web::Cookie::Cookie>()> on_get_cookies_entries;
     Function<OrderedHashMap<String, String>()> on_get_local_storage_entries;
     Function<OrderedHashMap<String, String>()> on_get_session_storage_entries;
+    Function<Gfx::ShareableBitmap()> on_take_screenshot;
+
+    WebDriverEndpoints& webdriver_endpoints() { return m_webdriver_endpoints; }
+    void enable_webdriver_mode();
 
     enum class InspectorTarget {
         Document,
@@ -133,6 +142,8 @@ private:
     RefPtr<const Gfx::Bitmap> m_icon;
 
     Optional<URL> m_navigating_url;
+
+    WebDriverEndpoints m_webdriver_endpoints {};
 
     bool m_loaded { false };
     bool m_is_history_navigation { false };

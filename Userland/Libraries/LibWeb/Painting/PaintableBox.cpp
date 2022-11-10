@@ -13,7 +13,6 @@
 #include <LibWeb/Painting/BackgroundPainting.h>
 #include <LibWeb/Painting/FilterPainting.h>
 #include <LibWeb/Painting/PaintableBox.h>
-#include <LibWeb/Painting/ShadowPainting.h>
 #include <LibWeb/Painting/StackingContext.h>
 #include <LibWeb/Platform/FontPlugin.h>
 
@@ -36,6 +35,13 @@ PaintableBox::~PaintableBox()
 void PaintableBox::invalidate_stacking_context()
 {
     m_stacking_context = nullptr;
+}
+
+bool PaintableBox::is_out_of_view(PaintContext& context) const
+{
+    return !enclosing_int_rect(absolute_paint_rect())
+                .translated(context.painter().translation())
+                .intersects(context.painter().clip_rect());
 }
 
 PaintableWithLines::PaintableWithLines(Layout::BlockContainer const& layout_box)
@@ -65,6 +71,12 @@ Gfx::FloatPoint PaintableBox::effective_offset() const
 {
     Gfx::FloatPoint offset;
     if (m_containing_line_box_fragment.has_value()) {
+
+        // FIXME: This is a hack to deal with situations where the layout tree has been garbage collected.
+        //        We could avoid this by making the paintable tree garbage collected as well.
+        if (!containing_block() || !containing_block()->paint_box())
+            return offset;
+
         auto const& fragment = containing_block()->paint_box()->line_boxes()[m_containing_line_box_fragment->line_box_index].fragments()[m_containing_line_box_fragment->fragment_index];
         offset = fragment.offset();
     } else {
@@ -90,6 +102,28 @@ Gfx::FloatRect PaintableBox::absolute_rect() const
     if (!m_absolute_rect.has_value())
         m_absolute_rect = compute_absolute_rect();
     return *m_absolute_rect;
+}
+
+Gfx::FloatRect PaintableBox::compute_absolute_paint_rect() const
+{
+    // FIXME: This likely incomplete:
+    auto rect = absolute_border_box_rect();
+    auto resolved_box_shadow_data = resolve_box_shadow_data();
+    for (auto const& shadow : resolved_box_shadow_data) {
+        if (shadow.placement == ShadowPlacement::Inner)
+            continue;
+        auto inflate = shadow.spread_distance + shadow.blur_radius;
+        auto shadow_rect = rect.inflated(inflate, inflate, inflate, inflate).translated(shadow.offset_x, shadow.offset_y);
+        rect = rect.united(shadow_rect);
+    }
+    return rect;
+}
+
+Gfx::FloatRect PaintableBox::absolute_paint_rect() const
+{
+    if (!m_absolute_paint_rect.has_value())
+        m_absolute_paint_rect = compute_absolute_paint_rect();
+    return *m_absolute_paint_rect;
 }
 
 void PaintableBox::set_containing_line_box_fragment(Optional<Layout::LineBoxFragmentCoordinate> fragment_coordinate)
@@ -235,11 +269,11 @@ void PaintableBox::paint_background(PaintContext& context) const
     Painting::paint_background(context, layout_box(), background_rect, background_color, computed_values().image_rendering(), background_layers, normalized_border_radii_data());
 }
 
-void PaintableBox::paint_box_shadow(PaintContext& context) const
+Vector<ShadowData> PaintableBox::resolve_box_shadow_data() const
 {
     auto box_shadow_data = computed_values().box_shadow();
     if (box_shadow_data.is_empty())
-        return;
+        return {};
 
     Vector<ShadowData> resolved_box_shadow_data;
     resolved_box_shadow_data.ensure_capacity(box_shadow_data.size());
@@ -252,6 +286,15 @@ void PaintableBox::paint_box_shadow(PaintContext& context) const
             static_cast<int>(layer.spread_distance.to_px(layout_box())),
             layer.placement == CSS::ShadowPlacement::Outer ? ShadowPlacement::Outer : ShadowPlacement::Inner);
     }
+
+    return resolved_box_shadow_data;
+}
+
+void PaintableBox::paint_box_shadow(PaintContext& context) const
+{
+    auto resolved_box_shadow_data = resolve_box_shadow_data();
+    if (resolved_box_shadow_data.is_empty())
+        return;
     Painting::paint_box_shadow(context, absolute_border_box_rect().to_rounded<int>(), normalized_border_radii_data(), resolved_box_shadow_data);
 }
 
@@ -606,9 +649,18 @@ Optional<HitTestResult> PaintableBox::hit_test(Gfx::FloatPoint const& position, 
         return stacking_context()->hit_test(position, type);
     }
 
-    if (absolute_border_box_rect().contains(position.x(), position.y()))
-        return HitTestResult { *this };
-    return {};
+    if (!absolute_border_box_rect().contains(position.x(), position.y()))
+        return {};
+
+    for (auto* child = first_child(); child; child = child->next_sibling()) {
+        auto result = child->hit_test(position, type);
+        if (!result.has_value())
+            continue;
+        if (!result->paintable->visible_for_hit_testing())
+            continue;
+        return result;
+    }
+    return HitTestResult { *this };
 }
 
 Optional<HitTestResult> PaintableWithLines::hit_test(Gfx::FloatPoint const& position, HitTestType type) const
@@ -621,6 +673,10 @@ Optional<HitTestResult> PaintableWithLines::hit_test(Gfx::FloatPoint const& posi
         for (auto& fragment : line_box.fragments()) {
             if (is<Layout::Box>(fragment.layout_node()) && static_cast<Layout::Box const&>(fragment.layout_node()).paint_box()->stacking_context())
                 continue;
+            if (!fragment.layout_node().containing_block()) {
+                dbgln("FIXME: PaintableWithLines::hit_test(): Missing containing block on {}", fragment.layout_node().debug_description());
+                continue;
+            }
             auto fragment_absolute_rect = fragment.absolute_rect();
             if (fragment_absolute_rect.contains(position)) {
                 if (is<Layout::BlockContainer>(fragment.layout_node()) && fragment.layout_node().paintable())

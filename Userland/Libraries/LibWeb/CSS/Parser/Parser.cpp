@@ -40,31 +40,31 @@ static void log_parse_error(SourceLocation const& location = SourceLocation::cur
 namespace Web::CSS::Parser {
 
 ParsingContext::ParsingContext()
-    : m_window_object(Bindings::main_thread_internal_window_object())
+    : m_realm(*Bindings::main_thread_vm().current_realm())
 {
 }
 
-ParsingContext::ParsingContext(HTML::Window& window_object)
-    : m_window_object(window_object)
+ParsingContext::ParsingContext(JS::Realm& realm)
+    : m_realm(realm)
 {
 }
 
 ParsingContext::ParsingContext(DOM::Document const& document, AK::URL url)
-    : m_window_object(const_cast<HTML::Window&>(document.window()))
+    : m_realm(const_cast<JS::Realm&>(document.realm()))
     , m_document(&document)
     , m_url(move(url))
 {
 }
 
 ParsingContext::ParsingContext(DOM::Document const& document)
-    : m_window_object(const_cast<HTML::Window&>(document.window()))
+    : m_realm(const_cast<JS::Realm&>(document.realm()))
     , m_document(&document)
     , m_url(document.url())
 {
 }
 
 ParsingContext::ParsingContext(DOM::ParentNode& parent_node)
-    : m_window_object(parent_node.document().window())
+    : m_realm(parent_node.realm())
     , m_document(&parent_node.document())
     , m_url(parent_node.document().url())
 {
@@ -79,87 +79,6 @@ bool ParsingContext::in_quirks_mode() const
 AK::URL ParsingContext::complete_url(String const& addr) const
 {
     return m_url.complete_url(addr);
-}
-
-template<typename T>
-TokenStream<T>::TokenStream(Vector<T> const& tokens)
-    : m_tokens(tokens)
-    , m_eof(make_eof())
-{
-}
-
-template<typename T>
-bool TokenStream<T>::has_next_token()
-{
-    return (size_t)(m_iterator_offset + 1) < m_tokens.size();
-}
-
-template<typename T>
-T const& TokenStream<T>::peek_token(int offset)
-{
-    if (!has_next_token())
-        return m_eof;
-
-    return m_tokens.at(m_iterator_offset + offset + 1);
-}
-
-template<typename T>
-T const& TokenStream<T>::next_token()
-{
-    if (!has_next_token())
-        return m_eof;
-
-    ++m_iterator_offset;
-
-    return m_tokens.at(m_iterator_offset);
-}
-
-template<typename T>
-T const& TokenStream<T>::current_token()
-{
-    if ((size_t)m_iterator_offset >= m_tokens.size())
-        return m_eof;
-
-    return m_tokens.at(m_iterator_offset);
-}
-
-template<typename T>
-void TokenStream<T>::reconsume_current_input_token()
-{
-    if (m_iterator_offset >= 0)
-        --m_iterator_offset;
-}
-
-template<typename T>
-void TokenStream<T>::skip_whitespace()
-{
-    while (peek_token().is(Token::Type::Whitespace))
-        next_token();
-}
-
-template<>
-Token TokenStream<Token>::make_eof()
-{
-    return Tokenizer::create_eof_token();
-}
-
-template<>
-ComponentValue TokenStream<ComponentValue>::make_eof()
-{
-    return ComponentValue(Tokenizer::create_eof_token());
-}
-
-template<typename T>
-void TokenStream<T>::dump_all_tokens()
-{
-    dbgln("Dumping all tokens:");
-    for (size_t i = 0; i < m_tokens.size(); ++i) {
-        auto& token = m_tokens[i];
-        if ((i - 1) == (size_t)m_iterator_offset)
-            dbgln("-> {}", token.to_debug_string());
-        else
-            dbgln("   {}", token.to_debug_string());
-    }
 }
 
 Parser::Parser(ParsingContext const& context, StringView input, String const& encoding)
@@ -199,7 +118,7 @@ CSSStyleSheet* Parser::parse_as_css_stylesheet(Optional<AK::URL> location)
     auto style_sheet = parse_a_stylesheet(m_token_stream, {});
 
     // Interpret all of the resulting top-level qualified rules as style rules, defined below.
-    JS::MarkedVector<CSSRule*> rules(m_context.window_object().heap());
+    JS::MarkedVector<CSSRule*> rules(m_context.realm().heap());
     for (auto& raw_rule : style_sheet.rules) {
         auto* rule = convert_to_rule(raw_rule);
         // If any style rule is invalid, or any at-rule is not recognized or is invalid according to its grammar or context, it’s a parse error. Discard that rule.
@@ -207,8 +126,8 @@ CSSStyleSheet* Parser::parse_as_css_stylesheet(Optional<AK::URL> location)
             rules.append(rule);
     }
 
-    auto* rule_list = CSSRuleList::create(m_context.window_object(), rules);
-    return CSSStyleSheet::create(m_context.window_object(), *rule_list, move(location));
+    auto* rule_list = CSSRuleList::create(m_context.realm(), rules);
+    return CSSStyleSheet::create(m_context.realm(), *rule_list, move(location));
 }
 
 Optional<SelectorList> Parser::parse_as_selector(SelectorParsingMode parsing_mode)
@@ -2378,23 +2297,114 @@ Optional<AK::URL> Parser::parse_url_function(ComponentValue const& component_val
     return {};
 }
 
+template<typename TElement>
+static Optional<Vector<TElement>> parse_color_stop_list(auto& tokens, auto is_position, auto get_position, auto parse_color, auto parse_dimension)
+{
+    enum class ElementType {
+        Garbage,
+        ColorStop,
+        ColorHint
+    };
+
+    auto parse_color_stop_list_element = [&](TElement& element) -> ElementType {
+        tokens.skip_whitespace();
+        if (!tokens.has_next_token())
+            return ElementType::Garbage;
+        auto const& token = tokens.next_token();
+
+        Gfx::Color color;
+        Optional<typename TElement::PositionType> position;
+        Optional<typename TElement::PositionType> second_position;
+        auto dimension = parse_dimension(token);
+        if (dimension.has_value() && is_position(*dimension)) {
+            // [<T-percentage> <color>] or [<T-percentage>]
+            position = get_position(*dimension);
+            tokens.skip_whitespace();
+            // <T-percentage>
+            if (!tokens.has_next_token() || tokens.peek_token().is(Token::Type::Comma)) {
+                element.transition_hint = typename TElement::ColorHint { *position };
+                return ElementType::ColorHint;
+            }
+            // <T-percentage> <color>
+            auto maybe_color = parse_color(tokens.next_token());
+            if (!maybe_color.has_value())
+                return ElementType::Garbage;
+            color = *maybe_color;
+        } else {
+            // [<color> <T-percentage>?]
+            auto maybe_color = parse_color(token);
+            if (!maybe_color.has_value())
+                return ElementType::Garbage;
+            color = *maybe_color;
+            tokens.skip_whitespace();
+            // Allow up to [<color> <T-percentage> <T-percentage>] (double-position color stops)
+            // Note: Double-position color stops only appear to be valid in this order.
+            for (auto stop_position : Array { &position, &second_position }) {
+                if (tokens.has_next_token() && !tokens.peek_token().is(Token::Type::Comma)) {
+                    auto token = tokens.next_token();
+                    auto dimension = parse_dimension(token);
+                    if (!dimension.has_value() || !is_position(*dimension))
+                        return ElementType::Garbage;
+                    *stop_position = get_position(*dimension);
+                    tokens.skip_whitespace();
+                }
+            }
+        }
+
+        element.color_stop = typename TElement::ColorStop { color, position, second_position };
+        return ElementType::ColorStop;
+    };
+
+    TElement first_element {};
+    if (parse_color_stop_list_element(first_element) != ElementType::ColorStop)
+        return {};
+
+    if (!tokens.has_next_token())
+        return {};
+
+    Vector<TElement> color_stops { first_element };
+    while (tokens.has_next_token()) {
+        TElement list_element {};
+        tokens.skip_whitespace();
+        if (!tokens.next_token().is(Token::Type::Comma))
+            return {};
+        auto element_type = parse_color_stop_list_element(list_element);
+        if (element_type == ElementType::ColorHint) {
+            // <color-hint>, <color-stop>
+            tokens.skip_whitespace();
+            if (!tokens.next_token().is(Token::Type::Comma))
+                return {};
+            // Note: This fills in the color stop on the same list_element as the color hint (it does not overwrite it).
+            if (parse_color_stop_list_element(list_element) != ElementType::ColorStop)
+                return {};
+        } else if (element_type == ElementType::ColorStop) {
+            // <color-stop>
+        } else {
+            return {};
+        }
+        color_stops.append(list_element);
+    }
+
+    return color_stops;
+}
+
+static StringView consume_if_starts_with(StringView str, StringView start, auto found_callback)
+{
+    if (str.starts_with(start, CaseSensitivity::CaseInsensitive)) {
+        found_callback();
+        return str.substring_view(start.length());
+    }
+    return str;
+};
+
 RefPtr<StyleValue> Parser::parse_linear_gradient_function(ComponentValue const& component_value)
 {
     using GradientType = LinearGradientStyleValue::GradientType;
-    using Repeating = LinearGradientStyleValue::Repeating;
 
     if (!component_value.is_function())
         return {};
 
-    auto consume_if_starts_with = [](StringView str, StringView start, auto found_callback) {
-        if (str.starts_with(start, CaseSensitivity::CaseInsensitive)) {
-            found_callback();
-            return str.substring_view(start.length());
-        }
-        return str;
-    };
-
-    Repeating repeating_gradient = Repeating::No;
+    GradientRepeating repeating_gradient = GradientRepeating::No;
     GradientType gradient_type { GradientType::Standard };
 
     auto function_name = component_value.function().name();
@@ -2404,7 +2414,7 @@ RefPtr<StyleValue> Parser::parse_linear_gradient_function(ComponentValue const& 
     });
 
     function_name = consume_if_starts_with(function_name, "repeating-"sv, [&] {
-        repeating_gradient = Repeating::Yes;
+        repeating_gradient = GradientRepeating::Yes;
     });
 
     if (!function_name.equals_ignoring_case("linear-gradient"sv))
@@ -2510,97 +2520,336 @@ RefPtr<StyleValue> Parser::parse_linear_gradient_function(ComponentValue const& 
 
     // <color-stop-list> =
     //      <linear-color-stop> , [ <linear-color-hint>? , <linear-color-stop> ]#
-
-    // FIXME: Support multi-position color stops
-    // https://developer.mozilla.org/en-US/docs/Web/CSS/gradient/linear-gradient#gradient_with_multi-position_color_stops
-    // These are shown on MDN... Though do not appear in the W3 spec(?)
-
-    enum class ElementType {
-        Garbage,
-        ColorStop,
-        ColorHint
+    auto is_length_percentage = [](Dimension& dimension) {
+        return dimension.is_length_percentage();
     };
-
-    auto parse_color_stop_list_element = [&](ColorStopListElement& element) -> ElementType {
-        tokens.skip_whitespace();
-        if (!tokens.has_next_token())
-            return ElementType::Garbage;
-        auto const& token = tokens.next_token();
-
-        Gfx::Color color;
-        Optional<LengthPercentage> position;
-        Optional<LengthPercentage> second_position;
-        auto dimension = parse_dimension(token);
-        if (dimension.has_value() && dimension->is_length_percentage()) {
-            // [<length-percentage> <color>] or [<length-percentage>]
-            position = dimension->length_percentage();
-            tokens.skip_whitespace();
-            // <length-percentage>
-            if (!tokens.has_next_token() || tokens.peek_token().is(Token::Type::Comma)) {
-                element.transition_hint = GradientColorHint { *position };
-                return ElementType::ColorHint;
-            }
-            // <length-percentage> <color>
-            auto maybe_color = parse_color(tokens.next_token());
-            if (!maybe_color.has_value())
-                return ElementType::Garbage;
-            color = *maybe_color;
-        } else {
-            // [<color> <length-percentage>?]
-            auto maybe_color = parse_color(token);
-            if (!maybe_color.has_value())
-                return ElementType::Garbage;
-            color = *maybe_color;
-            tokens.skip_whitespace();
-            // Allow up to [<color> <length-percentage> <length-percentage>] (double-position color stops)
-            // Note: Double-position color stops only appear to be valid in this order.
-            for (auto stop_position : Array { &position, &second_position }) {
-                if (tokens.has_next_token() && !tokens.peek_token().is(Token::Type::Comma)) {
-                    auto token = tokens.next_token();
-                    auto dimension = parse_dimension(token);
-                    if (!dimension.has_value() || !dimension->is_length_percentage())
-                        return ElementType::Garbage;
-                    *stop_position = dimension->length_percentage();
-                    tokens.skip_whitespace();
-                }
-            }
-        }
-
-        element.color_stop = GradientColorStop { color, position, second_position };
-        return ElementType::ColorStop;
+    auto get_length_percentage = [](Dimension& dimension) {
+        return dimension.length_percentage();
     };
+    auto color_stops = parse_color_stop_list<LinearColorStopListElement>(
+        tokens, is_length_percentage, get_length_percentage,
+        [&](auto& token) { return parse_color(token); },
+        [&](auto& token) { return parse_dimension(token); });
 
-    ColorStopListElement first_element {};
-    if (parse_color_stop_list_element(first_element) != ElementType::ColorStop)
+    if (!color_stops.has_value())
         return {};
+
+    return LinearGradientStyleValue::create(gradient_direction, move(*color_stops), gradient_type, repeating_gradient);
+}
+
+RefPtr<StyleValue> Parser::parse_conic_gradient_function(ComponentValue const& component_value)
+{
+    if (!component_value.is_function())
+        return {};
+
+    GradientRepeating repeating_gradient = GradientRepeating::No;
+
+    auto function_name = component_value.function().name();
+
+    function_name = consume_if_starts_with(function_name, "repeating-"sv, [&] {
+        repeating_gradient = GradientRepeating::Yes;
+    });
+
+    if (!function_name.equals_ignoring_case("conic-gradient"sv))
+        return {};
+
+    TokenStream tokens { component_value.function().values() };
+    tokens.skip_whitespace();
 
     if (!tokens.has_next_token())
         return {};
 
-    Vector<ColorStopListElement> color_stops { first_element };
-    while (tokens.has_next_token()) {
-        ColorStopListElement list_element {};
-        tokens.skip_whitespace();
-        if (!tokens.next_token().is(Token::Type::Comma))
-            return {};
-        auto element_type = parse_color_stop_list_element(list_element);
-        if (element_type == ElementType::ColorHint) {
-            // <linear-color-hint>, <linear-color-stop>
-            tokens.skip_whitespace();
-            if (!tokens.next_token().is(Token::Type::Comma))
+    Angle from_angle(0, Angle::Type::Deg);
+    PositionValue at_position = PositionValue::center();
+
+    // conic-gradient( [ [ from <angle> ]? [ at <position> ]? ]  ||
+    // <color-interpolation-method> , <angular-color-stop-list> )
+    auto token = tokens.peek_token();
+    bool got_from_angle = false;
+    bool got_color_interpolation_method = false;
+    bool got_at_position = false;
+    while (token.is(Token::Type::Ident)) {
+        auto token_string = token.token().ident();
+        auto consume_identifier = [&](auto identifier) {
+            if (token_string.equals_ignoring_case(identifier)) {
+                (void)tokens.next_token();
+                tokens.skip_whitespace();
+                return true;
+            }
+            return false;
+        };
+
+        if (consume_identifier("from"sv)) {
+            // from <angle>
+            if (got_from_angle || got_at_position)
                 return {};
-            // Note: This fills in the color stop on the same list_element as the color hint (it does not overwrite it).
-            if (parse_color_stop_list_element(list_element) != ElementType::ColorStop)
+            if (!tokens.has_next_token())
                 return {};
-        } else if (element_type == ElementType::ColorStop) {
-            // <linear-color-stop>
+
+            auto angle_token = tokens.next_token();
+            if (!angle_token.is(Token::Type::Dimension))
+                return {};
+            float angle = angle_token.token().dimension_value();
+            auto angle_unit = angle_token.token().dimension_unit();
+            auto angle_type = Angle::unit_from_name(angle_unit);
+            if (!angle_type.has_value())
+                return {};
+
+            from_angle = Angle(angle, *angle_type);
+            got_from_angle = true;
+        } else if (consume_identifier("at"sv)) {
+            // at <position>
+            if (got_at_position)
+                return {};
+            auto position = parse_position(tokens);
+            if (!position.has_value())
+                return {};
+            at_position = *position;
+            got_at_position = true;
+        } else if (consume_identifier("in"sv)) {
+            // <color-interpolation-method>
+            if (got_color_interpolation_method)
+                return {};
+            dbgln("FIXME: Parse color interpolation method for conic-gradient()");
+            got_color_interpolation_method = true;
         } else {
-            return {};
+            break;
         }
-        color_stops.append(list_element);
+        tokens.skip_whitespace();
+        if (!tokens.has_next_token())
+            return {};
+        token = tokens.peek_token();
     }
 
-    return LinearGradientStyleValue::create(gradient_direction, move(color_stops), gradient_type, repeating_gradient);
+    tokens.skip_whitespace();
+    if (!tokens.has_next_token())
+        return {};
+    if ((got_from_angle || got_at_position || got_color_interpolation_method) && !tokens.next_token().is(Token::Type::Comma))
+        return {};
+
+    // <angular-color-stop-list> =
+    //   <angular-color-stop> , [ <angular-color-hint>? , <angular-color-stop> ]#
+    auto is_angle_percentage = [](Dimension& dimension) {
+        return dimension.is_angle_percentage();
+    };
+    auto get_angle_percentage = [](Dimension& dimension) {
+        return dimension.angle_percentage();
+    };
+    auto color_stops = parse_color_stop_list<AngularColorStopListElement>(
+        tokens, is_angle_percentage, get_angle_percentage,
+        [&](auto& token) { return parse_color(token); },
+        [&](auto& token) { return parse_dimension(token); });
+
+    if (!color_stops.has_value())
+        return {};
+
+    return ConicGradientStyleValue::create(from_angle, at_position, move(*color_stops), repeating_gradient);
+}
+
+Optional<PositionValue> Parser::parse_position(TokenStream<ComponentValue>& tokens)
+{
+    auto transaction = tokens.begin_transaction();
+    tokens.skip_whitespace();
+    if (!tokens.has_next_token())
+        return {};
+
+    auto parse_horizontal_preset = [&](auto ident) -> Optional<PositionValue::HorizontalPreset> {
+        if (ident.equals_ignoring_case("left"sv))
+            return PositionValue::HorizontalPreset::Left;
+        if (ident.equals_ignoring_case("center"sv))
+            return PositionValue::HorizontalPreset::Center;
+        if (ident.equals_ignoring_case("right"sv))
+            return PositionValue::HorizontalPreset::Right;
+        return {};
+    };
+
+    auto parse_vertical_preset = [&](auto ident) -> Optional<PositionValue::VerticalPreset> {
+        if (ident.equals_ignoring_case("top"sv))
+            return PositionValue::VerticalPreset::Top;
+        if (ident.equals_ignoring_case("center"sv))
+            return PositionValue::VerticalPreset::Center;
+        if (ident.equals_ignoring_case("bottom"sv))
+            return PositionValue::VerticalPreset::Bottom;
+        return {};
+    };
+
+    auto parse_horizontal_edge = [&](auto ident) -> Optional<PositionValue::HorizontalEdge> {
+        if (ident.equals_ignoring_case("left"sv))
+            return PositionValue::HorizontalEdge::Left;
+        if (ident.equals_ignoring_case("right"sv))
+            return PositionValue::HorizontalEdge::Right;
+        return {};
+    };
+
+    auto parse_vertical_edge = [&](auto ident) -> Optional<PositionValue::VerticalEdge> {
+        if (ident.equals_ignoring_case("top"sv))
+            return PositionValue::VerticalEdge::Top;
+        if (ident.equals_ignoring_case("bottom"sv))
+            return PositionValue::VerticalEdge::Bottom;
+        return {};
+    };
+
+    // <position> = [
+    //   [ left | center | right ] || [ top | center | bottom ]
+    // |
+    //   [ left | center | right | <length-percentage> ]
+    //   [ top | center | bottom | <length-percentage> ]?
+    // |
+    //   [ [ left | right ] <length-percentage> ] &&
+    //   [ [ top | bottom ] <length-percentage> ]
+    // ]
+
+    // [ left | center | right ] || [ top | center | bottom ]
+    auto alternation_1 = [&]() -> Optional<PositionValue> {
+        auto transaction = tokens.begin_transaction();
+        PositionValue position {};
+        auto& first_token = tokens.next_token();
+        if (!first_token.is(Token::Type::Ident))
+            return {};
+        auto ident = first_token.token().ident();
+        // <horizontal-position> <vertical-position>?
+        auto horizontal_position = parse_horizontal_preset(ident);
+        if (horizontal_position.has_value()) {
+            position.horizontal_position = *horizontal_position;
+            tokens.skip_whitespace();
+            if (tokens.has_next_token()) {
+                auto& second_token = tokens.next_token();
+                if (!second_token.is(Token::Type::Ident))
+                    return {};
+                auto vertical_position = parse_vertical_preset(second_token.token().ident());
+                if (!vertical_position.has_value())
+                    return {};
+                position.vertical_position = *vertical_position;
+            }
+        } else {
+            // <vertical-position> <horizontal-position>?
+            auto vertical_position = parse_vertical_preset(ident);
+            if (!vertical_position.has_value())
+                return {};
+            position.vertical_position = *vertical_position;
+            if (tokens.has_next_token()) {
+                auto& second_token = tokens.next_token();
+                if (!second_token.is(Token::Type::Ident))
+                    return {};
+                auto horizontal_position = parse_horizontal_preset(second_token.token().ident());
+                if (!horizontal_position.has_value())
+                    return {};
+                position.horizontal_position = *horizontal_position;
+            }
+        }
+        transaction.commit();
+        return position;
+    };
+
+    // [ left | center | right | <length-percentage> ]
+    // [ top | center | bottom | <length-percentage> ]?
+    auto alternation_2 = [&]() -> Optional<PositionValue> {
+        auto transaction = tokens.begin_transaction();
+        PositionValue position {};
+        auto& first_token = tokens.next_token();
+        if (first_token.is(Token::Type::Ident)) {
+            auto horizontal_position = parse_horizontal_preset(first_token.token().ident());
+            if (!horizontal_position.has_value())
+                return {};
+            position.horizontal_position = *horizontal_position;
+        } else {
+            auto dimension = parse_dimension(first_token);
+            if (!dimension.has_value() || !dimension->is_length_percentage())
+                return {};
+            position.horizontal_position = dimension->length_percentage();
+        }
+        tokens.skip_whitespace();
+        if (tokens.has_next_token()) {
+            auto& second_token = tokens.next_token();
+            if (second_token.is(Token::Type::Ident)) {
+                auto vertical_position = parse_vertical_preset(second_token.token().ident());
+                if (!vertical_position.has_value())
+                    return {};
+                position.vertical_position = *vertical_position;
+            } else {
+                auto dimension = parse_dimension(second_token);
+                if (!dimension.has_value() || !dimension->is_length_percentage())
+                    return {};
+                position.vertical_position = dimension->length_percentage();
+            }
+        }
+        transaction.commit();
+        return position;
+    };
+
+    // [ [ left | right ] <length-percentage> ] &&
+    // [ [ top | bottom ] <length-percentage> ]
+    auto alternation_3 = [&]() -> Optional<PositionValue> {
+        auto transaction = tokens.begin_transaction();
+        PositionValue position {};
+
+        auto parse_horizontal = [&] {
+            // [ left | right ] <length-percentage> ]
+            auto transaction = tokens.begin_transaction();
+            tokens.skip_whitespace();
+            if (!tokens.has_next_token())
+                return false;
+            auto& first_token = tokens.next_token();
+            if (!first_token.is(Token::Type::Ident))
+                return false;
+            auto horizontal_egde = parse_horizontal_edge(first_token.token().ident());
+            if (!horizontal_egde.has_value())
+                return false;
+            position.x_relative_to = *horizontal_egde;
+            tokens.skip_whitespace();
+            if (!tokens.has_next_token())
+                return false;
+            auto& second_token = tokens.next_token();
+            auto dimension = parse_dimension(second_token);
+            if (!dimension.has_value() || !dimension->is_length_percentage())
+                return false;
+            position.horizontal_position = dimension->length_percentage();
+            transaction.commit();
+            return true;
+        };
+
+        auto parse_vertical = [&] {
+            // [ top | bottom ] <length-percentage> ]
+            auto transaction = tokens.begin_transaction();
+            tokens.skip_whitespace();
+            if (!tokens.has_next_token())
+                return false;
+            auto& first_token = tokens.next_token();
+            if (!first_token.is(Token::Type::Ident))
+                return false;
+            auto vertical_edge = parse_vertical_edge(first_token.token().ident());
+            if (!vertical_edge.has_value())
+                return false;
+            position.y_relative_to = *vertical_edge;
+            tokens.skip_whitespace();
+            if (!tokens.has_next_token())
+                return false;
+            auto& second_token = tokens.next_token();
+            auto dimension = parse_dimension(second_token);
+            if (!dimension.has_value() || !dimension->is_length_percentage())
+                return false;
+            position.vertical_position = dimension->length_percentage();
+            transaction.commit();
+            return true;
+        };
+
+        if ((parse_horizontal() && parse_vertical()) || (parse_vertical() && parse_horizontal())) {
+            transaction.commit();
+            return position;
+        }
+
+        return {};
+    };
+
+    // Note: The alternatives must be attempted in this order since `alternation_2' can match a prefix of `alternation_3'
+    auto position = alternation_3();
+    if (!position.has_value())
+        position = alternation_2();
+    if (!position.has_value())
+        position = alternation_1();
+    if (position.has_value())
+        transaction.commit();
+    return position;
 }
 
 CSSRule* Parser::convert_to_rule(NonnullRefPtr<Rule> rule)
@@ -2646,13 +2895,13 @@ CSSRule* Parser::convert_to_rule(NonnullRefPtr<Rule> rule)
 
             auto child_tokens = TokenStream { rule->block()->values() };
             auto parser_rules = parse_a_list_of_rules(child_tokens);
-            JS::MarkedVector<CSSRule*> child_rules(m_context.window_object().heap());
+            JS::MarkedVector<CSSRule*> child_rules(m_context.realm().heap());
             for (auto& raw_rule : parser_rules) {
                 if (auto* child_rule = convert_to_rule(raw_rule))
                     child_rules.append(child_rule);
             }
-            auto* rule_list = CSSRuleList::create(m_context.window_object(), child_rules);
-            return CSSMediaRule::create(m_context.window_object(), *MediaList::create(m_context.window_object(), move(media_query_list)), *rule_list);
+            auto* rule_list = CSSRuleList::create(m_context.realm(), child_rules);
+            return CSSMediaRule::create(m_context.realm(), *MediaList::create(m_context.realm(), move(media_query_list)), *rule_list);
         }
         if (rule->at_rule_name().equals_ignoring_case("supports"sv)) {
             auto supports_tokens = TokenStream { rule->prelude() };
@@ -2669,14 +2918,14 @@ CSSRule* Parser::convert_to_rule(NonnullRefPtr<Rule> rule)
                 return {};
             auto child_tokens = TokenStream { rule->block()->values() };
             auto parser_rules = parse_a_list_of_rules(child_tokens);
-            JS::MarkedVector<CSSRule*> child_rules(m_context.window_object().heap());
+            JS::MarkedVector<CSSRule*> child_rules(m_context.realm().heap());
             for (auto& raw_rule : parser_rules) {
                 if (auto* child_rule = convert_to_rule(raw_rule))
                     child_rules.append(child_rule);
             }
 
-            auto* rule_list = CSSRuleList::create(m_context.window_object(), child_rules);
-            return CSSSupportsRule::create(m_context.window_object(), supports.release_nonnull(), *rule_list);
+            auto* rule_list = CSSRuleList::create(m_context.realm(), child_rules);
+            return CSSSupportsRule::create(m_context.realm(), supports.release_nonnull(), *rule_list);
         }
 
         // FIXME: More at rules!
@@ -2714,7 +2963,7 @@ CSSRule* Parser::convert_to_rule(NonnullRefPtr<Rule> rule)
         return {};
     }
 
-    return CSSStyleRule::create(m_context.window_object(), move(selectors.value()), *declaration);
+    return CSSStyleRule::create(m_context.realm(), move(selectors.value()), *declaration);
 }
 
 auto Parser::extract_properties(Vector<DeclarationOrAtRule> const& declarations_and_at_rules) -> PropertiesAndCustomProperties
@@ -2743,7 +2992,7 @@ auto Parser::extract_properties(Vector<DeclarationOrAtRule> const& declarations_
 PropertyOwningCSSStyleDeclaration* Parser::convert_to_style_declaration(Vector<DeclarationOrAtRule> const& declarations_and_at_rules)
 {
     auto [properties, custom_properties] = extract_properties(declarations_and_at_rules);
-    return PropertyOwningCSSStyleDeclaration::create(m_context.window_object(), move(properties), move(custom_properties));
+    return PropertyOwningCSSStyleDeclaration::create(m_context.realm(), move(properties), move(custom_properties));
 }
 
 Optional<StyleProperty> Parser::convert_to_style_property(Declaration const& declaration)
@@ -2796,7 +3045,7 @@ RefPtr<StyleValue> Parser::parse_builtin_value(ComponentValue const& component_v
     return {};
 }
 
-RefPtr<StyleValue> Parser::parse_calculated_value(Vector<ComponentValue> const& component_values)
+RefPtr<CalculatedStyleValue> Parser::parse_calculated_value(Vector<ComponentValue> const& component_values)
 {
     auto calc_expression = parse_calc_expression(component_values);
     if (calc_expression == nullptr)
@@ -3421,7 +3670,7 @@ RefPtr<StyleValue> Parser::parse_rect_value(ComponentValue const& component_valu
         // <top>, <right>, <bottom>, and <left> may either have a <length> value or 'auto'.
         // Negative lengths are permitted.
         auto current_token = tokens.next_token().token();
-        if (current_token.to_string() == "auto") {
+        if (current_token.is(Token::Type::Ident) && current_token.ident().equals_ignoring_case("auto"sv)) {
             params.append(Length::make_auto());
         } else {
             auto maybe_length = parse_length(current_token);
@@ -3571,7 +3820,10 @@ RefPtr<StyleValue> Parser::parse_image_value(ComponentValue const& component_val
     if (url.has_value())
         return ImageStyleValue::create(url.value());
     // FIXME: Implement other kinds of gradient
-    return parse_linear_gradient_function(component_value);
+    auto linear_gradient = parse_linear_gradient_function(component_value);
+    if (linear_gradient)
+        return linear_gradient;
+    return parse_conic_gradient_function(component_value);
 }
 
 template<typename ParseFunction>
@@ -4975,7 +5227,7 @@ CSSRule* Parser::parse_font_face_rule(TokenStream<ComponentValue>& tokens)
         unicode_range.empend(0x0u, 0x10FFFFu);
     }
 
-    return CSSFontFaceRule::create(m_context.window_object(), FontFace { font_family.release_value(), move(src), move(unicode_range) });
+    return CSSFontFaceRule::create(m_context.realm(), FontFace { font_family.release_value(), move(src), move(unicode_range) });
 }
 
 Vector<FontFace::Source> Parser::parse_font_face_src(TokenStream<ComponentValue>& component_values)
@@ -5286,7 +5538,13 @@ RefPtr<StyleValue> Parser::parse_transform_value(Vector<ComponentValue> const& c
         NonnullRefPtrVector<StyleValue> values;
         auto argument_tokens = TokenStream { part.function().values() };
         argument_tokens.skip_whitespace();
+        size_t argument_index = 0;
         while (argument_tokens.has_next_token()) {
+            if (argument_index == function_metadata.parameters.size()) {
+                dbgln_if(CSS_PARSER_DEBUG, "Too many arguments to {}. max: {}", part.function().name(), function_metadata.parameters.size());
+                return nullptr;
+            }
+
             auto const& value = argument_tokens.next_token();
             RefPtr<CalculatedStyleValue> maybe_calc_value;
             if (auto maybe_dynamic_value = parse_dynamic_value(value)) {
@@ -5297,7 +5555,7 @@ RefPtr<StyleValue> Parser::parse_transform_value(Vector<ComponentValue> const& c
                 maybe_calc_value = maybe_dynamic_value->as_calculated();
             }
 
-            switch (function_metadata.parameter_type) {
+            switch (function_metadata.parameters[argument_index].type) {
             case TransformFunctionParameterType::Angle: {
                 // These are `<angle> | <zero>` in the spec, so we have to check for both kinds.
                 if (maybe_calc_value && maybe_calc_value->resolves_to_angle()) {
@@ -5309,6 +5567,21 @@ RefPtr<StyleValue> Parser::parse_transform_value(Vector<ComponentValue> const& c
                     if (!dimension_value || !dimension_value->is_angle())
                         return nullptr;
                     values.append(dimension_value.release_nonnull());
+                }
+                break;
+            }
+            case TransformFunctionParameterType::Length: {
+                if (maybe_calc_value && maybe_calc_value->resolves_to_length()) {
+                    values.append(LengthStyleValue::create(Length::make_calculated(maybe_calc_value.release_nonnull())));
+                } else {
+                    auto dimension_value = parse_dimension_value(value);
+                    if (!dimension_value)
+                        return nullptr;
+
+                    if (dimension_value->is_length())
+                        values.append(dimension_value.release_nonnull());
+                    else
+                        return nullptr;
                 }
                 break;
             }
@@ -5351,15 +5624,12 @@ RefPtr<StyleValue> Parser::parse_transform_value(Vector<ComponentValue> const& c
                 if (!argument_tokens.has_next_token())
                     return nullptr;
             }
+
+            argument_index++;
         }
 
-        if (values.size() < function_metadata.min_parameters) {
-            dbgln_if(CSS_PARSER_DEBUG, "Not enough arguments to {}. min: {}, given: {}", part.function().name(), function_metadata.min_parameters, values.size());
-            return nullptr;
-        }
-
-        if (values.size() > function_metadata.max_parameters) {
-            dbgln_if(CSS_PARSER_DEBUG, "Too many arguments to {}. max: {}, given: {}", part.function().name(), function_metadata.max_parameters, values.size());
+        if (argument_index < function_metadata.parameters.size() && function_metadata.parameters[argument_index].required) {
+            dbgln_if(CSS_PARSER_DEBUG, "Required parameter at position {} is missing", argument_index);
             return nullptr;
         }
 
@@ -5492,71 +5762,319 @@ RefPtr<StyleValue> Parser::parse_as_css_value(PropertyID property_id)
     return parsed_value.release_value();
 }
 
+Optional<CSS::GridSize> Parser::parse_grid_size(ComponentValue const& component_value)
+{
+    // FIXME: Parse calc here if necessary
+    if (component_value.is_function())
+        return {};
+    auto token = component_value.token();
+    if (token.is(Token::Type::Dimension) && token.dimension_unit().equals_ignoring_case("fr"sv)) {
+        float numeric_value = token.dimension_value();
+        if (numeric_value)
+            return GridSize(numeric_value);
+    }
+    if (token.is(Token::Type::Ident) && token.ident().equals_ignoring_case("auto"sv))
+        return GridSize::make_auto();
+    auto dimension = parse_dimension(token);
+    if (!dimension.has_value())
+        return {};
+    if (dimension->is_length())
+        return GridSize(dimension->length());
+    else if (dimension->is_percentage())
+        return GridSize(dimension->percentage());
+    return {};
+}
+
+Optional<CSS::GridMinMax> Parser::parse_min_max(Vector<ComponentValue> const& component_values)
+{
+    // https://www.w3.org/TR/css-grid-2/#valdef-grid-template-columns-minmax
+    // 'minmax(min, max)'
+    // Defines a size range greater than or equal to min and less than or equal to max. If the max is
+    // less than the min, then the max will be floored by the min (essentially yielding minmax(min,
+    // min)). As a maximum, a <flex> value sets the track’s flex factor; it is invalid as a minimum.
+    auto function_tokens = TokenStream(component_values);
+    auto comma_separated_list = parse_a_comma_separated_list_of_component_values(function_tokens);
+    if (comma_separated_list.size() != 2)
+        return {};
+
+    TokenStream part_one_tokens { comma_separated_list[0] };
+    part_one_tokens.skip_whitespace();
+    if (!part_one_tokens.has_next_token())
+        return {};
+    auto current_token = part_one_tokens.next_token();
+    auto min_grid_size = parse_grid_size(current_token);
+
+    TokenStream part_two_tokens { comma_separated_list[1] };
+    part_two_tokens.skip_whitespace();
+    if (!part_two_tokens.has_next_token())
+        return {};
+    current_token = part_two_tokens.next_token();
+    auto max_grid_size = parse_grid_size(current_token);
+
+    if (min_grid_size.has_value() && max_grid_size.has_value()) {
+        // https://www.w3.org/TR/css-grid-2/#valdef-grid-template-columns-minmax
+        // As a maximum, a <flex> value sets the track’s flex factor; it is invalid as a minimum.
+        if (min_grid_size.value().is_flexible_length())
+            return {};
+        return CSS::GridMinMax(min_grid_size.value(), max_grid_size.value());
+    }
+    return {};
+}
+
+Optional<CSS::GridRepeat> Parser::parse_repeat(Vector<ComponentValue> const& component_values)
+{
+    // https://www.w3.org/TR/css-grid-2/#repeat-syntax
+    // 7.2.3.1. Syntax of repeat()
+    // The generic form of the repeat() syntax is, approximately,
+    // repeat( [ <integer [1,∞]> | auto-fill | auto-fit ] , <track-list> )
+    auto is_auto_fill = false;
+    auto is_auto_fit = false;
+    auto function_tokens = TokenStream(component_values);
+    auto comma_separated_list = parse_a_comma_separated_list_of_component_values(function_tokens);
+    if (comma_separated_list.size() != 2)
+        return {};
+    // The first argument specifies the number of repetitions.
+    TokenStream part_one_tokens { comma_separated_list[0] };
+    part_one_tokens.skip_whitespace();
+    if (!part_one_tokens.has_next_token())
+        return {};
+    auto current_token = part_one_tokens.next_token().token();
+
+    auto repeat_count = 0;
+    if (current_token.is(Token::Type::Number) && current_token.number().is_integer() && current_token.number_value() > 0)
+        repeat_count = current_token.number_value();
+    else if (current_token.is(Token::Type::Ident) && current_token.ident().equals_ignoring_case("auto-fill"sv))
+        is_auto_fill = true;
+    else if (current_token.is(Token::Type::Ident) && current_token.ident().equals_ignoring_case("auto-fit"sv))
+        is_auto_fit = true;
+
+    // The second argument is a track list, which is repeated that number of times.
+    TokenStream part_two_tokens { comma_separated_list[1] };
+    part_two_tokens.skip_whitespace();
+    if (!part_two_tokens.has_next_token())
+        return {};
+
+    Vector<CSS::ExplicitGridTrack> repeat_params;
+    Vector<Vector<String>> line_names_list;
+    auto last_object_was_line_names = false;
+    while (part_two_tokens.has_next_token()) {
+        auto token = part_two_tokens.next_token();
+        Vector<String> line_names;
+        if (token.is_block()) {
+            if (last_object_was_line_names)
+                return {};
+            last_object_was_line_names = true;
+            if (!token.block().is_square())
+                return {};
+            TokenStream block_tokens { token.block().values() };
+            while (block_tokens.has_next_token()) {
+                auto current_block_token = block_tokens.next_token();
+                line_names.append(current_block_token.token().ident());
+            }
+            line_names_list.append(line_names);
+            part_two_tokens.skip_whitespace();
+        } else {
+            last_object_was_line_names = false;
+            auto track_sizing_function = parse_track_sizing_function(token);
+            if (!track_sizing_function.has_value())
+                return {};
+            // However, there are some restrictions:
+            // The repeat() notation can’t be nested.
+            if (track_sizing_function.value().is_repeat())
+                return {};
+            // Automatic repetitions (auto-fill or auto-fit) cannot be combined with intrinsic or flexible sizes.
+            if (track_sizing_function.value().is_default() && track_sizing_function.value().grid_size().is_flexible_length() && (is_auto_fill || is_auto_fit))
+                return {};
+            repeat_params.append(track_sizing_function.value());
+            part_two_tokens.skip_whitespace();
+        }
+    }
+    while (line_names_list.size() <= repeat_params.size())
+        line_names_list.append({});
+
+    // Thus the precise syntax of the repeat() notation has several forms:
+    // <track-repeat> = repeat( [ <integer [1,∞]> ] , [ <line-names>? <track-size> ]+ <line-names>? )
+    // <auto-repeat>  = repeat( [ auto-fill | auto-fit ] , [ <line-names>? <fixed-size> ]+ <line-names>? )
+    // <fixed-repeat> = repeat( [ <integer [1,∞]> ] , [ <line-names>? <fixed-size> ]+ <line-names>? )
+    // <name-repeat>  = repeat( [ <integer [1,∞]> | auto-fill ], <line-names>+)
+
+    // The <track-repeat> variant can represent the repetition of any <track-size>, but is limited to a
+    // fixed number of repetitions.
+
+    // The <auto-repeat> variant can repeat automatically to fill a space, but requires definite track
+    // sizes so that the number of repetitions can be calculated. It can only appear once in the track
+    // list, but the same track list can also contain <fixed-repeat>s.
+
+    // The <name-repeat> variant is for adding line names to subgrids. It can only be used with the
+    // subgrid keyword and cannot specify track sizes, only line names.
+
+    // If a repeat() function that is not a <name-repeat> ends up placing two <line-names> adjacent to
+    // each other, the name lists are merged. For example, repeat(2, [a] 1fr [b]) is equivalent to [a]
+    // 1fr [b a] 1fr [b].
+    if (is_auto_fill)
+        return CSS::GridRepeat(CSS::GridTrackSizeList(repeat_params, line_names_list), CSS::GridRepeat::Type::AutoFill);
+    else if (is_auto_fit)
+        return CSS::GridRepeat(CSS::GridTrackSizeList(repeat_params, line_names_list), CSS::GridRepeat::Type::AutoFit);
+    else
+        return CSS::GridRepeat(CSS::GridTrackSizeList(repeat_params, line_names_list), repeat_count);
+}
+
+Optional<CSS::ExplicitGridTrack> Parser::parse_track_sizing_function(ComponentValue const& token)
+{
+    if (token.is_function()) {
+        auto const& function_token = token.function();
+        if (function_token.name().equals_ignoring_case("repeat"sv)) {
+            auto maybe_repeat = parse_repeat(function_token.values());
+            if (maybe_repeat.has_value())
+                return CSS::ExplicitGridTrack(maybe_repeat.value());
+            else
+                return {};
+        } else if (function_token.name().equals_ignoring_case("minmax"sv)) {
+            auto maybe_min_max_value = parse_min_max(function_token.values());
+            if (maybe_min_max_value.has_value())
+                return CSS::ExplicitGridTrack(maybe_min_max_value.value());
+            else
+                return {};
+        }
+        return {};
+    } else if (token.is(Token::Type::Ident) && token.token().ident().equals_ignoring_case("auto"sv)) {
+        return CSS::ExplicitGridTrack(GridSize(Length::make_auto()));
+    } else if (token.is_block()) {
+        return {};
+    } else {
+        auto grid_size = parse_grid_size(token);
+        if (!grid_size.has_value())
+            return {};
+        return CSS::ExplicitGridTrack(grid_size.value());
+    }
+}
+
 RefPtr<StyleValue> Parser::parse_grid_track_sizes(Vector<ComponentValue> const& component_values)
 {
-    Vector<CSS::GridTrackSize> params;
-    for (auto const& component_value : component_values) {
-        // FIXME: Incomplete as a GridTrackSize can be a function like minmax(min, max), etc.
-        if (component_value.is_function()) {
-            params.append(Length::make_auto());
-            continue;
-        }
-        if (component_value.is_block()) {
-            params.append(Length::make_auto());
-            continue;
-        }
-        if (component_value.is(Token::Type::Ident) && component_value.token().ident().equals_ignoring_case("auto"sv)) {
-            params.append(Length::make_auto());
-            continue;
-        }
-        if (component_value.token().type() == Token::Type::Dimension) {
-            float numeric_value = component_value.token().dimension_value();
-            auto unit_string = component_value.token().dimension_unit();
-            if (unit_string.equals_ignoring_case("fr"sv) && numeric_value) {
-                params.append(GridTrackSize(numeric_value));
-                continue;
+    Vector<CSS::ExplicitGridTrack> track_list;
+    Vector<Vector<String>> line_names_list;
+    auto last_object_was_line_names = false;
+    TokenStream tokens { component_values };
+    while (tokens.has_next_token()) {
+        auto token = tokens.next_token();
+        if (token.is_block()) {
+            if (last_object_was_line_names)
+                return GridTrackSizeStyleValue::make_auto();
+            last_object_was_line_names = true;
+            Vector<String> line_names;
+            if (!token.block().is_square())
+                return GridTrackSizeStyleValue::make_auto();
+            TokenStream block_tokens { token.block().values() };
+            while (block_tokens.has_next_token()) {
+                auto current_block_token = block_tokens.next_token();
+                line_names.append(current_block_token.token().ident());
             }
+            line_names_list.append(line_names);
+        } else {
+            last_object_was_line_names = false;
+            auto track_sizing_function = parse_track_sizing_function(token);
+            if (!track_sizing_function.has_value())
+                return GridTrackSizeStyleValue::make_auto();
+            // FIXME: Handle multiple repeat values (should combine them here, or remove
+            // any other ones if the first one is auto-fill, etc.)
+            track_list.append(track_sizing_function.value());
         }
-
-        auto dimension = parse_dimension(component_value);
-        if (!dimension.has_value())
-            return GridTrackSizeStyleValue::create({});
-        if (dimension->is_length())
-            params.append(dimension->length());
-        if (dimension->is_percentage())
-            params.append(dimension->percentage());
     }
-    return GridTrackSizeStyleValue::create(params);
+    while (line_names_list.size() <= track_list.size())
+        line_names_list.append({});
+    return GridTrackSizeStyleValue::create(CSS::GridTrackSizeList(track_list, line_names_list));
 }
 
 RefPtr<StyleValue> Parser::parse_grid_track_placement(Vector<ComponentValue> const& component_values)
 {
+    // https://www.w3.org/TR/css-grid-2/#line-placement
+    // Line-based Placement: the grid-row-start, grid-column-start, grid-row-end, and grid-column-end properties
+    // <grid-line> =
+    //     auto |
+    //     <custom-ident> |
+    //     [ <integer> && <custom-ident>? ] |
+    //     [ span && [ <integer> || <custom-ident> ] ]
+    auto is_auto = [](Token token) -> bool {
+        if (token.is(Token::Type::Ident) && token.ident().equals_ignoring_case("auto"sv))
+            return true;
+        return false;
+    };
+    auto is_span = [](Token token) -> bool {
+        if (token.is(Token::Type::Ident) && token.ident().equals_ignoring_case("span"sv))
+            return true;
+        return false;
+    };
+    auto is_valid_integer = [](Token token) -> bool {
+        // An <integer> value of zero makes the declaration invalid.
+        if (token.is(Token::Type::Number) && token.number().is_integer() && token.number_value() != 0)
+            return true;
+        return false;
+    };
+    auto is_line_name = [](Token token) -> bool {
+        // The <custom-ident> additionally excludes the keywords span and auto.
+        if (token.is(Token::Type::Ident) && !token.ident().equals_ignoring_case("span"sv) && !token.ident().equals_ignoring_case("auto"sv))
+            return true;
+        return false;
+    };
+
     auto tokens = TokenStream { component_values };
+    tokens.skip_whitespace();
     auto current_token = tokens.next_token().token();
 
     if (!tokens.has_next_token()) {
-        if (current_token.to_string() == "auto"sv)
+        if (is_auto(current_token))
             return GridTrackPlacementStyleValue::create(CSS::GridTrackPlacement());
-        if (current_token.is(Token::Type::Number) && current_token.number().is_integer())
+        if (is_span(current_token))
+            return GridTrackPlacementStyleValue::create(CSS::GridTrackPlacement(1, true));
+        if (is_valid_integer(current_token))
             return GridTrackPlacementStyleValue::create(CSS::GridTrackPlacement(static_cast<int>(current_token.number_value())));
+        if (is_line_name(current_token))
+            return GridTrackPlacementStyleValue::create(CSS::GridTrackPlacement(current_token.ident()));
         return {};
     }
 
-    auto first_grid_track_placement = CSS::GridTrackPlacement();
-    auto has_span = false;
-    if (current_token.to_string() == "span"sv) {
-        has_span = true;
+    auto span_value = false;
+    auto span_or_position_value = 0;
+    String line_name_value;
+    while (true) {
+        if (is_auto(current_token))
+            return {};
+        if (is_span(current_token)) {
+            if (span_value == false)
+                span_value = true;
+            else
+                return {};
+        }
+        if (is_valid_integer(current_token)) {
+            if (span_or_position_value == 0)
+                span_or_position_value = static_cast<int>(current_token.number_value());
+            else
+                return {};
+        }
+        if (is_line_name(current_token)) {
+            if (line_name_value.is_empty())
+                line_name_value = current_token.ident();
+            else
+                return {};
+        }
         tokens.skip_whitespace();
-        current_token = tokens.next_token().token();
-    }
-    if (current_token.is(Token::Type::Number) && current_token.number().is_integer()) {
-        first_grid_track_placement.set_position(static_cast<int>(current_token.number_value()));
-        first_grid_track_placement.set_has_span(has_span);
+        if (tokens.has_next_token())
+            current_token = tokens.next_token().token();
+        else
+            break;
     }
 
-    if (!tokens.has_next_token())
-        return GridTrackPlacementStyleValue::create(first_grid_track_placement);
-    return {};
+    // Negative integers or zero are invalid.
+    if (span_value && span_or_position_value < 1)
+        return {};
+
+    // If the <integer> is omitted, it defaults to 1.
+    if (span_or_position_value == 0)
+        span_or_position_value = 1;
+
+    if (!line_name_value.is_empty())
+        return GridTrackPlacementStyleValue::create(CSS::GridTrackPlacement(line_name_value, span_or_position_value, span_value));
+    return GridTrackPlacementStyleValue::create(CSS::GridTrackPlacement(span_or_position_value, span_value));
 }
 
 RefPtr<StyleValue> Parser::parse_grid_track_placement_shorthand_value(Vector<ComponentValue> const& component_values)
@@ -5564,41 +6082,35 @@ RefPtr<StyleValue> Parser::parse_grid_track_placement_shorthand_value(Vector<Com
     auto tokens = TokenStream { component_values };
     auto current_token = tokens.next_token().token();
 
-    if (!tokens.has_next_token()) {
-        if (current_token.to_string() == "auto"sv)
-            return GridTrackPlacementShorthandStyleValue::create(CSS::GridTrackPlacement::make_auto());
-        if (current_token.is(Token::Type::Number) && current_token.number().is_integer())
-            return GridTrackPlacementShorthandStyleValue::create(CSS::GridTrackPlacement(current_token.number_value()));
-        return {};
+    Vector<ComponentValue> track_start_placement_tokens;
+    while (true) {
+        if (current_token.is(Token::Type::Delim) && current_token.delim() == "/"sv)
+            break;
+        track_start_placement_tokens.append(current_token);
+        if (!tokens.has_next_token())
+            break;
+        current_token = tokens.next_token().token();
     }
 
-    auto calculate_grid_track_placement = [](auto& current_token, auto& tokens) -> CSS::GridTrackPlacement {
-        auto grid_track_placement = CSS::GridTrackPlacement();
-        auto has_span = false;
-        if (current_token.to_string() == "span"sv) {
-            has_span = true;
-            tokens.skip_whitespace();
+    Vector<ComponentValue> track_end_placement_tokens;
+    if (tokens.has_next_token()) {
+        current_token = tokens.next_token().token();
+        while (true) {
+            track_end_placement_tokens.append(current_token);
+            if (!tokens.has_next_token())
+                break;
             current_token = tokens.next_token().token();
         }
-        if (current_token.is(Token::Type::Number) && current_token.number().is_integer()) {
-            grid_track_placement.set_position(static_cast<int>(current_token.number_value()));
-            grid_track_placement.set_has_span(has_span);
-        }
-        return grid_track_placement;
-    };
+    }
 
-    auto first_grid_track_placement = calculate_grid_track_placement(current_token, tokens);
-    if (!tokens.has_next_token())
-        return GridTrackPlacementShorthandStyleValue::create(CSS::GridTrackPlacement(first_grid_track_placement));
+    auto parsed_start_value = parse_grid_track_placement(track_start_placement_tokens);
+    if (parsed_start_value && track_end_placement_tokens.is_empty())
+        return GridTrackPlacementShorthandStyleValue::create(parsed_start_value.release_nonnull()->as_grid_track_placement().grid_track_placement());
 
-    tokens.skip_whitespace();
-    current_token = tokens.next_token().token();
-    tokens.skip_whitespace();
-    current_token = tokens.next_token().token();
+    auto parsed_end_value = parse_grid_track_placement(track_end_placement_tokens);
+    if (parsed_start_value && parsed_end_value)
+        return GridTrackPlacementShorthandStyleValue::create(parsed_start_value.release_nonnull()->as_grid_track_placement(), parsed_end_value.release_nonnull()->as_grid_track_placement());
 
-    auto second_grid_track_placement = calculate_grid_track_placement(current_token, tokens);
-    if (!tokens.has_next_token())
-        return GridTrackPlacementShorthandStyleValue::create(GridTrackPlacementStyleValue::create(first_grid_track_placement), GridTrackPlacementStyleValue::create(second_grid_track_placement));
     return {};
 }
 
@@ -6455,6 +6967,15 @@ bool Parser::is_builtin(StringView name)
         || name.equals_ignoring_case("unset"sv);
 }
 
+RefPtr<CalculatedStyleValue> Parser::parse_calculated_value(Badge<StyleComputer>, ParsingContext const& context, Vector<ComponentValue> const& tokens)
+{
+    if (tokens.is_empty())
+        return {};
+
+    Parser parser(context, ""sv);
+    return parser.parse_calculated_value(tokens);
+}
+
 RefPtr<StyleValue> Parser::parse_css_value(Badge<StyleComputer>, ParsingContext const& context, PropertyID property_id, Vector<ComponentValue> const& tokens)
 {
     if (tokens.is_empty() || property_id == CSS::PropertyID::Invalid || property_id == CSS::PropertyID::Custom)
@@ -6590,7 +7111,7 @@ namespace Web {
 CSS::CSSStyleSheet* parse_css_stylesheet(CSS::Parser::ParsingContext const& context, StringView css, Optional<AK::URL> location)
 {
     if (css.is_empty())
-        return CSS::CSSStyleSheet::create(context.window_object(), *CSS::CSSRuleList::create_empty(context.window_object()), location);
+        return CSS::CSSStyleSheet::create(context.realm(), *CSS::CSSRuleList::create_empty(context.realm()), location);
     CSS::Parser::Parser parser(context, css);
     return parser.parse_as_css_stylesheet(location);
 }

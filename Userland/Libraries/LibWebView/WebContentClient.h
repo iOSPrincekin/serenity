@@ -14,19 +14,19 @@
 
 namespace WebView {
 
-class OutOfProcessWebView;
+class ViewImplementation;
 
 class WebContentClient final
     : public IPC::ConnectionToServer<WebContentClientEndpoint, WebContentServerEndpoint>
     , public WebContentClientEndpoint {
-    IPC_CLIENT_CONNECTION(WebContentClient, "/tmp/user/%uid/portal/webcontent"sv);
+    IPC_CLIENT_CONNECTION(WebContentClient, "/tmp/session/%sid/portal/webcontent"sv);
 
 public:
+    WebContentClient(NonnullOwnPtr<Core::Stream::LocalSocket>, ViewImplementation&);
+
     Function<void()> on_web_content_process_crash;
 
 private:
-    WebContentClient(NonnullOwnPtr<Core::Stream::LocalSocket>, OutOfProcessWebView&);
-
     virtual void die() override;
 
     virtual void did_paint(Gfx::IntRect const&, i32) override;
@@ -61,9 +61,14 @@ private:
     virtual Messages::WebContentClient::DidRequestCookieResponse did_request_cookie(AK::URL const&, u8) override;
     virtual void did_set_cookie(AK::URL const&, Web::Cookie::ParsedCookie const&, u8) override;
     virtual void did_update_resource_count(i32 count_waiting) override;
+    virtual void did_request_restore_window() override;
+    virtual Messages::WebContentClient::DidRequestRepositionWindowResponse did_request_reposition_window(Gfx::IntPoint const&) override;
+    virtual Messages::WebContentClient::DidRequestResizeWindowResponse did_request_resize_window(Gfx::IntSize const&) override;
+    virtual Messages::WebContentClient::DidRequestMaximizeWindowResponse did_request_maximize_window() override;
+    virtual Messages::WebContentClient::DidRequestMinimizeWindowResponse did_request_minimize_window() override;
     virtual void did_request_file(String const& path, i32) override;
 
-    OutOfProcessWebView& m_view;
+    ViewImplementation& m_view;
 };
 
 }

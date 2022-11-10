@@ -13,7 +13,7 @@ namespace Web::HTML {
 HTMLButtonElement::HTMLButtonElement(DOM::Document& document, DOM::QualifiedName qualified_name)
     : HTMLElement(document, move(qualified_name))
 {
-    set_prototype(&window().cached_web_prototype("HTMLButtonElement"));
+    set_prototype(&Bindings::cached_web_prototype(realm(), "HTMLButtonElement"));
 
     // https://html.spec.whatwg.org/multipage/form-elements.html#the-button-element:activation-behaviour
     activation_behavior = [this](auto&) {
@@ -83,7 +83,14 @@ HTMLButtonElement::TypeAttributeState HTMLButtonElement::type_state() const
 
 void HTMLButtonElement::set_type(String const& type)
 {
-    set_attribute(HTML::AttributeNames::type, type);
+    MUST(set_attribute(HTML::AttributeNames::type, type));
+}
+
+// https://html.spec.whatwg.org/multipage/interaction.html#dom-tabindex
+i32 HTMLButtonElement::default_tab_index_value() const
+{
+    // See the base function for the spec comments.
+    return 0;
 }
 
 }

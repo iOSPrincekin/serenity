@@ -13,16 +13,15 @@
 #include <LibWeb/DOM/ParentNode.h>
 #include <LibWeb/DOM/StaticNodeList.h>
 #include <LibWeb/Dump.h>
-#include <LibWeb/HTML/Window.h>
 #include <LibWeb/Namespace.h>
 
 namespace Web::DOM {
 
-ExceptionOr<JS::GCPtr<Element>> ParentNode::query_selector(StringView selector_text)
+WebIDL::ExceptionOr<JS::GCPtr<Element>> ParentNode::query_selector(StringView selector_text)
 {
     auto maybe_selectors = parse_selector(CSS::Parser::ParsingContext(*this), selector_text);
     if (!maybe_selectors.has_value())
-        return DOM::SyntaxError::create(global_object(), "Failed to parse selector");
+        return WebIDL::SyntaxError::create(realm(), "Failed to parse selector");
 
     auto selectors = maybe_selectors.value();
 
@@ -41,11 +40,11 @@ ExceptionOr<JS::GCPtr<Element>> ParentNode::query_selector(StringView selector_t
     return result;
 }
 
-ExceptionOr<JS::NonnullGCPtr<NodeList>> ParentNode::query_selector_all(StringView selector_text)
+WebIDL::ExceptionOr<JS::NonnullGCPtr<NodeList>> ParentNode::query_selector_all(StringView selector_text)
 {
     auto maybe_selectors = parse_selector(CSS::Parser::ParsingContext(*this), selector_text);
     if (!maybe_selectors.has_value())
-        return DOM::SyntaxError::create(global_object(), "Failed to parse selector");
+        return WebIDL::SyntaxError::create(realm(), "Failed to parse selector");
 
     auto selectors = maybe_selectors.value();
 
@@ -60,7 +59,7 @@ ExceptionOr<JS::NonnullGCPtr<NodeList>> ParentNode::query_selector_all(StringVie
         return IterationDecision::Continue;
     });
 
-    return StaticNodeList::create(window(), move(elements));
+    return StaticNodeList::create(realm(), move(elements));
 }
 
 JS::GCPtr<Element> ParentNode::first_element_child()
@@ -168,7 +167,7 @@ JS::NonnullGCPtr<HTMLCollection> ParentNode::get_elements_by_tag_name_ns(FlyStri
 }
 
 // https://dom.spec.whatwg.org/#dom-parentnode-prepend
-ExceptionOr<void> ParentNode::prepend(Vector<Variant<JS::Handle<Node>, String>> const& nodes)
+WebIDL::ExceptionOr<void> ParentNode::prepend(Vector<Variant<JS::Handle<Node>, String>> const& nodes)
 {
     // 1. Let node be the result of converting nodes into a node given nodes and this’s node document.
     auto node = TRY(convert_nodes_to_single_node(nodes, document()));
@@ -179,7 +178,7 @@ ExceptionOr<void> ParentNode::prepend(Vector<Variant<JS::Handle<Node>, String>> 
     return {};
 }
 
-ExceptionOr<void> ParentNode::append(Vector<Variant<JS::Handle<Node>, String>> const& nodes)
+WebIDL::ExceptionOr<void> ParentNode::append(Vector<Variant<JS::Handle<Node>, String>> const& nodes)
 {
     // 1. Let node be the result of converting nodes into a node given nodes and this’s node document.
     auto node = TRY(convert_nodes_to_single_node(nodes, document()));
@@ -190,7 +189,7 @@ ExceptionOr<void> ParentNode::append(Vector<Variant<JS::Handle<Node>, String>> c
     return {};
 }
 
-ExceptionOr<void> ParentNode::replace_children(Vector<Variant<JS::Handle<Node>, String>> const& nodes)
+WebIDL::ExceptionOr<void> ParentNode::replace_children(Vector<Variant<JS::Handle<Node>, String>> const& nodes)
 {
     // 1. Let node be the result of converting nodes into a node given nodes and this’s node document.
     auto node = TRY(convert_nodes_to_single_node(nodes, document()));

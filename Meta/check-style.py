@@ -22,6 +22,7 @@ GOOD_LICENSE_HEADER_PATTERN = re.compile(
 LICENSE_HEADER_CHECK_EXCLUDES = {
     'AK/Checked.h',
     'AK/Function.h',
+    'Userland/Libraries/LibJS/SafeFunction.h',
     'Userland/Libraries/LibC/elf.h',
     'Userland/Libraries/LibCodeComprehension/Cpp/Tests/',
     'Userland/Libraries/LibCpp/Tests/parser/',
@@ -43,7 +44,7 @@ def should_check_file(filename):
         return False
     if filename.startswith('Base/'):
         return False
-    if filename == 'Kernel/FileSystem/ext2_fs.h':
+    if filename == 'Kernel/FileSystem/Ext2FS/Definitions.h':
         return False
     return True
 

@@ -71,7 +71,8 @@ int main(int argc, char** argv)
     if (import_base_path.is_null())
         import_base_path = lexical_path.dirname();
 
-    auto& interface = IDL::Parser(path, data, import_base_path).parse();
+    IDL::Parser parser(path, data, import_base_path);
+    auto& interface = parser.parse();
 
     static constexpr Array libweb_interface_namespaces = {
         "CSS"sv,
@@ -93,6 +94,7 @@ int main(int argc, char** argv)
         "UIEvents"sv,
         "URL"sv,
         "WebGL"sv,
+        "WebIDL"sv,
         "WebSockets"sv,
         "XHR"sv,
     };
@@ -110,7 +112,8 @@ int main(int argc, char** argv)
     if constexpr (BINDINGS_GENERATOR_DEBUG) {
         dbgln("Attributes:");
         for (auto& attribute : interface.attributes) {
-            dbgln("  {}{}{} {}",
+            dbgln("  {}{}{}{} {}",
+                attribute.inherit ? "inherit " : "",
                 attribute.readonly ? "readonly " : "",
                 attribute.type->name(),
                 attribute.type->is_nullable() ? "?" : "",

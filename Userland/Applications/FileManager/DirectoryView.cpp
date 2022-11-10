@@ -88,7 +88,7 @@ NonnullRefPtrVector<LauncherHandler> DirectoryView::get_launch_handlers(URL cons
 
 NonnullRefPtrVector<LauncherHandler> DirectoryView::get_launch_handlers(String const& path)
 {
-    return get_launch_handlers(URL::create_with_file_protocol(path));
+    return get_launch_handlers(URL::create_with_file_scheme(path));
 }
 
 void DirectoryView::handle_activation(GUI::ModelIndex const& index)
@@ -107,14 +107,14 @@ void DirectoryView::handle_activation(GUI::ModelIndex const& index)
 
     if (S_ISDIR(st.st_mode)) {
         if (is_desktop()) {
-            Desktop::Launcher::open(URL::create_with_file_protocol(path));
+            Desktop::Launcher::open(URL::create_with_file_scheme(path));
             return;
         }
         open(path);
         return;
     }
 
-    auto url = URL::create_with_file_protocol(path);
+    auto url = URL::create_with_file_scheme(path);
     auto launcher_handlers = get_launch_handlers(url);
     auto default_launcher = get_default_launch_handler(launcher_handlers);
 
@@ -507,15 +507,18 @@ void DirectoryView::launch(URL const&, LauncherHandler const& launcher_handler) 
         posix_spawn_file_actions_addchdir(&spawn_actions, path().characters());
 
         char const* argv[] = { launcher_handler.details().name.characters(), nullptr };
-        posix_spawn(&child, launcher_handler.details().executable.characters(), &spawn_actions, &spawn_attributes, const_cast<char**>(argv), environ);
-        if (disown(child) < 0)
+        errno = posix_spawn(&child, launcher_handler.details().executable.characters(), &spawn_actions, &spawn_attributes, const_cast<char**>(argv), environ);
+        if (errno) {
+            perror("posix_spawn");
+        } else if (disown(child) < 0) {
             perror("disown");
-
+        }
         posix_spawn_file_actions_destroy(&spawn_actions);
     } else {
         for (auto& path : selected_file_paths()) {
             char const* argv[] = { launcher_handler.details().name.characters(), path.characters(), nullptr };
-            posix_spawn(&child, launcher_handler.details().executable.characters(), nullptr, &spawn_attributes, const_cast<char**>(argv), environ);
+            if ((errno = posix_spawn(&child, launcher_handler.details().executable.characters(), nullptr, &spawn_attributes, const_cast<char**>(argv), environ)))
+                continue;
             if (disown(child) < 0)
                 perror("disown");
         }

@@ -95,27 +95,32 @@ void LineBuilder::append_text_chunk(TextNode const& text_node, size_t offset_in_
 float LineBuilder::y_for_float_to_be_inserted_here(Box const& box)
 {
     auto const& box_state = m_layout_state.get(box);
-    auto width = box_state.margin_box_width();
+    auto const width = box_state.margin_box_width();
+    auto const height = box_state.margin_box_height();
 
-    auto current_line_width = ensure_last_line_box().width();
-    if (roundf(current_line_width + width) > m_available_width_for_current_line) {
-        float candidate_y = m_current_y + m_context.containing_block().line_height();
-        // FIXME: This is super dumb, we move 1px downwards per iteration and stop
-        //        when we find an Y value where we don't collide with other floats.
-        while (true) {
-            if (width > m_context.available_space_for_line(candidate_y)) {
-                if (!m_context.any_floats_intrude_at_y(candidate_y)) {
-                    return candidate_y;
-                }
-            } else {
+    float candidate_y = m_current_y;
+
+    float current_line_width = ensure_last_line_box().width();
+    // If there's already inline content on the current line, check if the new float can fit
+    // alongside the content. If not, place it on the next line.
+    if (current_line_width > 0 && (current_line_width + width) > m_available_width_for_current_line)
+        candidate_y += m_context.containing_block().line_height();
+
+    // Then, look for the next Y position where we can fit the new float.
+    // FIXME: This is super dumb, we move 1px downwards per iteration and stop
+    //        when we find an Y value where we don't collide with other floats.
+    while (true) {
+        auto space_at_y_top = m_context.available_space_for_line(candidate_y);
+        auto space_at_y_bottom = m_context.available_space_for_line(candidate_y + height);
+        if (width > space_at_y_top || width > space_at_y_bottom) {
+            if (!m_context.any_floats_intrude_at_y(candidate_y) && !m_context.any_floats_intrude_at_y(candidate_y + height)) {
                 return candidate_y;
             }
-            candidate_y += 1;
+        } else {
+            return candidate_y;
         }
-
-        return m_current_y + m_context.containing_block().line_height();
+        candidate_y += 1;
     }
-    return m_current_y;
 }
 
 bool LineBuilder::should_break(float next_item_width)
@@ -133,7 +138,7 @@ bool LineBuilder::should_break(float next_item_width)
             return false;
     }
     auto current_line_width = ensure_last_line_box().width();
-    return roundf(current_line_width + next_item_width) > m_available_width_for_current_line;
+    return (current_line_width + next_item_width) > m_available_width_for_current_line;
 }
 
 static float box_baseline(LayoutState const& state, Box const& box)
@@ -179,7 +184,7 @@ void LineBuilder::update_last_line()
     float x_offset_bottom = m_context.leftmost_x_offset_at(m_current_y + current_line_height - 1);
     float x_offset = max(x_offset_top, x_offset_bottom);
 
-    float excess_horizontal_space = m_context.effective_containing_block_width() - line_box.width();
+    float excess_horizontal_space = m_available_width_for_current_line - line_box.width();
 
     switch (text_align) {
     case CSS::TextAlign::Center:
@@ -209,13 +214,11 @@ void LineBuilder::update_last_line()
 
             float fragment_baseline = 0;
             if (fragment.layout_node().is_text_node()) {
-                fragment_baseline = font_metrics.ascent;
+                fragment_baseline = font_metrics.ascent + half_leading;
             } else {
                 auto const& box = verify_cast<Layout::Box>(fragment.layout_node());
                 fragment_baseline = box_baseline(m_layout_state, box);
             }
-
-            fragment_baseline += half_leading;
 
             // Remember the baseline used for this fragment. This will be used when painting the fragment.
             fragment.set_baseline(fragment_baseline);
@@ -277,7 +280,7 @@ void LineBuilder::update_last_line()
         float bottom_of_inline_box = 0;
         {
             // FIXME: Support inline-table elements.
-            if (fragment.layout_node().is_replaced_box() || fragment.layout_node().is_inline_block()) {
+            if (fragment.layout_node().is_replaced_box() || (fragment.layout_node().display().is_inline_outside() && !fragment.layout_node().display().is_flow_inside())) {
                 auto const& fragment_box_state = m_layout_state.get(static_cast<Box const&>(fragment.layout_node()));
                 top_of_inline_box = fragment.offset().y() - fragment_box_state.margin_box_top();
                 bottom_of_inline_box = fragment.offset().y() + fragment_box_state.content_height() + fragment_box_state.margin_box_bottom();

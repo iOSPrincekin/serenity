@@ -1,6 +1,9 @@
 /*
  * Copyright (c) 2020-2022, Andreas Kling <kling@serenityos.org>
  * Copyright (c) 2021, Sam Atkins <atkinssj@serenityos.org>
+ * Copyright (c) 2021-2022, Linus Groh <linusg@serenityos.org>
+ * Copyright (c) 2022, Tobias Christiansen <tobyase@serenityos.org>
+ * Copyright (c) 2022, Tim Flynn <trflynn89@serenityos.org>
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
@@ -15,11 +18,18 @@
 #include <LibJS/Heap/Heap.h>
 #include <LibJS/Parser.h>
 #include <LibJS/Runtime/ConsoleObject.h>
+#include <LibJS/Runtime/JSONObject.h>
 #include <LibWeb/Bindings/MainThreadVM.h>
+#include <LibWeb/CSS/PropertyID.h>
 #include <LibWeb/Cookie/ParsedCookie.h>
 #include <LibWeb/DOM/Document.h>
+#include <LibWeb/DOM/NodeList.h>
 #include <LibWeb/Dump.h>
+#include <LibWeb/Geometry/DOMRect.h>
 #include <LibWeb/HTML/BrowsingContext.h>
+#include <LibWeb/HTML/FormAssociatedElement.h>
+#include <LibWeb/HTML/HTMLInputElement.h>
+#include <LibWeb/HTML/HTMLOptionElement.h>
 #include <LibWeb/HTML/Scripting/ClassicScript.h>
 #include <LibWeb/HTML/Storage.h>
 #include <LibWeb/HTML/Window.h>
@@ -29,6 +39,7 @@
 #include <LibWeb/Loader/ResourceLoader.h>
 #include <LibWeb/Painting/PaintableBox.h>
 #include <LibWeb/Painting/StackingContext.h>
+#include <LibWeb/Platform/EventLoopPlugin.h>
 #include <WebContent/ConnectionFromClient.h>
 #include <WebContent/PageHost.h>
 #include <WebContent/WebContentClientEndpoint.h>
@@ -40,12 +51,12 @@ ConnectionFromClient::ConnectionFromClient(NonnullOwnPtr<Core::Stream::LocalSock
     : IPC::ConnectionFromClient<WebContentClientEndpoint, WebContentServerEndpoint>(*this, move(socket), 1)
     , m_page_host(PageHost::create(*this))
 {
-    m_paint_flush_timer = Core::Timer::create_single_shot(0, [this] { flush_pending_paint_requests(); });
+    m_paint_flush_timer = Web::Platform::Timer::create_single_shot(0, [this] { flush_pending_paint_requests(); });
 }
 
 void ConnectionFromClient::die()
 {
-    Core::EventLoop::current().quit(0);
+    Web::Platform::EventLoopPlugin::the().quit();
 }
 
 Web::Page& ConnectionFromClient::page()
@@ -56,6 +67,13 @@ Web::Page& ConnectionFromClient::page()
 Web::Page const& ConnectionFromClient::page() const
 {
     return m_page_host->page();
+}
+
+void ConnectionFromClient::connect_to_webdriver(String const& webdriver_ipc_path)
+{
+    // FIXME: Propagate this error back to the browser.
+    if (auto result = m_page_host->connect_to_webdriver(webdriver_ipc_path); result.is_error())
+        dbgln("Unable to connect to the WebDriver process: {}", result.error());
 }
 
 void ConnectionFromClient::update_system_theme(Core::AnonymousBuffer const& theme_buffer)
@@ -81,6 +99,7 @@ void ConnectionFromClient::load_url(const URL& url)
 {
     dbgln_if(SPAM_DEBUG, "handle: WebContentServer::LoadURL: url={}", url);
 
+#if defined(AK_OS_SERENITY)
     String process_name;
     if (url.host().is_empty())
         process_name = "WebContent";
@@ -88,6 +107,7 @@ void ConnectionFromClient::load_url(const URL& url)
         process_name = String::formatted("WebContent: {}", url.host());
 
     pthread_setname_np(pthread_self(), process_name.characters());
+#endif
 
     page().load(url);
 }
@@ -144,9 +164,9 @@ void ConnectionFromClient::flush_pending_paint_requests()
     m_pending_paint_requests.clear();
 }
 
-void ConnectionFromClient::mouse_down(Gfx::IntPoint const& position, unsigned int button, [[maybe_unused]] unsigned int buttons, unsigned int modifiers)
+void ConnectionFromClient::mouse_down(Gfx::IntPoint const& position, unsigned int button, unsigned int buttons, unsigned int modifiers)
 {
-    page().handle_mousedown(position, button, modifiers);
+    page().handle_mousedown(position, button, buttons, modifiers);
 }
 
 void ConnectionFromClient::mouse_move(Gfx::IntPoint const& position, [[maybe_unused]] unsigned int button, unsigned int buttons, unsigned int modifiers)
@@ -154,19 +174,19 @@ void ConnectionFromClient::mouse_move(Gfx::IntPoint const& position, [[maybe_unu
     page().handle_mousemove(position, buttons, modifiers);
 }
 
-void ConnectionFromClient::mouse_up(Gfx::IntPoint const& position, unsigned int button, [[maybe_unused]] unsigned int buttons, unsigned int modifiers)
+void ConnectionFromClient::mouse_up(Gfx::IntPoint const& position, unsigned int button, unsigned int buttons, unsigned int modifiers)
 {
-    page().handle_mouseup(position, button, modifiers);
+    page().handle_mouseup(position, button, buttons, modifiers);
 }
 
-void ConnectionFromClient::mouse_wheel(Gfx::IntPoint const& position, unsigned int button, [[maybe_unused]] unsigned int buttons, unsigned int modifiers, i32 wheel_delta_x, i32 wheel_delta_y)
+void ConnectionFromClient::mouse_wheel(Gfx::IntPoint const& position, unsigned int button, unsigned int buttons, unsigned int modifiers, i32 wheel_delta_x, i32 wheel_delta_y)
 {
-    page().handle_mousewheel(position, button, modifiers, wheel_delta_x, wheel_delta_y);
+    page().handle_mousewheel(position, button, buttons, modifiers, wheel_delta_x, wheel_delta_y);
 }
 
-void ConnectionFromClient::doubleclick(Gfx::IntPoint const& position, unsigned int button, [[maybe_unused]] unsigned int buttons, unsigned int modifiers)
+void ConnectionFromClient::doubleclick(Gfx::IntPoint const& position, unsigned int button, unsigned int buttons, unsigned int modifiers)
 {
-    page().handle_doubleclick(position, button, modifiers);
+    page().handle_doubleclick(position, button, buttons, modifiers);
 }
 
 void ConnectionFromClient::key_down(i32 key, unsigned int modifiers, u32 code_point)
@@ -247,6 +267,20 @@ void ConnectionFromClient::get_source()
     if (auto* doc = page().top_level_browsing_context().active_document()) {
         async_did_get_source(doc->url(), doc->source());
     }
+}
+
+Messages::WebContentServer::SerializeSourceResponse ConnectionFromClient::serialize_source()
+{
+    if (auto* doc = page().top_level_browsing_context().active_document()) {
+        auto result = doc->serialize_fragment(Web::DOMParsing::RequireWellFormed::Yes);
+        if (!result.is_error())
+            return { result.release_value() };
+
+        auto source = MUST(doc->serialize_fragment(Web::DOMParsing::RequireWellFormed::No));
+        return { move(source) };
+    }
+
+    return { {} };
 }
 
 void ConnectionFromClient::inspect_dom_tree()
@@ -348,7 +382,7 @@ Messages::WebContentServer::InspectDomNodeResponse ConnectionFromClient::inspect
 
         if (pseudo_element.has_value()) {
             auto pseudo_element_node = element.get_pseudo_element_node(pseudo_element.value());
-            if (pseudo_element_node.is_null())
+            if (!pseudo_element_node)
                 return { false, "", "", "", "" };
 
             // FIXME: Pseudo-elements only exist as Layout::Nodes, which don't have style information
@@ -434,6 +468,243 @@ void ConnectionFromClient::js_console_request_messages(i32 start_index)
         m_console_client->send_messages(start_index);
 }
 
+static Optional<Web::DOM::Element&> find_element_by_id(i32 element_id)
+{
+    auto* node = Web::DOM::Node::from_id(element_id);
+    if (!node || !node->is_element())
+        return {};
+
+    return verify_cast<Web::DOM::Element>(*node);
+}
+
+// https://w3c.github.io/webdriver/#dfn-scrolls-into-view
+void ConnectionFromClient::scroll_element_into_view(i32 element_id)
+{
+    auto element = find_element_by_id(element_id);
+    if (!element.has_value())
+        return;
+
+    // 1. Let options be the following ScrollIntoViewOptions:
+    Web::DOM::ScrollIntoViewOptions options {};
+    // Logical scroll position "block"
+    //     "end"
+    options.block = Web::Bindings::ScrollLogicalPosition::End;
+    // Logical scroll position "inline"
+    //     "nearest"
+    options.inline_ = Web::Bindings::ScrollLogicalPosition::Nearest;
+
+    // 2. Run Function.[[Call]](scrollIntoView, options) with element as the this value.
+    element->scroll_into_view(options);
+}
+
+Messages::WebContentServer::IsElementSelectedResponse ConnectionFromClient::is_element_selected(i32 element_id)
+{
+    auto element = find_element_by_id(element_id);
+    if (!element.has_value())
+        return { false };
+
+    bool selected = false;
+
+    if (is<Web::HTML::HTMLInputElement>(*element)) {
+        auto& input = dynamic_cast<Web::HTML::HTMLInputElement&>(*element);
+        using enum Web::HTML::HTMLInputElement::TypeAttributeState;
+
+        if (input.type_state() == Checkbox || input.type_state() == RadioButton)
+            selected = input.checked();
+    } else if (is<Web::HTML::HTMLOptionElement>(*element)) {
+        selected = dynamic_cast<Web::HTML::HTMLOptionElement&>(*element).selected();
+    }
+
+    return { selected };
+}
+
+Messages::WebContentServer::GetElementAttributeResponse ConnectionFromClient::get_element_attribute(i32 element_id, String const& name)
+{
+    auto element = find_element_by_id(element_id);
+    if (!element.has_value())
+        return Optional<String> {};
+
+    return { element->get_attribute(name) };
+}
+
+Messages::WebContentServer::GetElementPropertyResponse ConnectionFromClient::get_element_property(i32 element_id, String const& name)
+{
+    auto element = find_element_by_id(element_id);
+    if (!element.has_value())
+        return Optional<String> {};
+
+    auto property_or_error = element->get(name);
+    if (property_or_error.is_throw_completion())
+        return Optional<String> {};
+
+    auto property = property_or_error.release_value();
+
+    if (property.is_undefined())
+        return Optional<String> {};
+
+    auto string_or_error = property.to_string(element->vm());
+    if (string_or_error.is_error())
+        return Optional<String> {};
+
+    return { string_or_error.release_value() };
+}
+
+Messages::WebContentServer::GetActiveDocumentsTypeResponse ConnectionFromClient::get_active_documents_type()
+{
+    auto* active_document = page().top_level_browsing_context().active_document();
+
+    if (!active_document)
+        return { "" };
+
+    auto type = active_document->document_type();
+
+    switch (type) {
+    case Web::DOM::Document::Type::HTML:
+        return { "html" };
+        break;
+    case Web::DOM::Document::Type::XML:
+        return { "xml" };
+        break;
+    }
+
+    return { "" };
+}
+
+Messages::WebContentServer::GetComputedValueForElementResponse ConnectionFromClient::get_computed_value_for_element(i32 element_id, String const& property_name)
+{
+    auto element = find_element_by_id(element_id);
+    if (!element.has_value())
+        return { "" };
+
+    auto property_id = Web::CSS::property_id_from_string(property_name);
+
+    auto computed_values = element->computed_css_values();
+    if (!computed_values)
+        return { "" };
+
+    auto style_value = computed_values->property(property_id);
+
+    return { style_value->to_string() };
+}
+
+Messages::WebContentServer::GetElementTextResponse ConnectionFromClient::get_element_text(i32 element_id)
+{
+    auto element = find_element_by_id(element_id);
+    if (!element.has_value())
+        return { "" };
+
+    return { element->layout_node()->dom_node()->text_content() };
+}
+
+Messages::WebContentServer::GetElementTagNameResponse ConnectionFromClient::get_element_tag_name(i32 element_id)
+{
+    auto element = find_element_by_id(element_id);
+    if (!element.has_value())
+        return { "" };
+
+    return { element->tag_name() };
+}
+
+// https://w3c.github.io/webdriver/#dfn-calculate-the-absolute-position
+static Gfx::IntPoint calculate_absolute_position_of_element(Web::Page const& page, JS::NonnullGCPtr<Web::Geometry::DOMRect> rect)
+{
+    // 1. Let rect be the value returned by calling getBoundingClientRect().
+
+    // 2. Let window be the associated window of current top-level browsing context.
+    auto const* window = page.top_level_browsing_context().active_window();
+
+    // 3. Let x be (scrollX of window + rect’s x coordinate).
+    auto x = (window ? static_cast<int>(window->scroll_x()) : 0) + static_cast<int>(rect->x());
+
+    // 4. Let y be (scrollY of window + rect’s y coordinate).
+    auto y = (window ? static_cast<int>(window->scroll_y()) : 0) + static_cast<int>(rect->y());
+
+    // 5. Return a pair of (x, y).
+    return { x, y };
+}
+
+static Gfx::IntRect calculate_absolute_rect_of_element(Web::Page const& page, Web::DOM::Element const& element)
+{
+    auto bounding_rect = element.get_bounding_client_rect();
+    auto coordinates = calculate_absolute_position_of_element(page, bounding_rect);
+
+    return Gfx::IntRect {
+        coordinates.x(),
+        coordinates.y(),
+        static_cast<int>(bounding_rect->width()),
+        static_cast<int>(bounding_rect->height())
+    };
+}
+
+Messages::WebContentServer::GetElementRectResponse ConnectionFromClient::get_element_rect(i32 element_id)
+{
+    auto element = find_element_by_id(element_id);
+    if (!element.has_value())
+        return { {} };
+
+    return { calculate_absolute_rect_of_element(page(), *element) };
+}
+
+Messages::WebContentServer::IsElementEnabledResponse ConnectionFromClient::is_element_enabled(i32 element_id)
+{
+    auto element = find_element_by_id(element_id);
+    if (!element.has_value())
+        return { false };
+
+    auto* document = page().top_level_browsing_context().active_document();
+    if (!document)
+        return { false };
+
+    bool enabled = !document->is_xml_document();
+
+    if (enabled && is<Web::HTML::FormAssociatedElement>(*element)) {
+        auto& form_associated_element = dynamic_cast<Web::HTML::FormAssociatedElement&>(*element);
+        enabled = form_associated_element.enabled();
+    }
+
+    return { enabled };
+}
+
+Messages::WebContentServer::TakeElementScreenshotResponse ConnectionFromClient::take_element_screenshot(i32 element_id)
+{
+    auto element = find_element_by_id(element_id);
+    if (!element.has_value())
+        return { {} };
+
+    auto viewport_rect = page().top_level_browsing_context().viewport_rect();
+
+    auto rect = calculate_absolute_rect_of_element(page(), *element);
+    rect.intersect(viewport_rect);
+
+    auto bitmap = Gfx::Bitmap::try_create(Gfx::BitmapFormat::BGRA8888, rect.size()).release_value_but_fixme_should_propagate_errors();
+    m_page_host->paint(rect, *bitmap);
+
+    return { bitmap->to_shareable_bitmap() };
+}
+
+Messages::WebContentServer::TakeDocumentScreenshotResponse ConnectionFromClient::take_document_screenshot()
+{
+    auto* document = page().top_level_browsing_context().active_document();
+    if (!document || !document->document_element())
+        return { {} };
+
+    auto bounding_rect = document->document_element()->get_bounding_client_rect();
+    auto position = calculate_absolute_position_of_element(page(), bounding_rect);
+    auto const& content_size = m_page_host->content_size();
+
+    Gfx::IntRect rect {
+        position.x(),
+        position.y(),
+        content_size.width() - position.x(),
+        content_size.height() - position.y(),
+    };
+
+    auto bitmap = Gfx::Bitmap::try_create(Gfx::BitmapFormat::BGRA8888, rect.size()).release_value_but_fixme_should_propagate_errors();
+    m_page_host->paint(rect, *bitmap);
+
+    return { bitmap->to_shareable_bitmap() };
+}
+
 Messages::WebContentServer::GetSelectedTextResponse ConnectionFromClient::get_selected_text()
 {
     return page().focused_context().selected_text();
@@ -495,6 +766,16 @@ void ConnectionFromClient::set_is_scripting_enabled(bool is_scripting_enabled)
     m_page_host->set_is_scripting_enabled(is_scripting_enabled);
 }
 
+void ConnectionFromClient::set_window_position(Gfx::IntPoint const& position)
+{
+    m_page_host->set_window_position(position);
+}
+
+void ConnectionFromClient::set_window_size(Gfx::IntSize const& size)
+{
+    m_page_host->set_window_size(size);
+}
+
 Messages::WebContentServer::GetLocalStorageEntriesResponse ConnectionFromClient::get_local_storage_entries()
 {
     auto* document = page().top_level_browsing_context().active_document();
@@ -533,6 +814,26 @@ void ConnectionFromClient::set_system_visibility_state(bool visible)
         visible
             ? Web::HTML::VisibilityState::Visible
             : Web::HTML::VisibilityState::Hidden);
+}
+
+Messages::WebContentServer::WebdriverExecuteScriptResponse ConnectionFromClient::webdriver_execute_script(String const& body, Vector<String> const& json_arguments, Optional<u64> const& timeout, bool async)
+{
+    auto& page = m_page_host->page();
+
+    auto* window = page.top_level_browsing_context().active_window();
+    auto& vm = window->vm();
+
+    auto arguments = JS::MarkedVector<JS::Value> { vm.heap() };
+    for (auto const& argument_string : json_arguments) {
+        // NOTE: These are assumed to be valid JSON values.
+        auto json_value = MUST(JsonValue::from_string(argument_string));
+        arguments.append(JS::JSONObject::parse_json_value(vm, json_value));
+    }
+
+    auto result = async
+        ? Web::WebDriver::execute_async_script(page, body, move(arguments), timeout)
+        : Web::WebDriver::execute_script(page, body, move(arguments), timeout);
+    return { result.type, result.value.serialized<StringBuilder>() };
 }
 
 }
