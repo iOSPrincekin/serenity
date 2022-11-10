@@ -13,6 +13,7 @@
 #include <LibWeb/HTML/Scripting/Environments.h>
 #include <LibWeb/HTML/Window.h>
 #include <LibWeb/HighResolutionTime/Performance.h>
+#include <LibWeb/HighResolutionTime/TimeOrigin.h>
 #include <LibWeb/Platform/EventLoopPlugin.h>
 #include <LibWeb/Platform/Timer.h>
 
@@ -92,7 +93,7 @@ void EventLoop::process()
     // FIXME: 'current high resolution time' in hr-time-3 takes a global object,
     //        the HTML spec has not been updated to reflect this, let's use the shared timer.
     //        - https://github.com/whatwg/html/issues/7776
-    double task_start_time = unsafe_shared_current_time();
+    double task_start_time = HighResolutionTime::unsafe_shared_current_time();
 
     // 3. Let taskQueue be one of the event loop's task queues, chosen in an implementation-defined manner,
     //    with the constraint that the chosen task queue must contain at least one runnable task.
@@ -204,7 +205,7 @@ void EventLoop::process()
     // FIXME: has_a_rendering_opportunity is always true
     if (m_type == Type::Window && !task_queue.has_runnable_tasks() && m_microtask_queue.is_empty() /*&& !has_a_rendering_opportunity*/) {
         // 1. Set this event loop's last idle period start time to the current high resolution time.
-        m_last_idle_period_start_time = unsafe_shared_current_time();
+        m_last_idle_period_start_time = HighResolutionTime::unsafe_shared_current_time();
 
         // 2. Let computeDeadline be the following steps:
         // NOTE: instead of passing around a function we use this event loop, which has compute_deadline()
@@ -231,13 +232,13 @@ void EventLoop::process()
 
 // FIXME: This is here to paper over an issue in the HTML parser where it'll create new interpreters (and thus ESOs) on temporary documents created for innerHTML if it uses Document::realm() to get the global object.
 //        Use queue_global_task instead.
-void old_queue_global_task_with_document(HTML::Task::Source source, DOM::Document& document, Function<void()> steps)
+void old_queue_global_task_with_document(HTML::Task::Source source, DOM::Document& document, JS::SafeFunction<void()> steps)
 {
     main_thread_event_loop().task_queue().add(HTML::Task::create(source, &document, move(steps)));
 }
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-global-task
-void queue_global_task(HTML::Task::Source source, JS::Object& global_object, Function<void()> steps)
+void queue_global_task(HTML::Task::Source source, JS::Object& global_object, JS::SafeFunction<void()> steps)
 {
     // 1. Let event loop be global's relevant agent's event loop.
     auto& global_custom_data = verify_cast<Bindings::WebEngineCustomData>(*global_object.vm().custom_data());
@@ -255,7 +256,7 @@ void queue_global_task(HTML::Task::Source source, JS::Object& global_object, Fun
 }
 
 // https://html.spec.whatwg.org/#queue-a-microtask
-void queue_a_microtask(DOM::Document* document, Function<void()> steps)
+void queue_a_microtask(DOM::Document* document, JS::SafeFunction<void()> steps)
 {
     // 1. If event loop was not given, set event loop to the implied event loop.
     auto& event_loop = HTML::main_thread_event_loop();
@@ -368,15 +369,11 @@ void EventLoop::unregister_environment_settings_object(Badge<EnvironmentSettings
 Vector<JS::Handle<HTML::Window>> EventLoop::same_loop_windows() const
 {
     Vector<JS::Handle<HTML::Window>> windows;
-    for (auto& document : documents_in_this_event_loop())
-        windows.append(JS::make_handle(document->window()));
+    for (auto& document : documents_in_this_event_loop()) {
+        if (document->is_fully_active())
+            windows.append(JS::make_handle(document->window()));
+    }
     return windows;
-}
-
-// https://w3c.github.io/hr-time/#dfn-unsafe-shared-current-time
-double EventLoop::unsafe_shared_current_time() const
-{
-    return Time::now_monotonic().to_nanoseconds() / 1e6;
 }
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#event-loop-processing-model:last-idle-period-start-time

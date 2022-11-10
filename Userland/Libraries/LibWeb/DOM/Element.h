@@ -8,11 +8,11 @@
 
 #include <AK/FlyString.h>
 #include <AK/String.h>
+#include <LibWeb/Bindings/ElementPrototype.h>
 #include <LibWeb/CSS/CSSStyleDeclaration.h>
 #include <LibWeb/CSS/StyleComputer.h>
 #include <LibWeb/DOM/Attr.h>
 #include <LibWeb/DOM/ChildNode.h>
-#include <LibWeb/DOM/ExceptionOr.h>
 #include <LibWeb/DOM/NamedNodeMap.h>
 #include <LibWeb/DOM/NonDocumentTypeChildNode.h>
 #include <LibWeb/DOM/ParentNode.h>
@@ -22,8 +22,20 @@
 #include <LibWeb/HTML/TagNames.h>
 #include <LibWeb/Layout/Node.h>
 #include <LibWeb/Layout/TreeBuilder.h>
+#include <LibWeb/WebIDL/ExceptionOr.h>
 
 namespace Web::DOM {
+
+// https://w3c.github.io/csswg-drafts/cssom-view-1/#dictdef-scrolloptions
+struct ScrollOptions {
+    Bindings::ScrollBehavior behavior { Bindings::ScrollBehavior::Auto };
+};
+
+// https://w3c.github.io/csswg-drafts/cssom-view-1/#dictdef-scrollintoviewoptions
+struct ScrollIntoViewOptions : public ScrollOptions {
+    Bindings::ScrollLogicalPosition block { Bindings::ScrollLogicalPosition::Start };
+    Bindings::ScrollLogicalPosition inline_ { Bindings::ScrollLogicalPosition::Nearest };
+};
 
 class Element
     : public ParentNode
@@ -52,18 +64,20 @@ public:
     bool has_attributes() const { return !m_attributes->is_empty(); }
     String attribute(FlyString const& name) const { return get_attribute(name); }
     String get_attribute(FlyString const& name) const;
-    ExceptionOr<void> set_attribute(FlyString const& name, String const& value);
-    ExceptionOr<void> set_attribute_ns(FlyString const& namespace_, FlyString const& qualified_name, String const& value);
+    WebIDL::ExceptionOr<void> set_attribute(FlyString const& name, String const& value);
+    WebIDL::ExceptionOr<void> set_attribute_ns(FlyString const& namespace_, FlyString const& qualified_name, String const& value);
     void remove_attribute(FlyString const& name);
-    DOM::ExceptionOr<bool> toggle_attribute(FlyString const& name, Optional<bool> force);
+    WebIDL::ExceptionOr<bool> toggle_attribute(FlyString const& name, Optional<bool> force);
     size_t attribute_list_size() const { return m_attributes->length(); }
     NamedNodeMap const* attributes() const { return m_attributes.ptr(); }
     Vector<String> get_attribute_names() const;
 
+    JS::GCPtr<Attr> get_attribute_node(FlyString const& name) const;
+
     DOMTokenList* class_list();
 
-    DOM::ExceptionOr<bool> matches(StringView selectors) const;
-    DOM::ExceptionOr<DOM::Element const*> closest(StringView selectors) const;
+    WebIDL::ExceptionOr<bool> matches(StringView selectors) const;
+    WebIDL::ExceptionOr<DOM::Element const*> closest(StringView selectors) const;
 
     int client_top() const;
     int client_left() const;
@@ -105,10 +119,10 @@ public:
 
     CSS::CSSStyleDeclaration* style_for_bindings();
 
-    String inner_html() const;
-    ExceptionOr<void> set_inner_html(String const&);
+    WebIDL::ExceptionOr<String> inner_html() const;
+    WebIDL::ExceptionOr<void> set_inner_html(String const&);
 
-    ExceptionOr<void> insert_adjacent_html(String position, String text);
+    WebIDL::ExceptionOr<void> insert_adjacent_html(String position, String text);
 
     bool is_focused() const;
     bool is_active() const;
@@ -122,7 +136,7 @@ public:
     void set_custom_properties(HashMap<FlyString, CSS::StyleProperty> custom_properties) { m_custom_properties = move(custom_properties); }
     HashMap<FlyString, CSS::StyleProperty> const& custom_properties() const { return m_custom_properties; }
 
-    void queue_an_element_task(HTML::Task::Source, Function<void()>);
+    void queue_an_element_task(HTML::Task::Source, JS::SafeFunction<void()>);
 
     bool is_void_element() const;
     bool serializes_as_void() const;
@@ -130,28 +144,54 @@ public:
     JS::NonnullGCPtr<Geometry::DOMRect> get_bounding_client_rect() const;
     JS::NonnullGCPtr<Geometry::DOMRectList> get_client_rects() const;
 
-    virtual RefPtr<Layout::Node> create_layout_node(NonnullRefPtr<CSS::StyleProperties>);
+    virtual JS::GCPtr<Layout::Node> create_layout_node(NonnullRefPtr<CSS::StyleProperties>);
 
     virtual void did_receive_focus() { }
     virtual void did_lose_focus() { }
 
-    static RefPtr<Layout::Node> create_layout_node_for_display_type(DOM::Document&, CSS::Display const&, NonnullRefPtr<CSS::StyleProperties>, Element*);
+    static JS::GCPtr<Layout::Node> create_layout_node_for_display_type(DOM::Document&, CSS::Display const&, NonnullRefPtr<CSS::StyleProperties>, Element*);
 
-    void set_pseudo_element_node(Badge<Layout::TreeBuilder>, CSS::Selector::PseudoElement, RefPtr<Layout::Node>);
-    RefPtr<Layout::Node> get_pseudo_element_node(CSS::Selector::PseudoElement) const;
+    void set_pseudo_element_node(Badge<Layout::TreeBuilder>, CSS::Selector::PseudoElement, JS::GCPtr<Layout::Node>);
+    JS::GCPtr<Layout::Node> get_pseudo_element_node(CSS::Selector::PseudoElement) const;
     void clear_pseudo_element_nodes(Badge<Layout::TreeBuilder>);
     void serialize_pseudo_elements_as_json(JsonArraySerializer<StringBuilder>& children_array) const;
+
+    i32 tab_index() const;
+    void set_tab_index(i32 tab_index);
+
+    bool is_potentially_scrollable() const;
+
+    double scroll_top() const;
+    double scroll_left() const;
+    void set_scroll_top(double y);
+    void set_scroll_left(double x);
+
+    int scroll_width() const;
+    int scroll_height() const;
+
+    bool is_actually_disabled() const;
+
+    WebIDL::ExceptionOr<JS::GCPtr<Element>> insert_adjacent_element(String const& where, JS::NonnullGCPtr<Element> element);
+    WebIDL::ExceptionOr<void> insert_adjacent_text(String const& where, String const& data);
+
+    // https://w3c.github.io/csswg-drafts/cssom-view-1/#dom-element-scrollintoview
+    void scroll_into_view(Optional<Variant<bool, ScrollIntoViewOptions>> = {});
 
 protected:
     Element(Document&, DOM::QualifiedName);
     virtual void initialize(JS::Realm&) override;
 
     virtual void children_changed() override;
+    virtual i32 default_tab_index_value() const;
 
     virtual void visit_edges(Cell::Visitor&) override;
 
 private:
     void make_html_uppercased_qualified_name();
+
+    void invalidate_style_after_attribute_change(FlyString const& attribute_name);
+
+    WebIDL::ExceptionOr<JS::GCPtr<Node>> insert_adjacent(String const& where, JS::NonnullGCPtr<Node> node);
 
     QualifiedName m_qualified_name;
     String m_html_uppercased_qualified_name;
@@ -166,12 +206,12 @@ private:
 
     Vector<FlyString> m_classes;
 
-    Array<RefPtr<Layout::Node>, CSS::Selector::PseudoElementCount> m_pseudo_element_nodes;
+    Array<JS::GCPtr<Layout::Node>, CSS::Selector::PseudoElementCount> m_pseudo_element_nodes;
 };
 
 template<>
 inline bool Node::fast_is<Element>() const { return is_element(); }
 
-ExceptionOr<QualifiedName> validate_and_extract(JS::Object& global_object, FlyString namespace_, FlyString qualified_name);
+WebIDL::ExceptionOr<QualifiedName> validate_and_extract(JS::Realm&, FlyString namespace_, FlyString qualified_name);
 
 }

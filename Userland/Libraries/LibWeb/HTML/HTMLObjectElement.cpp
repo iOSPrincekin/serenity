@@ -19,7 +19,7 @@ namespace Web::HTML {
 HTMLObjectElement::HTMLObjectElement(DOM::Document& document, DOM::QualifiedName qualified_name)
     : BrowsingContextContainer(document, move(qualified_name))
 {
-    set_prototype(&window().cached_web_prototype("HTMLObjectElement"));
+    set_prototype(&Bindings::cached_web_prototype(realm(), "HTMLObjectElement"));
 }
 
 HTMLObjectElement::~HTMLObjectElement() = default;
@@ -39,7 +39,7 @@ String HTMLObjectElement::data() const
     return document().parse_url(data).to_string();
 }
 
-RefPtr<Layout::Node> HTMLObjectElement::create_layout_node(NonnullRefPtr<CSS::StyleProperties> style)
+JS::GCPtr<Layout::Node> HTMLObjectElement::create_layout_node(NonnullRefPtr<CSS::StyleProperties> style)
 {
     switch (m_representation) {
     case Representation::Children:
@@ -49,7 +49,7 @@ RefPtr<Layout::Node> HTMLObjectElement::create_layout_node(NonnullRefPtr<CSS::St
         return nullptr;
     case Representation::Image:
         if (m_image_loader.has_value() && m_image_loader->has_image())
-            return adopt_ref(*new Layout::ImageBox(document(), *this, move(style), *m_image_loader));
+            return heap().allocate_without_realm<Layout::ImageBox>(document(), *this, move(style), *m_image_loader);
         break;
     default:
         break;
@@ -97,7 +97,7 @@ void HTMLObjectElement::queue_element_task_to_run_object_representation_steps()
 
             // 3. If that failed, fire an event named error at the element, then jump to the step below labeled fallback.
             if (!url.is_valid()) {
-                dispatch_event(*DOM::Event::create(document().window(), HTML::EventNames::error));
+                dispatch_event(*DOM::Event::create(realm(), HTML::EventNames::error));
                 return run_object_representation_fallback_steps();
             }
 
@@ -124,7 +124,7 @@ void HTMLObjectElement::queue_element_task_to_run_object_representation_steps()
 void HTMLObjectElement::resource_did_fail()
 {
     // 4.7. If the load failed (e.g. there was an HTTP 404 error, there was a DNS error), fire an event named error at the element, then jump to the step below labeled fallback.
-    dispatch_event(*DOM::Event::create(document().window(), HTML::EventNames::error));
+    dispatch_event(*DOM::Event::create(realm(), HTML::EventNames::error));
     run_object_representation_fallback_steps();
 }
 
@@ -262,7 +262,7 @@ void HTMLObjectElement::run_object_representation_completed_steps(Representation
     // 4.11. If the object element does not represent its nested browsing context, then once the resource is completely loaded, queue an element task on the DOM manipulation task source given the object element to fire an event named load at the element.
     if (representation != Representation::NestedBrowsingContext) {
         queue_an_element_task(HTML::Task::Source::DOMManipulation, [&]() {
-            dispatch_event(*DOM::Event::create(document().window(), HTML::EventNames::load));
+            dispatch_event(*DOM::Event::create(realm(), HTML::EventNames::load));
         });
     }
 
@@ -314,6 +314,13 @@ void HTMLObjectElement::update_layout_and_child_objects(Representation represent
     m_representation = representation;
     set_needs_style_update(true);
     document().set_needs_layout();
+}
+
+// https://html.spec.whatwg.org/multipage/interaction.html#dom-tabindex
+i32 HTMLObjectElement::default_tab_index_value() const
+{
+    // See the base function for the spec comments.
+    return 0;
 }
 
 }

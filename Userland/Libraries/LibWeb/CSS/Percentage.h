@@ -37,11 +37,12 @@ public:
     }
 
     bool operator==(Percentage const& other) const { return m_value == other.m_value; }
-    bool operator!=(Percentage const& other) const { return !(*this == other); }
 
 private:
     float m_value;
 };
+
+bool calculated_style_value_contains_percentage(CalculatedStyleValue const&);
 
 template<typename T>
 class PercentageOr {
@@ -80,11 +81,18 @@ public:
 
     bool contains_percentage() const
     {
-        if (is_percentage())
-            return true;
-        if (is_calculated())
-            return calculated()->contains_percentage();
-        return false;
+        return m_value.visit(
+            [&](T const& t) {
+                if (t.is_calculated())
+                    return calculated_style_value_contains_percentage(*t.calculated_style_value());
+                return false;
+            },
+            [&](Percentage const&) {
+                return true;
+            },
+            [&](NonnullRefPtr<CalculatedStyleValue> const& calculated) {
+                return calculated_style_value_contains_percentage(*calculated);
+            });
     }
 
     Percentage const& percentage() const
@@ -138,7 +146,6 @@ public:
             return (m_value.template get<Percentage>() == other.m_value.template get<Percentage>());
         return (m_value.template get<T>() == other.m_value.template get<T>());
     }
-    bool operator!=(PercentageOr<T> const& other) const { return !(*this == other); }
 
 protected:
     bool is_t() const { return m_value.template has<T>(); }

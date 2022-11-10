@@ -18,7 +18,7 @@ class Text : public CharacterData {
 public:
     virtual ~Text() override = default;
 
-    static JS::NonnullGCPtr<Text> create_with_global_object(HTML::Window& window, String const& data);
+    static JS::NonnullGCPtr<Text> construct_impl(JS::Realm& realm, String const& data);
 
     // ^Node
     virtual FlyString node_name() const override { return "#text"; }
@@ -29,10 +29,13 @@ public:
     void set_owner_input_element(Badge<HTML::HTMLInputElement>, HTML::HTMLInputElement&);
     HTML::HTMLInputElement* owner_input_element() { return m_owner_input_element.ptr(); }
 
-    ExceptionOr<JS::NonnullGCPtr<Text>> split_text(size_t offset);
+    WebIDL::ExceptionOr<JS::NonnullGCPtr<Text>> split_text(size_t offset);
+
+    bool is_password_input() const { return m_is_password_input; }
+    void set_is_password_input(Badge<HTML::HTMLInputElement>, bool b) { m_is_password_input = b; }
 
 protected:
-    explicit Text(Document&, String const&);
+    Text(Document&, String const&);
     Text(Document&, NodeType, String const&);
 
     virtual void visit_edges(Cell::Visitor&) override;
@@ -41,6 +44,7 @@ private:
     JS::GCPtr<HTML::HTMLInputElement> m_owner_input_element;
 
     bool m_always_editable { false };
+    bool m_is_password_input { false };
 };
 
 template<>

@@ -1,0 +1,16 @@
+#include <LibWeb/WebDriver/Response.h>
+
+endpoint WebDriverClient {
+    close_session() => ()
+    set_is_webdriver_active(bool active) =|
+    navigate_to(JsonValue payload) => (Web::WebDriver::Response response)
+    get_current_url() => (Web::WebDriver::Response response)
+    get_window_rect() => (Web::WebDriver::Response response)
+    set_window_rect(JsonValue payload) => (Web::WebDriver::Response response)
+    maximize_window() => (Web::WebDriver::Response response)
+    minimize_window() => (Web::WebDriver::Response response)
+    find_element(JsonValue payload) => (Web::WebDriver::Response response)
+    find_elements(JsonValue payload) => (Web::WebDriver::Response response)
+    find_element_from_element(JsonValue payload, String element_id) => (Web::WebDriver::Response response)
+    find_elements_from_element(JsonValue payload, String element_id) => (Web::WebDriver::Response response)
+}

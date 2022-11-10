@@ -1,4 +1,5 @@
 #import <CSS/CSSStyleDeclaration.idl>
+#import <DOM/Attr.idl>
 #import <DOM/ChildNode.idl>
 #import <DOM/DOMTokenList.idl>
 #import <DOM/InnerHTML.idl>
@@ -9,7 +10,19 @@
 #import <Geometry/DOMRect.idl>
 #import <Geometry/DOMRectList.idl>
 
+enum ScrollBehavior { "auto", "smooth" };
+dictionary ScrollOptions {
+    ScrollBehavior behavior = "auto";
+};
+
+enum ScrollLogicalPosition { "start", "center", "end", "nearest" };
+dictionary ScrollIntoViewOptions : ScrollOptions {
+    ScrollLogicalPosition block = "start";
+    ScrollLogicalPosition inline = "nearest";
+};
+
 // https://dom.spec.whatwg.org/#element
+[Exposed=Window]
 interface Element : Node {
     readonly attribute DOMString? namespaceURI;
     readonly attribute DOMString? prefix;
@@ -25,6 +38,8 @@ interface Element : Node {
     boolean hasAttributes();
     [SameObject] readonly attribute NamedNodeMap attributes;
     sequence<DOMString> getAttributeNames();
+
+    Attr? getAttributeNode(DOMString qualifiedName);
 
     HTMLCollection getElementsByTagName(DOMString tagName);
     HTMLCollection getElementsByTagNameNS(DOMString? namespace, DOMString localName);
@@ -48,12 +63,21 @@ interface Element : Node {
     DOMRect getBoundingClientRect();
     DOMRectList getClientRects();
 
+    attribute unrestricted double scrollTop;
+    attribute unrestricted double scrollLeft;
+    readonly attribute long scrollWidth;
+    readonly attribute long scrollHeight;
     readonly attribute long clientTop;
     readonly attribute long clientLeft;
     readonly attribute long clientWidth;
     readonly attribute long clientHeight;
 
+    [CEReactions] Element? insertAdjacentElement(DOMString where, Element element);
+    undefined insertAdjacentText(DOMString where, DOMString data);
     [CEReactions] undefined insertAdjacentHTML(DOMString position, DOMString text);
+
+    undefined scrollIntoView(optional (boolean or ScrollIntoViewOptions) arg = {});
+
 };
 
 Element includes ParentNode;

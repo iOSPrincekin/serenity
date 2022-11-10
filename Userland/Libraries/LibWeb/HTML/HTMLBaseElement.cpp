@@ -12,7 +12,7 @@ namespace Web::HTML {
 HTMLBaseElement::HTMLBaseElement(DOM::Document& document, DOM::QualifiedName qualified_name)
     : HTMLElement(document, move(qualified_name))
 {
-    set_prototype(&window().cached_web_prototype("HTMLBaseElement"));
+    set_prototype(&Bindings::cached_web_prototype(realm(), "HTMLBaseElement"));
 }
 
 HTMLBaseElement::~HTMLBaseElement() = default;
@@ -20,6 +20,8 @@ HTMLBaseElement::~HTMLBaseElement() = default;
 void HTMLBaseElement::inserted()
 {
     HTMLElement::inserted();
+
+    document().update_base_element({});
 
     // The frozen base URL must be immediately set for an element whenever any of the following situations occur:
     // - The base element becomes the first base element in tree order with an href content attribute in its Document.
@@ -30,6 +32,12 @@ void HTMLBaseElement::inserted()
         set_the_frozen_base_url();
 }
 
+void HTMLBaseElement::removed_from(Node* parent)
+{
+    HTMLElement::removed_from(parent);
+    document().update_base_element({});
+}
+
 void HTMLBaseElement::parse_attribute(FlyString const& name, String const& value)
 {
     HTMLElement::parse_attribute(name, value);
@@ -38,6 +46,8 @@ void HTMLBaseElement::parse_attribute(FlyString const& name, String const& value
     // - The base element is the first base element in tree order with an href content attribute in its Document, and its href content attribute is changed.
     if (name != AttributeNames::href)
         return;
+
+    document().update_base_element({});
 
     auto first_base_element_with_href_in_document = document().first_base_element_with_href_in_tree_order();
     if (first_base_element_with_href_in_document.ptr() == this)
@@ -91,7 +101,7 @@ String HTMLBaseElement::href() const
 void HTMLBaseElement::set_href(String const& href)
 {
     // The href IDL attribute, on setting, must set the href content attribute to the given new value.
-    set_attribute(AttributeNames::href, href);
+    MUST(set_attribute(AttributeNames::href, href));
 }
 
 }

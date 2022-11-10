@@ -18,6 +18,7 @@
 #include <AK/String.h>
 #include <AK/Types.h>
 #include <LibJS/Forward.h>
+#include <LibJS/Heap/GCPtr.h>
 #include <LibJS/Runtime/BigInt.h>
 #include <LibJS/Runtime/Utf16String.h>
 #include <math.h>
@@ -272,6 +273,18 @@ public:
 
     Value(BigInt const* bigint)
         : Value(BIGINT_TAG << TAG_SHIFT, reinterpret_cast<void const*>(bigint))
+    {
+    }
+
+    template<typename T>
+    Value(GCPtr<T> ptr)
+        : Value(ptr.ptr())
+    {
+    }
+
+    template<typename T>
+    Value(NonnullGCPtr<T> ptr)
+        : Value(ptr.ptr())
     {
     }
 
@@ -550,6 +563,13 @@ bool same_value_non_numeric(Value lhs, Value rhs);
 ThrowCompletionOr<TriState> is_less_than(VM&, Value lhs, Value rhs, bool left_first);
 
 double to_integer_or_infinity(double);
+
+enum class NumberToStringMode {
+    WithExponent,
+    WithoutExponent,
+};
+String number_to_string(double, NumberToStringMode = NumberToStringMode::WithExponent);
+Optional<Value> string_to_number(StringView);
 
 inline bool Value::operator==(Value const& value) const { return same_value(*this, value); }
 

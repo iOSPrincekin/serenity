@@ -36,6 +36,7 @@ class BorderStyleValue;
 class Clip;
 class CalculatedStyleValue;
 class ColorStyleValue;
+class ConicGradientStyleValue;
 class ContentStyleValue;
 class CSSConditionRule;
 class CSSGroupingRule;
@@ -50,6 +51,7 @@ class CSSStyleSheet;
 class CSSSupportsRule;
 class Display;
 class ElementInlineCSSStyleDeclaration;
+class ExplicitGridTrack;
 class FilterValueListStyleValue;
 class FlexFlowStyleValue;
 class FlexStyleValue;
@@ -58,10 +60,13 @@ class FontStyleValue;
 class Frequency;
 class FrequencyPercentage;
 class FrequencyStyleValue;
+class GridMinMax;
+class GridRepeat;
+class GridSize;
 class GridTrackPlacement;
 class GridTrackPlacementShorthandStyleValue;
 class GridTrackPlacementStyleValue;
-class GridTrackSize;
+class GridTrackSizeList;
 class GridTrackSizeStyleValue;
 class IdentifierStyleValue;
 class ImageStyleValue;
@@ -91,6 +96,7 @@ class ResolutionStyleValue;
 class Screen;
 class Selector;
 class ShadowStyleValue;
+class Size;
 class StringStyleValue;
 class StyleComputer;
 class StyleProperties;
@@ -139,7 +145,6 @@ class DocumentFragment;
 class DocumentLoadEventDelayer;
 class DocumentType;
 class DOMEventListener;
-class DOMException;
 class DOMImplementation;
 class DOMTokenList;
 class Element;
@@ -169,9 +174,6 @@ class TreeWalker;
 enum class QuirksMode;
 struct EventListenerOptions;
 struct AddEventListenerOptions;
-
-template<typename ValueType>
-class ExceptionOr;
 }
 
 namespace Web::DOMParsing {
@@ -183,12 +185,26 @@ class TextEncoder;
 }
 
 namespace Web::Fetch {
+class BodyMixin;
 class Headers;
 class HeadersIterator;
+class Request;
+class Response;
+}
+
+namespace Web::Fetch::Fetching {
+class PendingResponse;
+class RefCountedFlag;
 }
 
 namespace Web::Fetch::Infrastructure {
 class Body;
+struct BodyWithType;
+class ConnectionTimingInfo;
+class FetchAlgorithms;
+class FetchController;
+class FetchParams;
+class FetchTimingInfo;
 struct Header;
 class HeaderList;
 class Request;
@@ -303,6 +319,7 @@ class MessageChannel;
 class MessageEvent;
 class MessagePort;
 struct NavigationParams;
+class Navigator;
 class Origin;
 class PageTransitionEvent;
 class Path2D;
@@ -316,6 +333,7 @@ class TextMetrics;
 class Timer;
 class Window;
 class WindowEnvironmentSettingsObject;
+class WindowProxy;
 class Worker;
 class WorkerEnvironmentSettingsObject;
 class WorkerGlobalScope;
@@ -358,12 +376,24 @@ namespace Web::Platform {
 class Timer;
 }
 
+namespace Web::ReferrerPolicy {
+enum class ReferrerPolicy;
+}
+
 namespace Web::RequestIdleCallback {
 class IdleDeadline;
 }
 
 namespace Web::ResizeObserver {
 class ResizeObserver;
+}
+
+namespace Web::Selection {
+class Selection;
+}
+
+namespace Web::Streams {
+class ReadableStream;
 }
 
 namespace Web::SVG {
@@ -384,8 +414,12 @@ class SVGRectElement;
 class SVGSVGElement;
 }
 
-namespace Web::Selection {
-class Selection;
+namespace Web::WebIDL {
+class CallbackType;
+class DOMException;
+
+template<typename ValueType>
+class ExceptionOr;
 }
 
 namespace Web::WebSockets {
@@ -455,18 +489,21 @@ class URLSearchParamsIterator;
 }
 
 namespace Web::Bindings {
-class CallbackType;
+class Intrinsics;
 class LocationObject;
 class OptionConstructor;
-class RangePrototype;
-class WindowProxy;
-class Wrappable;
-class Wrapper;
-class XMLHttpRequestPrototype;
 enum class CanPlayTypeResult;
 enum class CanvasFillRule;
 enum class EndingType;
 enum class DOMParserSupportedType;
+enum class ReferrerPolicy;
+enum class RequestDestination;
+enum class RequestMode;
+enum class RequestCredentials;
+enum class RequestCache;
+enum class RequestRedirect;
+enum class RequestDuplex;
+enum class ResponseType;
 enum class ResizeObserverBoxOptions;
 enum class XMLHttpRequestResponseType;
 }
