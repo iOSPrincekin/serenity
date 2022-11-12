@@ -99,12 +99,6 @@ public:
         return width() == other.width() && height() == other.height();
     }
 
-    template<class U>
-    [[nodiscard]] constexpr bool operator!=(Size<U> const& other) const
-    {
-        return !(*this == other);
-    }
-
     constexpr Size<T>& operator-=(Size<T> const& other)
     {
         m_width -= other.m_width;
@@ -164,6 +158,12 @@ public:
 
     [[nodiscard]] String to_string() const;
 
+    template<Integral I>
+    [[nodiscard]] Size<I> to_rounded() const
+    {
+        return Size<I>(round_to<I>(width()), round_to<I>(height()));
+    }
+
 private:
     T m_width { 0 };
     T m_height { 0 };
@@ -177,10 +177,10 @@ using FloatSize = Size<float>;
 namespace AK {
 
 template<typename T>
-struct Formatter<Gfx::Size<T>> : Formatter<StringView> {
+struct Formatter<Gfx::Size<T>> : Formatter<FormatString> {
     ErrorOr<void> format(FormatBuilder& builder, Gfx::Size<T> const& value)
     {
-        return Formatter<StringView>::format(builder, value.to_string());
+        return Formatter<FormatString>::format(builder, "[{}x{}]"sv, value.width(), value.height());
     }
 };
 

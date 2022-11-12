@@ -33,11 +33,6 @@ public:
         return m_model == other.m_model && m_row == other.m_row && m_column == other.m_column && m_internal_data == other.m_internal_data;
     }
 
-    bool operator!=(ModelIndex const& other) const
-    {
-        return !(*this == other);
-    }
-
     Model const* model() const { return m_model; }
 
     Variant data(ModelRole = ModelRole::Display) const;
@@ -69,8 +64,8 @@ struct Formatter<GUI::ModelIndex> : Formatter<FormatString> {
     ErrorOr<void> format(FormatBuilder& builder, GUI::ModelIndex const& value)
     {
         if (value.internal_data())
-            return Formatter<FormatString>::format(builder, "ModelIndex({},{},{})", value.row(), value.column(), value.internal_data());
-        return Formatter<FormatString>::format(builder, "ModelIndex({},{})", value.row(), value.column());
+            return Formatter<FormatString>::format(builder, "ModelIndex({},{},{})"sv, value.row(), value.column(), value.internal_data());
+        return Formatter<FormatString>::format(builder, "ModelIndex({},{})"sv, value.row(), value.column());
     }
 };
 

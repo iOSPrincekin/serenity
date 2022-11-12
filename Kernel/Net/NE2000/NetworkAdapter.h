@@ -7,9 +7,9 @@
 #pragma once
 
 #include <AK/OwnPtr.h>
-#include <Kernel/Arch/x86/IO.h>
 #include <Kernel/Bus/PCI/Access.h>
 #include <Kernel/Bus/PCI/Device.h>
+#include <Kernel/IOWindow.h>
 #include <Kernel/Interrupts/IRQHandler.h>
 #include <Kernel/Net/NetworkAdapter.h>
 #include <Kernel/Random.h>
@@ -20,7 +20,7 @@ class NE2000NetworkAdapter final : public NetworkAdapter
     , public PCI::Device
     , public IRQHandler {
 public:
-    static RefPtr<NE2000NetworkAdapter> try_to_initialize(PCI::DeviceIdentifier const&);
+    static LockRefPtr<NE2000NetworkAdapter> try_to_initialize(PCI::DeviceIdentifier const&);
 
     virtual ~NE2000NetworkAdapter() override;
 
@@ -41,7 +41,7 @@ public:
     virtual StringView purpose() const override { return class_name(); }
 
 private:
-    NE2000NetworkAdapter(PCI::Address, u8, NonnullOwnPtr<KString>);
+    NE2000NetworkAdapter(PCI::Address, u8, NonnullOwnPtr<IOWindow> registers_io_window, NonnullOwnPtr<KString>);
     virtual bool handle_irq(RegisterState const&) override;
     virtual StringView class_name() const override { return "NE2000NetworkAdapter"sv; }
 
@@ -58,7 +58,7 @@ private:
     u8 in8(u16 address);
     u16 in16(u16 address);
 
-    IOAddress m_io_base;
+    NonnullOwnPtr<IOWindow> m_registers_io_window;
     int m_ring_read_ptr;
     u8 m_interrupt_line { 0 };
 

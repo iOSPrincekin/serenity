@@ -225,7 +225,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     time->move_by({ window->width() - time->width(), 0 });
     cube->set_stat_label(time);
 
-    auto app_icon = GUI::Icon::default_icon("app-cube");
+    auto app_icon = GUI::Icon::default_icon("app-cube"sv);
     window->set_icon(app_icon.bitmap_for_size(16));
 
     auto file_menu = TRY(window->try_add_menu("&File"));
@@ -239,6 +239,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     TRY(file_menu->try_add_separator());
     TRY(file_menu->try_add_action(GUI::CommonActions::make_quit_action([&](auto&) { app->quit(); })));
     auto help_menu = TRY(window->try_add_menu("&Help"));
+    TRY(help_menu->try_add_action(GUI::CommonActions::make_command_palette_action(window)));
     TRY(help_menu->try_add_action(GUI::CommonActions::make_about_action("Cube Demo", app_icon, window)));
 
     cube->on_context_menu_request = [&](auto& event) {

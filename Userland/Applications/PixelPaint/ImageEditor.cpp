@@ -3,6 +3,7 @@
  * Copyright (c) 2021, Tobias Christiansen <tobyase@serenityos.org>
  * Copyright (c) 2021-2022, Mustafa Quraish <mustafa@serenityos.org>
  * Copyright (c) 2021, David Isaksson <davidisaksson93@gmail.com>
+ * Copyright (c) 2022, Timothy Slater <tslater2006@gmail.com>
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
@@ -25,34 +26,46 @@
 
 namespace PixelPaint {
 
+constexpr int marching_ant_length = 4;
+
 ImageEditor::ImageEditor(NonnullRefPtr<Image> image)
     : m_image(move(image))
     , m_title("Untitled")
-    , m_selection(*this)
+    , m_gui_event_loop(Core::EventLoop::current())
 {
     set_focus_policy(GUI::FocusPolicy::StrongFocus);
-    m_undo_stack.push(make<ImageUndoCommand>(*m_image));
+    m_undo_stack.push(make<ImageUndoCommand>(*m_image, String()));
     m_image->add_client(*this);
+    m_image->selection().add_client(*this);
     set_original_rect(m_image->rect());
     set_scale_bounds(0.1f, 100.0f);
 
-    m_pixel_grid_threshold = (float)Config::read_i32("PixelPaint", "PixelGrid", "Threshold", 15);
-    m_show_pixel_grid = Config::read_bool("PixelPaint", "PixelGrid", "Show", true);
+    m_pixel_grid_threshold = (float)Config::read_i32("PixelPaint"sv, "PixelGrid"sv, "Threshold"sv, 15);
+    m_show_pixel_grid = Config::read_bool("PixelPaint"sv, "PixelGrid"sv, "Show"sv, true);
 
-    m_show_rulers = Config::read_bool("PixelPaint", "Rulers", "Show", true);
-    m_show_guides = Config::read_bool("PixelPaint", "Guides", "Show", true);
+    m_show_rulers = Config::read_bool("PixelPaint"sv, "Rulers"sv, "Show"sv, true);
+    m_show_guides = Config::read_bool("PixelPaint"sv, "Guides"sv, "Show"sv, true);
+
+    m_marching_ants_timer = Core::Timer::create_repeating(80, [this] {
+        ++m_marching_ants_offset;
+        m_marching_ants_offset %= (marching_ant_length * 2);
+        if (!m_image->selection().is_empty() || m_image->selection().in_interactive_selection())
+            update();
+    });
+    m_marching_ants_timer->start();
 }
 
 ImageEditor::~ImageEditor()
 {
+    m_image->selection().remove_client(*this);
     m_image->remove_client(*this);
 }
 
-void ImageEditor::did_complete_action()
+void ImageEditor::did_complete_action(String action_text)
 {
     if (on_modified_change)
         on_modified_change(true);
-    m_undo_stack.push(make<ImageUndoCommand>(*m_image));
+    m_undo_stack.push(make<ImageUndoCommand>(*m_image, move(action_text)));
 }
 
 bool ImageEditor::is_modified()
@@ -102,7 +115,7 @@ void ImageEditor::set_title(String title)
 void ImageEditor::set_path(String path)
 {
     m_path = move(path);
-    set_title(LexicalPath::basename(m_path));
+    set_title(LexicalPath::title(m_path));
 }
 
 void ImageEditor::paint_event(GUI::PaintEvent& event)
@@ -114,7 +127,7 @@ void ImageEditor::paint_event(GUI::PaintEvent& event)
     painter.add_clip_rect(frame_inner_rect());
 
     {
-        Gfx::DisjointRectSet background_rects;
+        Gfx::DisjointIntRectSet background_rects;
         background_rects.add(frame_inner_rect());
         background_rects.shatter(content_rect());
         for (auto& rect : background_rects.rects())
@@ -158,8 +171,7 @@ void ImageEditor::paint_event(GUI::PaintEvent& event)
         }
     }
 
-    if (!m_selection.is_empty())
-        m_selection.paint(painter);
+    paint_selection(painter);
 
     if (m_show_rulers) {
         auto const ruler_bg_color = palette().color(Gfx::ColorRole::InactiveSelection);
@@ -259,9 +271,11 @@ void ImageEditor::second_paint_event(GUI::PaintEvent& event)
 GUI::MouseEvent ImageEditor::event_with_pan_and_scale_applied(GUI::MouseEvent const& event) const
 {
     auto image_position = frame_to_content_position(event.position());
+    auto tool_adjusted_image_position = m_active_tool->point_position_to_preferred_cell(image_position);
+
     return {
         static_cast<GUI::Event::Type>(event.type()),
-        Gfx::IntPoint(image_position.x(), image_position.y()),
+        tool_adjusted_image_position,
         event.buttons(),
         event.button(),
         event.modifiers(),
@@ -276,9 +290,11 @@ GUI::MouseEvent ImageEditor::event_adjusted_for_layer(GUI::MouseEvent const& eve
 {
     auto image_position = frame_to_content_position(event.position());
     image_position.translate_by(-layer.location().x(), -layer.location().y());
+    auto tool_adjusted_image_position = m_active_tool->point_position_to_preferred_cell(image_position);
+
     return {
         static_cast<GUI::Event::Type>(event.type()),
-        Gfx::IntPoint(image_position.x(), image_position.y()),
+        tool_adjusted_image_position,
         event.buttons(),
         event.button(),
         event.modifiers(),
@@ -289,12 +305,40 @@ GUI::MouseEvent ImageEditor::event_adjusted_for_layer(GUI::MouseEvent const& eve
     };
 }
 
+void ImageEditor::set_editor_color_to_color_at_mouse_position(GUI::MouseEvent const& event, bool sample_all_layers = false)
+{
+    auto position = event.position();
+    Color color;
+    auto layer = active_layer();
+    if (sample_all_layers) {
+        color = image().color_at(position);
+    } else {
+        if (!layer || !layer->rect().contains(position))
+            return;
+        color = layer->currently_edited_bitmap().get_pixel(position);
+    }
+
+    // We picked a transparent pixel, do nothing.
+    if (!color.alpha())
+        return;
+
+    if (event.button() == GUI::MouseButton::Primary)
+        set_primary_color(color);
+    else if (event.button() == GUI::MouseButton::Secondary)
+        set_secondary_color(color);
+}
+
 void ImageEditor::mousedown_event(GUI::MouseEvent& event)
 {
     if (event.button() == GUI::MouseButton::Middle) {
         start_panning(event.position());
         set_override_cursor(Gfx::StandardCursor::Drag);
         return;
+    }
+
+    if (event.alt() && !m_active_tool->is_overriding_alt()) {
+        set_editor_color_to_color_at_mouse_position(event);
+        return; // Pick Color instead of acivating active tool when holding alt.
     }
 
     if (!m_active_tool)
@@ -312,6 +356,14 @@ void ImageEditor::mousedown_event(GUI::MouseEvent& event)
     m_active_tool->on_mousedown(m_active_layer.ptr(), tool_event);
 }
 
+void ImageEditor::doubleclick_event(GUI::MouseEvent& event)
+{
+    auto layer_event = m_active_layer ? event_adjusted_for_layer(event, *m_active_layer) : event;
+    auto image_event = event_with_pan_and_scale_applied(event);
+    Tool::MouseEvent tool_event(Tool::MouseEvent::Action::DoubleClick, layer_event, image_event, event);
+    m_active_tool->on_doubleclick(m_active_layer.ptr(), tool_event);
+}
+
 void ImageEditor::mousemove_event(GUI::MouseEvent& event)
 {
     m_mouse_position = event.position();
@@ -325,13 +377,13 @@ void ImageEditor::mousemove_event(GUI::MouseEvent& event)
         return;
     }
 
+    if (!m_active_tool)
+        return;
+
     auto image_event = event_with_pan_and_scale_applied(event);
     if (on_image_mouse_position_change) {
         on_image_mouse_position_change(image_event.position());
     }
-
-    if (!m_active_tool)
-        return;
 
     auto layer_event = m_active_layer ? event_adjusted_for_layer(event, *m_active_layer) : event;
     Tool::MouseEvent tool_event(Tool::MouseEvent::Action::MouseDown, layer_event, image_event, event);
@@ -363,8 +415,8 @@ void ImageEditor::context_menu_event(GUI::ContextMenuEvent& event)
 
 void ImageEditor::keydown_event(GUI::KeyEvent& event)
 {
-    if (event.key() == Key_Delete && !selection().is_empty() && active_layer()) {
-        active_layer()->erase_selection(selection());
+    if (event.key() == Key_Delete && !m_image->selection().is_empty() && active_layer()) {
+        active_layer()->erase_selection(m_image->selection());
         return;
     }
 
@@ -410,6 +462,30 @@ void ImageEditor::set_active_layer(Layer* layer)
         if (on_active_layer_change)
             on_active_layer_change({});
     }
+}
+
+ErrorOr<void> ImageEditor::add_new_layer_from_selection()
+{
+    auto current_layer_selection = image().selection();
+    if (current_layer_selection.is_empty())
+        return Error::from_string_literal("There is no active selection to create layer from.");
+
+    // save offsets of selection so we know where to place the new layer
+    auto selection_offset = current_layer_selection.bounding_rect().location();
+
+    auto selection_bitmap = active_layer()->try_copy_bitmap(current_layer_selection);
+    if (selection_bitmap.is_null())
+        return Error::from_string_literal("Unable to create bitmap from selection.");
+
+    auto layer_or_error = PixelPaint::Layer::try_create_with_bitmap(image(), selection_bitmap.release_nonnull(), "New Layer"sv);
+    if (layer_or_error.is_error())
+        return Error::from_string_literal("Unable to create layer from selection.");
+
+    auto new_layer = layer_or_error.release_value();
+    new_layer->set_location(selection_offset);
+    image().add_layer(new_layer);
+    layers_did_change();
+    return {};
 }
 
 void ImageEditor::set_active_tool(Tool* tool)
@@ -472,8 +548,16 @@ void ImageEditor::set_pixel_grid_visibility(bool show_pixel_grid)
     update();
 }
 
+void ImageEditor::clear_guides()
+{
+    m_guides.clear();
+    update();
+}
+
 void ImageEditor::layers_did_change()
 {
+    if (on_modified_change)
+        on_modified_change(true);
     update();
 }
 
@@ -551,6 +635,7 @@ void ImageEditor::image_did_change_rect(Gfx::IntRect const& new_image_rect)
 {
     set_original_rect(new_image_rect);
     set_content_rect(new_image_rect);
+    relayout();
 }
 
 void ImageEditor::image_select_layer(Layer* layer)
@@ -597,7 +682,7 @@ void ImageEditor::save_project()
 
 void ImageEditor::save_project_as()
 {
-    auto response = FileSystemAccessClient::Client::the().try_save_file(window(), "untitled", "pp");
+    auto response = FileSystemAccessClient::Client::the().try_save_file(window(), m_title, "pp");
     if (response.is_error())
         return;
     auto file = response.value();
@@ -618,14 +703,14 @@ Result<void, String> ImageEditor::save_project_to_file(Core::File& file) const
     StringBuilder builder;
     auto json = MUST(JsonObjectSerializer<>::try_create(builder));
     m_image->serialize_as_json(json);
-    auto json_guides = MUST(json.add_array("guides"));
+    auto json_guides = MUST(json.add_array("guides"sv));
     for (auto const& guide : m_guides) {
         auto json_guide = MUST(json_guides.add_object());
         MUST(json_guide.add("offset"sv, (double)guide.offset()));
         if (guide.orientation() == Guide::Orientation::Vertical)
-            MUST(json_guide.add("orientation", "vertical"));
+            MUST(json_guide.add("orientation"sv, "vertical"));
         else if (guide.orientation() == Guide::Orientation::Horizontal)
-            MUST(json_guide.add("orientation", "horizontal"));
+            MUST(json_guide.add("orientation"sv, "horizontal"));
         MUST(json_guide.finish());
     }
     MUST(json_guides.finish());
@@ -648,6 +733,102 @@ void ImageEditor::set_show_active_layer_boundary(bool show)
 void ImageEditor::set_loaded_from_image(bool loaded_from_image)
 {
     m_loaded_from_image = loaded_from_image;
+}
+
+void ImageEditor::paint_selection(Gfx::Painter& painter)
+{
+    if (m_image->selection().is_empty())
+        return;
+
+    draw_marching_ants(painter, m_image->selection().mask());
+}
+
+void ImageEditor::draw_marching_ants(Gfx::Painter& painter, Gfx::IntRect const& rect) const
+{
+    // Top line
+    for (int x = rect.left(); x <= rect.right(); ++x)
+        draw_marching_ants_pixel(painter, x, rect.top());
+
+    // Right line
+    for (int y = rect.top() + 1; y <= rect.bottom(); ++y)
+        draw_marching_ants_pixel(painter, rect.right(), y);
+
+    // Bottom line
+    for (int x = rect.right() - 1; x >= rect.left(); --x)
+        draw_marching_ants_pixel(painter, x, rect.bottom());
+
+    // Left line
+    for (int y = rect.bottom() - 1; y > rect.top(); --y)
+        draw_marching_ants_pixel(painter, rect.left(), y);
+}
+
+void ImageEditor::draw_marching_ants(Gfx::Painter& painter, Mask const& mask) const
+{
+    // If the zoom is < 100%, we can skip pixels to save a lot of time drawing the ants
+    int step = max(1, (int)floorf(1.0f / scale()));
+
+    // Only check the visible selection area when drawing for performance
+    auto rect = this->rect();
+    rect = Gfx::enclosing_int_rect(frame_to_content_rect(rect));
+    rect.inflate(step * 2, step * 2); // prevent borders from having visible ants if the selection extends beyond it
+
+    // Scan the image horizontally to find vertical borders
+    for (int y = rect.top(); y <= rect.bottom(); y += step) {
+
+        bool previous_selected = false;
+        for (int x = rect.left(); x <= rect.right(); x += step) {
+            bool this_selected = mask.get(x, y) > 0;
+
+            if (this_selected != previous_selected) {
+                Gfx::IntRect image_pixel { x, y, 1, 1 };
+                auto pixel = content_to_frame_rect(image_pixel).to_type<int>();
+                auto end = max(pixel.top(), pixel.bottom()); // for when the zoom is < 100%
+
+                for (int pixel_y = pixel.top(); pixel_y <= end; pixel_y++) {
+                    draw_marching_ants_pixel(painter, pixel.left(), pixel_y);
+                }
+            }
+
+            previous_selected = this_selected;
+        }
+    }
+
+    // Scan the image vertically to find horizontal borders
+    for (int x = rect.left(); x <= rect.right(); x += step) {
+
+        bool previous_selected = false;
+        for (int y = rect.top(); y <= rect.bottom(); y += step) {
+            bool this_selected = mask.get(x, y) > 0;
+
+            if (this_selected != previous_selected) {
+                Gfx::IntRect image_pixel { x, y, 1, 1 };
+                auto pixel = content_to_frame_rect(image_pixel).to_type<int>();
+                auto end = max(pixel.left(), pixel.right()); // for when the zoom is < 100%
+
+                for (int pixel_x = pixel.left(); pixel_x <= end; pixel_x++) {
+                    draw_marching_ants_pixel(painter, pixel_x, pixel.top());
+                }
+            }
+
+            previous_selected = this_selected;
+        }
+    }
+}
+
+void ImageEditor::draw_marching_ants_pixel(Gfx::Painter& painter, int x, int y) const
+{
+    int pattern_index = x + y + m_marching_ants_offset;
+
+    if (pattern_index % (marching_ant_length * 2) < marching_ant_length) {
+        painter.set_pixel(x, y, Color::Black);
+    } else {
+        painter.set_pixel(x, y, Color::White);
+    }
+}
+
+void ImageEditor::selection_did_change()
+{
+    update();
 }
 
 }

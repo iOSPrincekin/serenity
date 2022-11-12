@@ -7,6 +7,7 @@
 #pragma once
 
 #include <AK/Concepts.h>
+#include <AK/HashMap.h>
 #include <AK/StdLibExtras.h>
 #include <LibCore/SharedCircularQueue.h>
 #include <LibIPC/Forward.h>
@@ -44,6 +45,7 @@ public:
     Encoder& operator<<(StringView);
     Encoder& operator<<(String const&);
     Encoder& operator<<(ByteBuffer const&);
+    Encoder& operator<<(JsonValue const&);
     Encoder& operator<<(URL const&);
     Encoder& operator<<(Dictionary const&);
     Encoder& operator<<(File const&);

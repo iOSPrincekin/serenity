@@ -27,6 +27,7 @@
 #include <LibWeb/FontCache.h>
 #include <LibWeb/HTML/HTMLHtmlElement.h>
 #include <LibWeb/Loader/ResourceLoader.h>
+#include <LibWeb/Platform/FontPlugin.h>
 #include <stdio.h>
 
 namespace Web::CSS {
@@ -108,24 +109,24 @@ private:
     HashMap<float, NonnullRefPtr<Gfx::ScaledFont>> mutable m_cached_fonts;
 };
 
-static StyleSheet& default_stylesheet()
+static CSSStyleSheet& default_stylesheet()
 {
-    static StyleSheet* sheet;
-    if (!sheet) {
+    static JS::Handle<CSSStyleSheet> sheet;
+    if (!sheet.cell()) {
         extern char const default_stylesheet_source[];
         String css = default_stylesheet_source;
-        sheet = parse_css_stylesheet(CSS::Parser::ParsingContext(), css).leak_ref();
+        sheet = JS::make_handle(parse_css_stylesheet(CSS::Parser::ParsingContext(), css));
     }
     return *sheet;
 }
 
-static StyleSheet& quirks_mode_stylesheet()
+static CSSStyleSheet& quirks_mode_stylesheet()
 {
-    static StyleSheet* sheet;
-    if (!sheet) {
+    static JS::Handle<CSSStyleSheet> sheet;
+    if (!sheet.cell()) {
         extern char const quirks_mode_stylesheet_source[];
         String css = quirks_mode_stylesheet_source;
-        sheet = parse_css_stylesheet(CSS::Parser::ParsingContext(), css).leak_ref();
+        sheet = JS::make_handle(parse_css_stylesheet(CSS::Parser::ParsingContext(), css));
     }
     return *sheet;
 }
@@ -140,7 +141,7 @@ void StyleComputer::for_each_stylesheet(CascadeOrigin cascade_origin, Callback c
     }
     if (cascade_origin == CascadeOrigin::Author) {
         for (auto const& sheet : document().style_sheets().sheets()) {
-            callback(sheet);
+            callback(*sheet);
         }
     }
 }
@@ -180,11 +181,11 @@ Vector<MatchingRule> StyleComputer::collect_matching_rules(DOM::Element const& e
     size_t style_sheet_index = 0;
     for_each_stylesheet(cascade_origin, [&](auto& sheet) {
         size_t rule_index = 0;
-        static_cast<CSSStyleSheet const&>(sheet).for_each_effective_style_rule([&](auto const& rule) {
+        sheet.for_each_effective_style_rule([&](auto const& rule) {
             size_t selector_index = 0;
             for (auto& selector : rule.selectors()) {
                 if (SelectorEngine::matches(selector, element, pseudo_element)) {
-                    matching_rules.append({ rule, style_sheet_index, rule_index, selector_index, selector.specificity() });
+                    matching_rules.append({ &rule, style_sheet_index, rule_index, selector_index, selector.specificity() });
                     break;
                 }
                 ++selector_index;
@@ -517,6 +518,54 @@ static void set_property_expanding_shorthands(StyleProperties& style, CSS::Prope
         return;
     }
 
+    if (property_id == CSS::PropertyID::GridColumn) {
+        if (value.is_grid_track_placement_shorthand()) {
+            auto const& shorthand = value.as_grid_track_placement_shorthand();
+            style.set_property(CSS::PropertyID::GridColumnStart, shorthand.start());
+            style.set_property(CSS::PropertyID::GridColumnEnd, shorthand.end());
+            return;
+        }
+
+        style.set_property(CSS::PropertyID::GridColumnStart, value);
+        style.set_property(CSS::PropertyID::GridColumnEnd, value);
+        return;
+    }
+
+    if (property_id == CSS::PropertyID::GridRow) {
+        if (value.is_grid_track_placement_shorthand()) {
+            auto const& shorthand = value.as_grid_track_placement_shorthand();
+            style.set_property(CSS::PropertyID::GridRowStart, shorthand.start());
+            style.set_property(CSS::PropertyID::GridRowEnd, shorthand.end());
+            return;
+        }
+
+        style.set_property(CSS::PropertyID::GridRowStart, value);
+        style.set_property(CSS::PropertyID::GridRowEnd, value);
+        return;
+    }
+
+    if (property_id == CSS::PropertyID::Gap || property_id == CSS::PropertyID::GridGap) {
+        if (value.is_value_list()) {
+            auto const& values_list = value.as_value_list();
+            style.set_property(CSS::PropertyID::RowGap, values_list.values()[0]);
+            style.set_property(CSS::PropertyID::ColumnGap, values_list.values()[1]);
+            return;
+        }
+        style.set_property(CSS::PropertyID::RowGap, value);
+        style.set_property(CSS::PropertyID::ColumnGap, value);
+        return;
+    }
+
+    if (property_id == CSS::PropertyID::RowGap || property_id == CSS::PropertyID::GridRowGap) {
+        style.set_property(CSS::PropertyID::RowGap, value);
+        return;
+    }
+
+    if (property_id == CSS::PropertyID::ColumnGap || property_id == CSS::PropertyID::GridColumnGap) {
+        style.set_property(CSS::PropertyID::ColumnGap, value);
+        return;
+    }
+
     style.set_property(property_id, value);
 }
 
@@ -529,16 +578,12 @@ static RefPtr<StyleValue> get_custom_property(DOM::Element const& element, FlySt
     return nullptr;
 }
 
-bool StyleComputer::expand_unresolved_values(DOM::Element& element, StringView property_name, HashMap<FlyString, NonnullRefPtr<PropertyDependencyNode>>& dependencies, Vector<Parser::ComponentValue> const& source, Vector<Parser::ComponentValue>& dest, size_t source_start_index) const
+bool StyleComputer::expand_variables(DOM::Element& element, StringView property_name, HashMap<FlyString, NonnullRefPtr<PropertyDependencyNode>>& dependencies, Parser::TokenStream<Parser::ComponentValue>& source, Vector<Parser::ComponentValue>& dest) const
 {
-    // FIXME: Do this better!
-    // We build a copy of the tree of ComponentValues, with all var()s and attr()s replaced with their contents.
-    // This is a very naive solution, and we could do better if the CSS Parser could accept tokens one at a time.
-
     // Arbitrary large value chosen to avoid the billion-laughs attack.
     // https://www.w3.org/TR/css-variables-1/#long-variables
     const size_t MAX_VALUE_COUNT = 16384;
-    if (source.size() + dest.size() > MAX_VALUE_COUNT) {
+    if (source.remaining_token_count() + dest.size() > MAX_VALUE_COUNT) {
         dbgln("Stopped expanding CSS variables: maximum length reached.");
         return false;
     }
@@ -551,52 +596,85 @@ bool StyleComputer::expand_unresolved_values(DOM::Element& element, StringView p
         return new_node;
     };
 
-    for (size_t source_index = source_start_index; source_index < source.size(); source_index++) {
-        auto const& value = source[source_index];
+    while (source.has_next_token()) {
+        auto const& value = source.next_token();
+        if (!value.is_function()) {
+            dest.empend(value);
+            continue;
+        }
+        if (!value.function().name().equals_ignoring_case("var"sv)) {
+            auto const& source_function = value.function();
+            Vector<Parser::ComponentValue> function_values;
+            Parser::TokenStream source_function_contents { source_function.values() };
+            if (!expand_variables(element, property_name, dependencies, source_function_contents, function_values))
+                return false;
+            NonnullRefPtr<Parser::Function> function = Parser::Function::create(source_function.name(), move(function_values));
+            dest.empend(function);
+            continue;
+        }
+
+        Parser::TokenStream var_contents { value.function().values() };
+        var_contents.skip_whitespace();
+        if (!var_contents.has_next_token())
+            return false;
+
+        auto const& custom_property_name_token = var_contents.next_token();
+        if (!custom_property_name_token.is(Parser::Token::Type::Ident))
+            return false;
+        auto custom_property_name = custom_property_name_token.token().ident();
+        if (!custom_property_name.starts_with("--"sv))
+            return false;
+
+        // Detect dependency cycles. https://www.w3.org/TR/css-variables-1/#cycles
+        // We do not do this by the spec, since we are not keeping a graph of var dependencies around,
+        // but rebuilding it every time.
+        if (custom_property_name == property_name)
+            return false;
+        auto parent = get_dependency_node(property_name);
+        auto child = get_dependency_node(custom_property_name);
+        parent->add_child(child);
+        if (parent->has_cycles())
+            return false;
+
+        if (auto custom_property_value = get_custom_property(element, custom_property_name)) {
+            VERIFY(custom_property_value->is_unresolved());
+            Parser::TokenStream custom_property_tokens { custom_property_value->as_unresolved().values() };
+            if (!expand_variables(element, custom_property_name, dependencies, custom_property_tokens, dest))
+                return false;
+            continue;
+        }
+
+        // Use the provided fallback value, if any.
+        var_contents.skip_whitespace();
+        if (var_contents.has_next_token()) {
+            auto const& comma_token = var_contents.next_token();
+            if (!comma_token.is(Parser::Token::Type::Comma))
+                return false;
+            var_contents.skip_whitespace();
+            if (!expand_variables(element, property_name, dependencies, var_contents, dest))
+                return false;
+        }
+    }
+    return true;
+}
+
+bool StyleComputer::expand_unresolved_values(DOM::Element& element, StringView property_name, Parser::TokenStream<Parser::ComponentValue>& source, Vector<Parser::ComponentValue>& dest) const
+{
+    // FIXME: Do this better!
+    // We build a copy of the tree of ComponentValues, with all var()s and attr()s replaced with their contents.
+    // This is a very naive solution, and we could do better if the CSS Parser could accept tokens one at a time.
+
+    while (source.has_next_token()) {
+        auto const& value = source.next_token();
         if (value.is_function()) {
-            if (value.function().name().equals_ignoring_case("var"sv)) {
-                auto const& var_contents = value.function().values();
-                if (var_contents.is_empty())
-                    return false;
-
-                auto const& custom_property_name_token = var_contents.first();
-                if (!custom_property_name_token.is(Parser::Token::Type::Ident))
-                    return false;
-                auto custom_property_name = custom_property_name_token.token().ident();
-                if (!custom_property_name.starts_with("--"))
-                    return false;
-
-                // Detect dependency cycles. https://www.w3.org/TR/css-variables-1/#cycles
-                // We do not do this by the spec, since we are not keeping a graph of var dependencies around,
-                // but rebuilding it every time.
-                if (custom_property_name == property_name)
-                    return false;
-                auto parent = get_dependency_node(property_name);
-                auto child = get_dependency_node(custom_property_name);
-                parent->add_child(child);
-                if (parent->has_cycles())
-                    return false;
-
-                if (auto custom_property_value = get_custom_property(element, custom_property_name)) {
-                    VERIFY(custom_property_value->is_unresolved());
-                    if (!expand_unresolved_values(element, custom_property_name, dependencies, custom_property_value->as_unresolved().values(), dest, 0))
-                        return false;
-                    continue;
-                }
-
-                // Use the provided fallback value, if any.
-                if (var_contents.size() > 2 && var_contents[1].is(Parser::Token::Type::Comma)) {
-                    if (!expand_unresolved_values(element, property_name, dependencies, var_contents, dest, 2))
-                        return false;
-                    continue;
-                }
-            } else if (value.function().name().equals_ignoring_case("attr"sv)) {
+            if (value.function().name().equals_ignoring_case("attr"sv)) {
                 // https://drafts.csswg.org/css-values-5/#attr-substitution
-                auto const& attr_contents = value.function().values();
-                if (attr_contents.is_empty())
+                Parser::TokenStream attr_contents { value.function().values() };
+                attr_contents.skip_whitespace();
+                if (!attr_contents.has_next_token())
                     return false;
 
-                auto const& attr_name_token = attr_contents.first();
+                auto const& attr_name_token = attr_contents.next_token();
                 if (!attr_name_token.is(Parser::Token::Type::Ident))
                     return false;
                 auto attr_name = attr_name_token.token().ident();
@@ -611,8 +689,13 @@ bool StyleComputer::expand_unresolved_values(DOM::Element& element, StringView p
 
                 // 2. Otherwise, if the attr() function has a fallback value as its last argument, replace the attr() function by the fallback value.
                 //    If there are any var() or attr() references in the fallback, substitute them as well.
-                if (attr_contents.size() > 2 && attr_contents[1].is(Parser::Token::Type::Comma)) {
-                    if (!expand_unresolved_values(element, property_name, dependencies, attr_contents, dest, 2))
+                attr_contents.skip_whitespace();
+                if (attr_contents.has_next_token()) {
+                    auto const& comma_token = attr_contents.next_token();
+                    if (!comma_token.is(Parser::Token::Type::Comma))
+                        return false;
+                    attr_contents.skip_whitespace();
+                    if (!expand_unresolved_values(element, property_name, attr_contents, dest))
                         return false;
                     continue;
                 }
@@ -621,9 +704,31 @@ bool StyleComputer::expand_unresolved_values(DOM::Element& element, StringView p
                 return false;
             }
 
+            if (value.function().name().equals_ignoring_case("calc"sv)) {
+                auto const& calc_function = value.function();
+                if (auto calc_value = CSS::Parser::Parser::parse_calculated_value({}, Parser::ParsingContext { document() }, calc_function.values())) {
+                    switch (calc_value->resolved_type()) {
+                    case CalculatedStyleValue::ResolvedType::Integer: {
+                        auto resolved_value = calc_value->resolve_integer();
+                        dest.empend(Parser::Token::create_number(resolved_value.value()));
+                        continue;
+                    }
+                    case CalculatedStyleValue::ResolvedType::Percentage: {
+                        auto resolved_value = calc_value->resolve_percentage();
+                        dest.empend(Parser::Token::create_percentage(resolved_value.value().value()));
+                        continue;
+                    }
+                    default:
+                        dbgln("FIXME: Unimplement calc() expansion in StyleComputer");
+                        break;
+                    }
+                }
+            }
+
             auto const& source_function = value.function();
             Vector<Parser::ComponentValue> function_values;
-            if (!expand_unresolved_values(element, property_name, dependencies, source_function.values(), function_values, 0))
+            Parser::TokenStream source_function_contents { source_function.values() };
+            if (!expand_unresolved_values(element, property_name, source_function_contents, function_values))
                 return false;
             NonnullRefPtr<Parser::Function> function = Parser::Function::create(source_function.name(), move(function_values));
             dest.empend(function);
@@ -631,8 +736,9 @@ bool StyleComputer::expand_unresolved_values(DOM::Element& element, StringView p
         }
         if (value.is_block()) {
             auto const& source_block = value.block();
+            Parser::TokenStream source_block_values { source_block.values() };
             Vector<Parser::ComponentValue> block_values;
-            if (!expand_unresolved_values(element, property_name, dependencies, source_block.values(), block_values, 0))
+            if (!expand_unresolved_values(element, property_name, source_block_values, block_values))
                 return false;
             NonnullRefPtr<Parser::Block> block = Parser::Block::create(source_block.token(), move(block_values));
             dest.empend(move(block));
@@ -650,9 +756,16 @@ RefPtr<StyleValue> StyleComputer::resolve_unresolved_style_value(DOM::Element& e
     // to produce a different StyleValue from it.
     VERIFY(unresolved.contains_var_or_attr());
 
-    Vector<Parser::ComponentValue> expanded_values;
+    Parser::TokenStream unresolved_values_without_variables_expanded { unresolved.values() };
+    Vector<Parser::ComponentValue> values_with_variables_expanded;
+
     HashMap<FlyString, NonnullRefPtr<PropertyDependencyNode>> dependencies;
-    if (!expand_unresolved_values(element, string_from_property_id(property_id), dependencies, unresolved.values(), expanded_values, 0))
+    if (!expand_variables(element, string_from_property_id(property_id), dependencies, unresolved_values_without_variables_expanded, values_with_variables_expanded))
+        return {};
+
+    Parser::TokenStream unresolved_values_with_variables_expanded { values_with_variables_expanded };
+    Vector<Parser::ComponentValue> expanded_values;
+    if (!expand_unresolved_values(element, string_from_property_id(property_id), unresolved_values_with_variables_expanded, expanded_values))
         return {};
 
     if (auto parsed_value = Parser::Parser::parse_css_value({}, Parser::ParsingContext { document() }, property_id, expanded_values))
@@ -757,21 +870,21 @@ void StyleComputer::compute_cascaded_values(StyleProperties& style, DOM::Element
     // FIXME: Transition declarations [css-transitions-1]
 }
 
-static DOM::Element const* get_parent_element(DOM::Element const* element, Optional<CSS::Selector::PseudoElement> pseudo_element)
+static DOM::Element const* element_to_inherit_style_from(DOM::Element const* element, Optional<CSS::Selector::PseudoElement> pseudo_element)
 {
     // Pseudo-elements treat their originating element as their parent.
     DOM::Element const* parent_element = nullptr;
     if (pseudo_element.has_value()) {
         parent_element = element;
     } else if (element) {
-        parent_element = element->parent_element();
+        parent_element = element->parent_or_shadow_host_element();
     }
     return parent_element;
 }
 
 static NonnullRefPtr<StyleValue> get_inherit_value(CSS::PropertyID property_id, DOM::Element const* element, Optional<CSS::Selector::PseudoElement> pseudo_element)
 {
-    auto* parent_element = get_parent_element(element, pseudo_element);
+    auto* parent_element = element_to_inherit_style_from(element, pseudo_element);
 
     if (!parent_element || !parent_element->computed_css_values())
         return property_initial_value(property_id);
@@ -828,7 +941,7 @@ void StyleComputer::compute_defaulted_values(StyleProperties& style, DOM::Elemen
 
 float StyleComputer::root_element_font_size() const
 {
-    constexpr float default_root_element_font_size = 10;
+    constexpr float default_root_element_font_size = 16;
 
     auto const* root_element = m_document.first_child_of_type<HTML::HTMLHtmlElement>();
     if (!root_element)
@@ -852,7 +965,7 @@ void StyleComputer::compute_font(StyleProperties& style, DOM::Element const* ele
     compute_defaulted_property_value(style, element, CSS::PropertyID::FontStyle, pseudo_element);
     compute_defaulted_property_value(style, element, CSS::PropertyID::FontWeight, pseudo_element);
 
-    auto* parent_element = get_parent_element(element, pseudo_element);
+    auto* parent_element = element_to_inherit_style_from(element, pseudo_element);
 
     auto font_size = style.property(CSS::PropertyID::FontSize);
     auto font_style = style.property(CSS::PropertyID::FontStyle);
@@ -894,7 +1007,7 @@ void StyleComputer::compute_font(StyleProperties& style, DOM::Element const* ele
 
     bool bold = weight > Gfx::FontWeight::Regular;
 
-    float font_size_in_px = 10;
+    float font_size_in_px = 16;
 
     if (font_size->is_identifier()) {
         switch (static_cast<IdentifierStyleValue const&>(*font_size).id()) {
@@ -903,7 +1016,7 @@ void StyleComputer::compute_font(StyleProperties& style, DOM::Element const* ele
         case CSS::ValueID::Small:
         case CSS::ValueID::Medium:
             // FIXME: Should be based on "user's default font size"
-            font_size_in_px = 10;
+            font_size_in_px = 16;
             break;
         case CSS::ValueID::Large:
         case CSS::ValueID::XLarge:
@@ -926,7 +1039,7 @@ void StyleComputer::compute_font(StyleProperties& style, DOM::Element const* ele
         if (parent_element && parent_element->computed_css_values())
             font_metrics = parent_element->computed_css_values()->computed_font().pixel_metrics();
         else
-            font_metrics = Gfx::FontDatabase::default_font().pixel_metrics();
+            font_metrics = Platform::FontPlugin::the().default_font().pixel_metrics();
 
         auto parent_font_size = [&]() -> float {
             if (!parent_element || !parent_element->computed_css_values())
@@ -962,15 +1075,15 @@ void StyleComputer::compute_font(StyleProperties& style, DOM::Element const* ele
         }
     }
 
-    int slope = Gfx::name_to_slope("Normal");
+    int slope = Gfx::name_to_slope("Normal"sv);
     // FIXME: Implement oblique <angle>
     if (font_style->is_identifier()) {
         switch (static_cast<IdentifierStyleValue const&>(*font_style).id()) {
         case CSS::ValueID::Italic:
-            slope = Gfx::name_to_slope("Italic");
+            slope = Gfx::name_to_slope("Italic"sv);
             break;
         case CSS::ValueID::Oblique:
-            slope = Gfx::name_to_slope("Oblique");
+            slope = Gfx::name_to_slope("Oblique"sv);
             break;
         case CSS::ValueID::Normal:
         default:
@@ -1003,28 +1116,39 @@ void StyleComputer::compute_font(StyleProperties& style, DOM::Element const* ele
         return {};
     };
 
-    // FIXME: Replace hard-coded font names with a relevant call to FontDatabase.
-    // Currently, we cannot request the default font's name, or request it at a specific size and weight.
-    // So, hard-coded font names it is.
     auto find_generic_font = [&](ValueID font_id) -> RefPtr<Gfx::Font> {
+        Platform::GenericFont generic_font {};
         switch (font_id) {
         case ValueID::Monospace:
         case ValueID::UiMonospace:
+            generic_font = Platform::GenericFont::Monospace;
             monospace = true;
-            return find_font("Csilla");
+            break;
         case ValueID::Serif:
-            return find_font("Roman");
+            generic_font = Platform::GenericFont::Serif;
+            break;
         case ValueID::Fantasy:
-            return find_font("Comic Book");
+            generic_font = Platform::GenericFont::Fantasy;
+            break;
         case ValueID::SansSerif:
+            generic_font = Platform::GenericFont::SansSerif;
+            break;
         case ValueID::Cursive:
+            generic_font = Platform::GenericFont::Cursive;
+            break;
         case ValueID::UiSerif:
+            generic_font = Platform::GenericFont::UiSerif;
+            break;
         case ValueID::UiSansSerif:
+            generic_font = Platform::GenericFont::UiSansSerif;
+            break;
         case ValueID::UiRounded:
-            return find_font("Katica");
+            generic_font = Platform::GenericFont::UiRounded;
+            break;
         default:
             return {};
         }
+        return find_font(Platform::FontPlugin::the().generic_font_name(generic_font));
     };
 
     RefPtr<Gfx::Font> found_font;
@@ -1132,8 +1256,15 @@ void StyleComputer::transform_box_type_if_needed(StyleProperties& style, DOM::El
     case BoxTypeTransformation::None:
         break;
     case BoxTypeTransformation::Blockify:
-        if (!display.is_block_outside())
-            style.set_property(CSS::PropertyID::Display, IdentifierStyleValue::create(CSS::ValueID::Block));
+        if (!display.is_block_outside()) {
+            // FIXME: We only want to change the outer display type here, but we don't have a nice API
+            //        to do that specifically. For now, we simply check for "inline-flex" and convert
+            //        that to "flex".
+            if (display.is_flex_inside())
+                style.set_property(CSS::PropertyID::Display, IdentifierStyleValue::create(CSS::ValueID::Flex));
+            else
+                style.set_property(CSS::PropertyID::Display, IdentifierStyleValue::create(CSS::ValueID::Block));
+        }
         break;
     case BoxTypeTransformation::Inlinify:
         if (!display.is_inline_outside())
@@ -1150,6 +1281,7 @@ NonnullRefPtr<StyleProperties> StyleComputer::create_document_style() const
     absolutize_values(style, nullptr, {});
     style->set_property(CSS::PropertyID::Width, CSS::LengthStyleValue::create(CSS::Length::make_px(viewport_rect().width())));
     style->set_property(CSS::PropertyID::Height, CSS::LengthStyleValue::create(CSS::Length::make_px(viewport_rect().height())));
+    style->set_property(CSS::PropertyID::Display, CSS::IdentifierStyleValue::create(CSS::ValueID::Block));
     return style;
 }
 
@@ -1228,10 +1360,10 @@ void StyleComputer::build_rule_cache()
     size_t style_sheet_index = 0;
     for_each_stylesheet(CascadeOrigin::Author, [&](auto& sheet) {
         size_t rule_index = 0;
-        static_cast<CSSStyleSheet const&>(sheet).for_each_effective_style_rule([&](auto const& rule) {
+        sheet.for_each_effective_style_rule([&](auto const& rule) {
             size_t selector_index = 0;
             for (CSS::Selector const& selector : rule.selectors()) {
-                MatchingRule matching_rule { rule, style_sheet_index, rule_index, selector_index, selector.specificity() };
+                MatchingRule matching_rule { &rule, style_sheet_index, rule_index, selector_index, selector.specificity() };
 
                 bool added_to_bucket = false;
                 for (auto const& simple_selector : selector.compound_selectors().last().simple_selectors) {
@@ -1299,7 +1431,7 @@ Gfx::IntRect StyleComputer::viewport_rect() const
 
 void StyleComputer::did_load_font([[maybe_unused]] FlyString const& family_name)
 {
-    document().invalidate_style();
+    document().invalidate_layout();
 }
 
 void StyleComputer::load_fonts_from_sheet(CSSStyleSheet const& sheet)
@@ -1313,8 +1445,31 @@ void StyleComputer::load_fonts_from_sheet(CSSStyleSheet const& sheet)
         if (m_loaded_fonts.contains(font_face.font_family()))
             continue;
 
+        // NOTE: This is rather ad-hoc, we just look for the first valid
+        //       source URL that's either a WOFF or TTF file and try loading that.
+        // FIXME: Find out exactly which resources we need to load and how.
+        Optional<AK::URL> candidate_url;
+        for (auto& source : font_face.sources()) {
+            if (!source.url.is_valid())
+                continue;
+
+            if (source.url.scheme() != "data") {
+                auto path = source.url.path();
+                if (!path.ends_with(".woff"sv, AK::CaseSensitivity::CaseInsensitive)
+                    && !path.ends_with(".ttf"sv, AK::CaseSensitivity::CaseInsensitive)) {
+                    continue;
+                }
+            }
+
+            candidate_url = source.url;
+            break;
+        }
+
+        if (!candidate_url.has_value())
+            continue;
+
         LoadRequest request;
-        auto url = m_document.parse_url(font_face.sources().first().url.to_string());
+        auto url = m_document.parse_url(candidate_url.value().to_string());
         auto loader = make<FontLoader>(const_cast<StyleComputer&>(*this), font_face.font_family(), move(url));
         const_cast<StyleComputer&>(*this).m_loaded_fonts.set(font_face.font_family(), move(loader));
     }

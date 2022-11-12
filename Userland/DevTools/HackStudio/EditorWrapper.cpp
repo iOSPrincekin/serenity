@@ -10,6 +10,7 @@
 #include "HackStudio.h"
 #include <LibGUI/Application.h>
 #include <LibGUI/BoxLayout.h>
+#include <LibGUI/FilePicker.h>
 #include <LibGUI/Label.h>
 #include <LibGfx/Font/Font.h>
 #include <LibGfx/Font/FontDatabase.h>
@@ -40,6 +41,7 @@ EditorWrapper::EditorWrapper()
 
     m_editor->on_modified_change = [this](bool) {
         update_title();
+        update_editor_window_title();
     };
 }
 
@@ -59,7 +61,7 @@ void EditorWrapper::set_mode_non_displayable()
     auto palette = editor().palette();
     palette.set_color(Gfx::ColorRole::BaseText, Color::from_rgb(0xffffff));
     editor().set_palette(palette);
-    editor().document().set_text("The contents of this file could not be displayed. Is it a binary file?");
+    editor().document().set_text("The contents of this file could not be displayed. Is it a binary file?"sv);
 }
 
 void EditorWrapper::set_filename(String const& filename)
@@ -71,6 +73,13 @@ void EditorWrapper::set_filename(String const& filename)
 
 void EditorWrapper::save()
 {
+    if (filename().is_empty()) {
+        auto file_picker_action = GUI::CommonActions::make_save_as_action([&](auto&) {
+            Optional<String> save_path = GUI::FilePicker::get_save_filepath(window(), "file"sv, "txt"sv, project_root().value());
+            set_filename(save_path.value());
+        });
+        file_picker_action->activate();
+    }
     editor().write_to_file(filename());
     update_diff();
     editor().update();
@@ -108,7 +117,7 @@ void EditorWrapper::update_title()
         title.append(m_filename);
 
     if (editor().document().is_modified())
-        title.append(" (*)");
+        title.append(" (*)"sv);
     m_filename_title = title.to_string();
 }
 

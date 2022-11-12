@@ -7,15 +7,15 @@ on:
 jobs:
   build:
     name: Static Analysis
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     if: always() && github.repository == 'SerenityOS/serenity' && github.ref == 'refs/heads/master'
     env:
-      # Latest scanner version is tracked on: https://sonarcloud.io/documentation/analysis/scan/sonarscanner/
-      SONAR_SCANNER_VERSION: 4.6.2.2472
+      # Latest scanner version is tracked on: https://docs.sonarcloud.io/advanced-setup/ci-based-analysis/sonarscanner-cli/
+      SONAR_SCANNER_VERSION: 4.7.0.2747
       SONAR_SERVER_URL: "https://sonarcloud.io"
       SONAR_ANALYSIS_ARCH: i686
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
 
@@ -54,18 +54,17 @@ jobs:
       # TODO: Is there someway to share these steps with the cmake.yml?
 
       - name: "Install Ubuntu dependencies"
-        # These packages are already part of the ubuntu-20.04 image:
+        # These packages are already part of the ubuntu-22.04 image:
         # cmake libgmp-dev npm shellcheck
         # Packages below aren't.
         run: |
-          sudo add-apt-repository ppa:ubuntu-toolchain-r/test
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          sudo add-apt-repository 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal-14 main'
+          sudo add-apt-repository 'deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-14 main'
           sudo apt-get update
-          sudo apt-get install -y clang-format-14 gcc-11 g++-11 libstdc++-11-dev libmpfr-dev libmpc-dev ninja-build unzip
+          sudo apt-get install -y clang-format-14 gcc-12 g++-12 libstdc++-12-dev libmpfr-dev libmpc-dev ninja-build unzip
 
       - name: Check versions
-        run: set +e; g++ --version; g++-11 --version; ninja --version;
+        run: set +e; g++ --version; g++-12 --version; ninja --version;
 
       - name: Prepare useful stamps
         id: stamps
@@ -76,8 +75,8 @@ jobs:
           # *and* as actual output variable, in this order.
           message("  set-output name=time::${current_date}")
           message("::set-output name=time::${current_date}")
-          message("  set-output name=libc_headers::${{ hashFiles('Userland/Libraries/LibC/**/*.h', 'Userland/Libraries/LibPthread/**/*.h', 'Toolchain/Patches/*.patch', 'Toolchain/BuildIt.sh') }}")
-          message("::set-output name=libc_headers::${{ hashFiles('Userland/Libraries/LibC/**/*.h', 'Userland/Libraries/LibPthread/**/*.h', 'Toolchain/Patches/*.patch', 'Toolchain/BuildIt.sh') }}")
+          message("  set-output name=libc_headers::${{ hashFiles('Userland/Libraries/LibC/**/*.h', 'Userland/Libraries/LibPthread/**/*.h', 'Toolchain/Patches/*.patch', 'Toolchain/Patches/gcc/*.patch', 'Toolchain/BuildIt.sh') }}")
+          message("::set-output name=libc_headers::${{ hashFiles('Userland/Libraries/LibC/**/*.h', 'Userland/Libraries/LibPthread/**/*.h', 'Toolchain/Patches/*.patch', 'Toolchain/Patches/gcc/*.patch', 'Toolchain/BuildIt.sh') }}")
 
       - name: Toolchain cache
         # TODO: Change the version to the released version when https://github.com/actions/cache/pull/489 (or 571) is merged.
@@ -107,8 +106,8 @@ jobs:
           cmake -S Meta/CMake/Superbuild -B Build/superbuild -GNinja \
             -DSERENITY_ARCH=${{ env.SONAR_ANALYSIS_ARCH }} \
             -DSERENITY_TOOLCHAIN=GNU \
-            -DCMAKE_C_COMPILER=gcc-11 \
-            -DCMAKE_CXX_COMPILER=g++-11 \
+            -DCMAKE_C_COMPILER=gcc-12 \
+            -DCMAKE_CXX_COMPILER=g++-12 \
             -DENABLE_PCI_IDS_DOWNLOAD=OFF \
             -DENABLE_USB_IDS_DOWNLOAD=OFF
 

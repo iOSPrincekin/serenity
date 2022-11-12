@@ -38,6 +38,19 @@ NonnullRefPtr<Statusbar::Segment> Statusbar::create_segment()
     return widget;
 }
 
+void Statusbar::child_event(Core::ChildEvent& event)
+{
+    auto& event_to_forward = event;
+    // To ensure that the ResizeCorner is always the last widget, and thus stays in the corner,
+    // we replace ChildAdded events that do not request specific placement with events that request placement before the corner
+    if (event.type() == Event::ChildAdded && is<Widget>(*event.child()) && !event.insertion_before_child()) {
+        Core::ChildEvent new_event(Event::ChildAdded, *event.child(), m_corner.ptr());
+        event_to_forward = new_event;
+    }
+
+    return Widget::child_event(event_to_forward);
+}
+
 void Statusbar::set_segment_count(size_t count)
 {
     if (count <= 1)
@@ -62,9 +75,10 @@ void Statusbar::update_segment(size_t index)
             segment.set_fixed_width(width);
         }
     } else if (segment.mode() == Segment::Mode::Fixed) {
-        if (segment.max_width() != -1)
-            segment.set_restored_width(segment.max_width());
-        segment.set_fixed_width(segment.max_width());
+        if (segment.max_width().is_int()) {
+            segment.set_restored_width(segment.max_width().as_int());
+            segment.set_fixed_width(segment.max_width());
+        }
     }
 
     if (segment.override_text().is_null()) {
@@ -84,7 +98,7 @@ void Statusbar::update_segment(size_t index)
         segment.set_text(segment.override_text());
         segment.set_frame_shape(Gfx::FrameShape::NoFrame);
         if (segment.mode() != Segment::Mode::Proportional)
-            segment.set_fixed_width(-1);
+            segment.set_fixed_width(SpecialDimension::Grow);
     }
 }
 

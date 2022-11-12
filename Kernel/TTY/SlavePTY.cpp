@@ -6,7 +6,6 @@
 
 #include <AK/Singleton.h>
 #include <Kernel/Debug.h>
-#include <Kernel/FileSystem/DevPtsFS.h>
 #include <Kernel/Process.h>
 #include <Kernel/TTY/MasterPTY.h>
 #include <Kernel/TTY/SlavePTY.h>
@@ -42,8 +41,9 @@ SlavePTY::SlavePTY(MasterPTY& master, unsigned index)
     , m_index(index)
 {
     auto& process = Process::current();
-    set_uid(process.uid());
-    set_gid(process.gid());
+    auto credentials = process.credentials();
+    set_uid(credentials->uid());
+    set_gid(credentials->gid());
     set_size(80, 25);
 
     SlavePTY::all_instances().with([&](auto& list) { list.append(*this); });

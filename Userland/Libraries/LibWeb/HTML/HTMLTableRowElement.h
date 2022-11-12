@@ -11,16 +11,20 @@
 namespace Web::HTML {
 
 class HTMLTableRowElement final : public HTMLElement {
-public:
-    using WrapperType = Bindings::HTMLTableRowElementWrapper;
+    WEB_PLATFORM_OBJECT(HTMLTableRowElement, HTMLElement);
 
-    HTMLTableRowElement(DOM::Document&, DOM::QualifiedName);
+public:
     virtual ~HTMLTableRowElement() override;
 
-    NonnullRefPtr<DOM::HTMLCollection> cells() const;
+    JS::NonnullGCPtr<DOM::HTMLCollection> cells() const;
 
     int row_index() const;
     int section_row_index() const;
+    WebIDL::ExceptionOr<JS::NonnullGCPtr<HTMLTableCellElement>> insert_cell(i32 index);
+    WebIDL::ExceptionOr<void> delete_cell(i32 index);
+
+private:
+    HTMLTableRowElement(DOM::Document&, DOM::QualifiedName);
 };
 
 }

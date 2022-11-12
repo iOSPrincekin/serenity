@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020, Andreas Kling <kling@serenityos.org>
+ * Copyright (c) 2018-2022, Andreas Kling <kling@serenityos.org>
  * Copyright (c) 2022, Dex♪ <dexes.ttp@gmail.com>
  *
  * SPDX-License-Identifier: BSD-2-Clause
@@ -14,16 +14,37 @@
 #include <LibCore/Object.h>
 #include <LibCore/Proxy.h>
 #include <LibWeb/Loader/Resource.h>
+#include <LibWeb/Page/Page.h>
 
 namespace Web {
 
 #if ARCH(I386)
 #    define CPU_STRING "x86"
-#else
+#elif ARCH(X86_64)
 #    define CPU_STRING "x86_64"
+#elif ARCH(AARCH64)
+#    define CPU_STRING "AArch64"
 #endif
 
-constexpr auto default_user_agent = "Mozilla/5.0 (SerenityOS; " CPU_STRING ") LibWeb+LibJS/1.0 Browser/1.0";
+#if defined(AK_OS_SERENITY)
+#    define OS_STRING "SerenityOS"
+#elif defined(AK_OS_LINUX)
+#    define OS_STRING "Linux"
+#elif defined(AK_OS_MACOS)
+#    define OS_STRING "macOS"
+#elif defined(AK_OS_WINDOWS)
+#    define OS_STRING "Windows"
+#elif defined(AK_OS_FREEBSD)
+#    define OS_STRING "FreeBSD"
+#elif defined(AK_OS_OPENBSD)
+#    define OS_STRING "OpenBSD"
+#elif defined(AK_OS_NETBSD)
+#    define OS_STRING "NetBSD"
+#else
+#    error Unknown OS
+#endif
+
+constexpr auto default_user_agent = "Mozilla/5.0 (" OS_STRING "; " CPU_STRING ") LibWeb+LibJS/1.0 Ladybird/1.0"sv;
 
 class ResourceLoaderConnectorRequest : public RefCounted<ResourceLoaderConnectorRequest> {
 public:
@@ -69,8 +90,8 @@ public:
 
     RefPtr<Resource> load_resource(Resource::Type, LoadRequest&);
 
-    void load(LoadRequest&, Function<void(ReadonlyBytes, HashMap<String, String, CaseInsensitiveStringTraits> const& response_headers, Optional<u32> status_code)> success_callback, Function<void(String const&, Optional<u32> status_code)> error_callback = nullptr);
-    void load(const AK::URL&, Function<void(ReadonlyBytes, HashMap<String, String, CaseInsensitiveStringTraits> const& response_headers, Optional<u32> status_code)> success_callback, Function<void(String const&, Optional<u32> status_code)> error_callback = nullptr);
+    void load(LoadRequest&, Function<void(ReadonlyBytes, HashMap<String, String, CaseInsensitiveStringTraits> const& response_headers, Optional<u32> status_code)> success_callback, Function<void(String const&, Optional<u32> status_code)> error_callback = nullptr, Optional<u32> timeout = {}, Function<void()> timeout_callback = nullptr);
+    void load(const AK::URL&, Function<void(ReadonlyBytes, HashMap<String, String, CaseInsensitiveStringTraits> const& response_headers, Optional<u32> status_code)> success_callback, Function<void(String const&, Optional<u32> status_code)> error_callback = nullptr, Optional<u32> timeout = {}, Function<void()> timeout_callback = nullptr);
 
     ResourceLoaderConnector& connector() { return *m_connector; }
 
@@ -98,6 +119,7 @@ private:
     HashTable<NonnullRefPtr<ResourceLoaderConnectorRequest>> m_active_requests;
     NonnullRefPtr<ResourceLoaderConnector> m_connector;
     String m_user_agent;
+    Optional<Page&> m_page {};
 };
 
 }

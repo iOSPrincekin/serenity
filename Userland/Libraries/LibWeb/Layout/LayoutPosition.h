@@ -7,6 +7,7 @@
 #pragma once
 
 #include <AK/RefPtr.h>
+#include <LibJS/Heap/GCPtr.h>
 #include <LibWeb/Forward.h>
 #include <LibWeb/Layout/Node.h>
 
@@ -15,7 +16,7 @@ namespace Web::Layout {
 class Node;
 
 struct LayoutPosition {
-    RefPtr<Node> layout_node;
+    JS::Handle<Layout::Node> layout_node;
     int index_in_node { 0 };
 
     DOM::Position to_dom_position() const;
@@ -48,7 +49,7 @@ public:
 
     LayoutRange normalized() const;
 
-    NonnullRefPtr<DOM::Range> to_dom_range() const;
+    JS::NonnullGCPtr<DOM::Range> to_dom_range() const;
 
 private:
     LayoutPosition m_start;

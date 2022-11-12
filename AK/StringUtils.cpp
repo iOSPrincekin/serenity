@@ -15,6 +15,7 @@
 #include <AK/Vector.h>
 
 #ifndef KERNEL
+#    include <AK/FloatingPointStringConversions.h>
 #    include <AK/String.h>
 #endif
 
@@ -58,6 +59,9 @@ bool matches(StringView str, StringView mask, CaseSensitivity case_sensitivity, 
             break;
         case '?':
             record_span(string_ptr - string_start, 1);
+            break;
+        case '\\':
+            ++mask_ptr;
             break;
         default:
             auto p = *mask_ptr;
@@ -229,6 +233,23 @@ template Optional<u16> convert_to_uint_from_octal(StringView str, TrimWhitespace
 template Optional<u32> convert_to_uint_from_octal(StringView str, TrimWhitespace);
 template Optional<u64> convert_to_uint_from_octal(StringView str, TrimWhitespace);
 
+#ifndef KERNEL
+template<typename T>
+Optional<T> convert_to_floating_point(StringView str, TrimWhitespace trim_whitespace)
+{
+    static_assert(IsSame<T, double> || IsSame<T, float>);
+    auto string = trim_whitespace == TrimWhitespace::Yes
+        ? str.trim_whitespace()
+        : str;
+
+    char const* start = string.characters_without_null_termination();
+    return parse_floating_point_completely<T>(start, start + str.length());
+}
+
+template Optional<double> convert_to_floating_point(StringView str, TrimWhitespace);
+template Optional<float> convert_to_floating_point(StringView str, TrimWhitespace);
+#endif
+
 bool equals_ignoring_case(StringView a, StringView b)
 {
     if (a.length() != b.length())
@@ -329,7 +350,7 @@ StringView trim(StringView str, StringView characters, TrimMode mode)
     if (mode == TrimMode::Left || mode == TrimMode::Both) {
         for (size_t i = 0; i < str.length(); ++i) {
             if (substring_length == 0)
-                return "";
+                return ""sv;
             if (!characters.contains(str[i]))
                 break;
             ++substring_start;
@@ -338,10 +359,10 @@ StringView trim(StringView str, StringView characters, TrimMode mode)
     }
 
     if (mode == TrimMode::Right || mode == TrimMode::Both) {
-        for (size_t i = str.length() - 1; i > 0; --i) {
+        for (size_t i = str.length(); i > 0; --i) {
             if (substring_length == 0)
-                return "";
-            if (!characters.contains(str[i]))
+                return ""sv;
+            if (!characters.contains(str[i - 1]))
                 break;
             --substring_length;
         }
@@ -352,7 +373,7 @@ StringView trim(StringView str, StringView characters, TrimMode mode)
 
 StringView trim_whitespace(StringView str, TrimMode mode)
 {
-    return trim(str, " \n\t\v\f\r", mode);
+    return trim(str, " \n\t\v\f\r"sv, mode);
 }
 
 Optional<size_t> find(StringView haystack, char needle, size_t start)
@@ -380,6 +401,15 @@ Optional<size_t> find_last(StringView haystack, char needle)
 {
     for (size_t i = haystack.length(); i > 0; --i) {
         if (haystack[i - 1] == needle)
+            return i - 1;
+    }
+    return {};
+}
+
+Optional<size_t> find_last_not(StringView haystack, char needle)
+{
+    for (size_t i = haystack.length(); i > 0; --i) {
+        if (haystack[i - 1] != needle)
             return i - 1;
     }
     return {};
@@ -453,22 +483,36 @@ String to_titlecase(StringView str)
 
     for (auto ch : str) {
         if (next_is_upper)
-            builder.append_code_point(to_ascii_uppercase(ch));
+            builder.append(to_ascii_uppercase(ch));
         else
-            builder.append_code_point(to_ascii_lowercase(ch));
+            builder.append(to_ascii_lowercase(ch));
         next_is_upper = ch == ' ';
     }
 
     return builder.to_string();
 }
 
-String replace(StringView str, StringView needle, StringView replacement, bool all_occurrences)
+String invert_case(StringView str)
+{
+    StringBuilder builder(str.length());
+
+    for (auto ch : str) {
+        if (is_ascii_lower_alpha(ch))
+            builder.append(to_ascii_uppercase(ch));
+        else
+            builder.append(to_ascii_lowercase(ch));
+    }
+
+    return builder.to_string();
+}
+
+String replace(StringView str, StringView needle, StringView replacement, ReplaceMode replace_mode)
 {
     if (str.is_empty())
         return str;
 
     Vector<size_t> positions;
-    if (all_occurrences) {
+    if (replace_mode == ReplaceMode::All) {
         positions = str.find_all(needle);
         if (!positions.size())
             return str;

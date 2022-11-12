@@ -11,13 +11,10 @@ sudo apt install build-essential cmake curl libmpfr-dev libmpc-dev libgmp-dev e2
 ```
 Optional: `fuse2fs` for [building images without root](https://github.com/SerenityOS/serenity/pull/11224).
 
-#### GCC 11
+#### GCC 12
 
-On Ubuntu gcc-11 is available in the repositories of 21.04 (Hirsuite) and later - add the `ubuntu-toolchain-r/test` PPA if you're running an older version:
-
-```console
-sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-```
+On Ubuntu gcc-12 is available in the repositories of 22.04 (Jammy) and later.
+If you are running an older version, you will either need to upgrade, or find an alternative installation source.
 
 Next, update your local package information from this repository:
 
@@ -25,16 +22,18 @@ Next, update your local package information from this repository:
 sudo apt update
 ```
 
-Now on Ubuntu or Debian you can install gcc-11 with apt like this:
+Now on Ubuntu or Debian you can install gcc-12 with apt like this:
 
 ```console
-sudo apt install gcc-11 g++-11
+sudo apt install gcc-12 g++-12
 ```
 
-#### QEMU 5 or later
+#### QEMU 6.2 or later
 
-QEMU version 5 is available in Ubuntu 20.10, but it is recommended to build Qemu as provided by the toolchain by running `Toolchain/BuildQemu.sh`.
-Note that you might need additional dev packages:
+Version 6.2 of QEMU is available in Ubuntu 22.04. On earlier versions of Ubuntu,
+you can build the recommended version of QEMU as provided by the toolchain by running
+`Toolchain/BuildQemu.sh`.
+Note that you might need additional dev packages in order to build QEMU on your machine:
 
 ```console
 sudo apt install libgtk-3-dev libpixman-1-dev libsdl2-dev libspice-server-dev
@@ -48,7 +47,7 @@ for details.
 ### Arch Linux / Manjaro
 
 ```console
-sudo pacman -S --needed base-devel cmake curl mpfr libmpc gmp e2fsprogs ninja qemu-desktop qemu-emulators-full ccache rsync unzip
+sudo pacman -S --needed base-devel cmake curl mpfr libmpc gmp e2fsprogs ninja qemu-desktop qemu-system-x86 qemu-system-aarch64 ccache rsync unzip
 ```
 Optional: `fuse2fs` for [building images without root](https://github.com/SerenityOS/serenity/pull/11224).
 

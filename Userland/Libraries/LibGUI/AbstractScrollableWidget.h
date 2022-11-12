@@ -21,6 +21,7 @@ public:
     Gfx::IntSize content_size() const { return m_content_size; }
     int content_width() const { return m_content_size.width(); }
     int content_height() const { return m_content_size.height(); }
+    Gfx::IntSize min_content_size() const { return m_min_content_size; }
 
     Gfx::IntRect visible_content_rect() const;
 
@@ -60,7 +61,7 @@ public:
 
     virtual Margins content_margins() const override;
 
-    void set_should_hide_unnecessary_scrollbars(bool b) { m_should_hide_unnecessary_scrollbars = b; }
+    void set_should_hide_unnecessary_scrollbars(bool);
     bool should_hide_unnecessary_scrollbars() const { return m_should_hide_unnecessary_scrollbars; }
 
     Gfx::IntPoint to_content_position(Gfx::IntPoint const& widget_position) const;
@@ -69,6 +70,8 @@ public:
     Gfx::IntRect to_content_rect(Gfx::IntRect const& widget_rect) const { return { to_content_position(widget_rect.location()), widget_rect.size() }; }
     Gfx::IntRect to_widget_rect(Gfx::IntRect const& content_rect) const { return { to_widget_position(content_rect.location()), content_rect.size() }; }
 
+    virtual Optional<UISize> calculated_min_size() const override;
+
 protected:
     AbstractScrollableWidget();
     virtual void custom_layout() override;
@@ -76,9 +79,12 @@ protected:
     virtual void mousewheel_event(MouseEvent&) override;
     virtual void did_scroll() { }
     void set_content_size(Gfx::IntSize const&);
+    void set_min_content_size(Gfx::IntSize const&);
     void set_size_occupied_by_fixed_elements(Gfx::IntSize const&);
     virtual void on_automatic_scrolling_timer_fired() {};
     int autoscroll_threshold() const { return m_autoscroll_threshold; }
+    void update_scrollbar_visibility();
+    void update_scrollbar_ranges();
 
 private:
     class AbstractScrollableWidgetScrollbar final : public Scrollbar {
@@ -100,13 +106,13 @@ private:
     };
     friend class ScrollableWidgetScrollbar;
 
-    void update_scrollbar_ranges();
     void handle_wheel_event(MouseEvent&, Widget&);
 
     RefPtr<AbstractScrollableWidgetScrollbar> m_vertical_scrollbar;
     RefPtr<AbstractScrollableWidgetScrollbar> m_horizontal_scrollbar;
     RefPtr<Widget> m_corner_widget;
     Gfx::IntSize m_content_size;
+    Gfx::IntSize m_min_content_size;
     Gfx::IntSize m_size_occupied_by_fixed_elements;
     bool m_scrollbars_enabled { true };
     bool m_should_hide_unnecessary_scrollbars { false };

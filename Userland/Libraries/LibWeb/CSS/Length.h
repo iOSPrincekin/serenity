@@ -40,6 +40,7 @@ public:
     // this file already. To break the cyclic dependency, we must move all method definitions out.
     Length(int value, Type type);
     Length(float value, Type type);
+    ~Length();
 
     static Length make_auto();
     static Length make_px(float value);
@@ -76,6 +77,7 @@ public:
     }
 
     float raw_value() const { return m_value; }
+    NonnullRefPtr<CalculatedStyleValue> calculated_style_value() const;
 
     float to_px(Layout::Node const&) const;
 
@@ -116,17 +118,9 @@ public:
 
     String to_string() const;
 
-    bool operator==(Length const& other) const
-    {
-        if (is_calculated())
-            return m_calculated_style == other.m_calculated_style;
-        return m_type == other.m_type && m_value == other.m_value;
-    }
-
-    bool operator!=(Length const& other) const
-    {
-        return !(*this == other);
-    }
+    // We have a RefPtr<CalculatedStyleValue> member, but can't include the header StyleValue.h as it includes
+    // this file already. To break the cyclic dependency, we must move all method definitions out.
+    bool operator==(Length const& other) const;
 
     float relative_length_to_px(Gfx::IntRect const& viewport_rect, Gfx::FontPixelMetrics const& font_metrics, float font_size, float root_font_size) const;
 

@@ -26,6 +26,9 @@ constexpr u32 CLUSTER_ELEMENT_ID = 0x1F43B675;
 constexpr u32 TIMESTAMP_SCALE_ID = 0x2AD7B1;
 constexpr u32 MUXING_APP_ID = 0x4D80;
 constexpr u32 WRITING_APP_ID = 0x5741;
+constexpr u32 DURATION_ID = 0x4489;
+
+// Tracks
 constexpr u32 TRACK_ENTRY_ID = 0xAE;
 constexpr u32 TRACK_NUMBER_ID = 0xD7;
 constexpr u32 TRACK_UID_ID = 0x73C5;
@@ -34,10 +37,21 @@ constexpr u32 TRACK_LANGUAGE_ID = 0x22B59C;
 constexpr u32 TRACK_CODEC_ID = 0x86;
 constexpr u32 TRACK_VIDEO_ID = 0xE0;
 constexpr u32 TRACK_AUDIO_ID = 0xE1;
+
+// Video
 constexpr u32 PIXEL_WIDTH_ID = 0xB0;
 constexpr u32 PIXEL_HEIGHT_ID = 0xBA;
+constexpr u32 COLOR_ENTRY_ID = 0x55B0;
+constexpr u32 PRIMARIES_ID = 0x55BB;
+constexpr u32 TRANSFER_CHARACTERISTICS_ID = 0x55BA;
+constexpr u32 MATRIX_COEFFICIENTS_ID = 0x55B1;
+constexpr u32 BITS_PER_CHANNEL_ID = 0x55B2;
+
+// Audio
 constexpr u32 CHANNELS_ID = 0x9F;
 constexpr u32 BIT_DEPTH_ID = 0x6264;
+
+// Clusters
 constexpr u32 SIMPLE_BLOCK_ID = 0xA3;
 constexpr u32 TIMESTAMP_ID = 0xE7;
 
@@ -113,7 +127,7 @@ bool MatroskaReader::parse_master_element([[maybe_unused]] StringView element_na
 Optional<EBMLHeader> MatroskaReader::parse_ebml_header()
 {
     EBMLHeader header;
-    auto success = parse_master_element("Header", [&](u64 element_id) {
+    auto success = parse_master_element("Header"sv, [&](u64 element_id) {
         if (element_id == DOCTYPE_ELEMENT_ID) {
             auto doc_type = read_string_element();
             CHECK_HAS_VALUE(doc_type);
@@ -139,7 +153,7 @@ Optional<EBMLHeader> MatroskaReader::parse_ebml_header()
 bool MatroskaReader::parse_segment_elements(MatroskaDocument& matroska_document)
 {
     dbgln_if(MATROSKA_DEBUG, "Parsing segment elements");
-    auto success = parse_master_element("Segment", [&](u64 element_id) {
+    auto success = parse_master_element("Segment"sv, [&](u64 element_id) {
         if (element_id == SEGMENT_INFORMATION_ELEMENT_ID) {
             auto segment_information = parse_information();
             if (!segment_information)
@@ -159,14 +173,14 @@ bool MatroskaReader::parse_segment_elements(MatroskaDocument& matroska_document)
         return true;
     });
 
-    dbgln("Success {}", success);
+    dbgln_if(MATROSKA_DEBUG, "Success {}", success);
     return success;
 }
 
 OwnPtr<SegmentInformation> MatroskaReader::parse_information()
 {
     auto segment_information = make<SegmentInformation>();
-    auto success = parse_master_element("Segment Information", [&](u64 element_id) {
+    auto success = parse_master_element("Segment Information"sv, [&](u64 element_id) {
         if (element_id == TIMESTAMP_SCALE_ID) {
             auto timestamp_scale = read_u64_element();
             CHECK_HAS_VALUE(timestamp_scale);
@@ -182,6 +196,11 @@ OwnPtr<SegmentInformation> MatroskaReader::parse_information()
             CHECK_HAS_VALUE(writing_app);
             segment_information->set_writing_app(writing_app.value());
             dbgln_if(MATROSKA_DEBUG, "Read WritingApp attribute: {}", writing_app.value());
+        } else if (element_id == DURATION_ID) {
+            auto duration = read_float_element();
+            CHECK_HAS_VALUE(duration);
+            segment_information->set_duration(duration.value());
+            dbgln_if(MATROSKA_DEBUG, "Read Duration attribute: {}", duration.value());
         } else {
             return read_unknown_element();
         }
@@ -196,7 +215,7 @@ OwnPtr<SegmentInformation> MatroskaReader::parse_information()
 
 bool MatroskaReader::parse_tracks(MatroskaDocument& matroska_document)
 {
-    auto success = parse_master_element("Tracks", [&](u64 element_id) {
+    auto success = parse_master_element("Tracks"sv, [&](u64 element_id) {
         if (element_id == TRACK_ENTRY_ID) {
             dbgln_if(MATROSKA_DEBUG, "Parsing track");
             auto track_entry = parse_track_entry();
@@ -218,7 +237,7 @@ bool MatroskaReader::parse_tracks(MatroskaDocument& matroska_document)
 OwnPtr<TrackEntry> MatroskaReader::parse_track_entry()
 {
     auto track_entry = make<TrackEntry>();
-    auto success = parse_master_element("Track", [&](u64 element_id) {
+    auto success = parse_master_element("Track"sv, [&](u64 element_id) {
         if (element_id == TRACK_NUMBER_ID) {
             auto track_number = read_u64_element();
             CHECK_HAS_VALUE(track_number);
@@ -264,11 +283,56 @@ OwnPtr<TrackEntry> MatroskaReader::parse_track_entry()
     return track_entry;
 }
 
+Optional<TrackEntry::ColorFormat> MatroskaReader::parse_video_color_information()
+{
+    TrackEntry::ColorFormat color_format {};
+
+    auto success = parse_master_element("Colour"sv, [&](u64 element_id) {
+        switch (element_id) {
+        case PRIMARIES_ID: {
+            auto primaries_result = read_u64_element();
+            CHECK_HAS_VALUE(primaries_result);
+            color_format.color_primaries = static_cast<ColorPrimaries>(primaries_result.value());
+            dbgln_if(MATROSKA_TRACE_DEBUG, "Read Colour's Primaries attribute: {}", color_primaries_to_string(color_format.color_primaries));
+            break;
+        }
+        case TRANSFER_CHARACTERISTICS_ID: {
+            auto transfer_characteristics_result = read_u64_element();
+            CHECK_HAS_VALUE(transfer_characteristics_result);
+            color_format.transfer_characteristics = static_cast<TransferCharacteristics>(transfer_characteristics_result.value());
+            dbgln_if(MATROSKA_TRACE_DEBUG, "Read Colour's TransferCharacteristics attribute: {}", transfer_characteristics_to_string(color_format.transfer_characteristics));
+            break;
+        }
+        case MATRIX_COEFFICIENTS_ID: {
+            auto matrix_coefficients_result = read_u64_element();
+            CHECK_HAS_VALUE(matrix_coefficients_result);
+            color_format.matrix_coefficients = static_cast<MatrixCoefficients>(matrix_coefficients_result.value());
+            dbgln_if(MATROSKA_TRACE_DEBUG, "Read Colour's MatrixCoefficients attribute: {}", matrix_coefficients_to_string(color_format.matrix_coefficients));
+            break;
+        }
+        case BITS_PER_CHANNEL_ID: {
+            auto bits_per_channel_result = read_u64_element();
+            CHECK_HAS_VALUE(bits_per_channel_result);
+            color_format.bits_per_channel = bits_per_channel_result.value();
+            dbgln_if(MATROSKA_TRACE_DEBUG, "Read Colour's BitsPerChannel attribute: {}", color_format.bits_per_channel);
+            break;
+        }
+        default:
+            return read_unknown_element();
+        }
+        return true;
+    });
+
+    if (!success)
+        return {};
+    return color_format;
+}
+
 Optional<TrackEntry::VideoTrack> MatroskaReader::parse_video_track_information()
 {
     TrackEntry::VideoTrack video_track {};
 
-    auto success = parse_master_element("VideoTrack", [&](u64 element_id) {
+    auto success = parse_master_element("VideoTrack"sv, [&](u64 element_id) {
         if (element_id == PIXEL_WIDTH_ID) {
             auto pixel_width = read_u64_element();
             CHECK_HAS_VALUE(pixel_width);
@@ -279,6 +343,10 @@ Optional<TrackEntry::VideoTrack> MatroskaReader::parse_video_track_information()
             CHECK_HAS_VALUE(pixel_height);
             video_track.pixel_height = pixel_height.value();
             dbgln_if(MATROSKA_TRACE_DEBUG, "Read VideoTrack's PixelHeight attribute: {}", pixel_height.value());
+        } else if (element_id == COLOR_ENTRY_ID) {
+            auto color_information_result = parse_video_color_information();
+            CHECK_HAS_VALUE(color_information_result);
+            video_track.color_format = color_information_result.value();
         } else {
             return read_unknown_element();
         }
@@ -295,7 +363,7 @@ Optional<TrackEntry::AudioTrack> MatroskaReader::parse_audio_track_information()
 {
     TrackEntry::AudioTrack audio_track {};
 
-    auto success = parse_master_element("AudioTrack", [&](u64 element_id) {
+    auto success = parse_master_element("AudioTrack"sv, [&](u64 element_id) {
         if (element_id == CHANNELS_ID) {
             auto channels = read_u64_element();
             CHECK_HAS_VALUE(channels);
@@ -322,7 +390,7 @@ OwnPtr<Cluster> MatroskaReader::parse_cluster()
 {
     auto cluster = make<Cluster>();
 
-    auto success = parse_master_element("Cluster", [&](u64 element_id) {
+    auto success = parse_master_element("Cluster"sv, [&](u64 element_id) {
         if (element_id == SIMPLE_BLOCK_ID) {
             auto simple_block = parse_simple_block();
             if (!simple_block)
@@ -452,6 +520,30 @@ Optional<u64> MatroskaReader::read_u64_element()
         result = (result << 8u) + m_streamer.read_octet();
     }
     return result;
+}
+
+Optional<double> MatroskaReader::read_float_element()
+{
+    auto length = m_streamer.read_variable_size_integer();
+    if (!length.has_value() || m_streamer.remaining() < length.value())
+        return {};
+    if (length != 4u && length != 8u)
+        return {};
+
+    union {
+        u64 value;
+        float float_value;
+        double double_value;
+    } read_data;
+    read_data.value = 0;
+    for (size_t i = 0; i < length.value(); i++) {
+        if (!m_streamer.has_octet())
+            return {};
+        read_data.value = (read_data.value << 8u) + m_streamer.read_octet();
+    }
+    if (length == 4u)
+        return read_data.float_value;
+    return read_data.double_value;
 }
 
 bool MatroskaReader::read_unknown_element()

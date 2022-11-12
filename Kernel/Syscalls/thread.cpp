@@ -14,7 +14,7 @@ namespace Kernel {
 
 ErrorOr<FlatPtr> Process::sys$create_thread(void* (*entry)(void*), Userspace<Syscall::SC_create_thread_params const*> user_params)
 {
-    VERIFY_PROCESS_BIG_LOCK_ACQUIRED(this)
+    VERIFY_PROCESS_BIG_LOCK_ACQUIRED(this);
     TRY(require_promise(Pledge::thread));
     auto params = TRY(copy_typed_from_user(user_params));
 
@@ -27,8 +27,11 @@ ErrorOr<FlatPtr> Process::sys$create_thread(void* (*entry)(void*), Userspace<Sys
     if (user_sp.has_overflow())
         return EOVERFLOW;
 
-    if (!MM.validate_user_stack(this->address_space(), VirtualAddress(user_sp.value() - 4)))
-        return EFAULT;
+    TRY(address_space().with([&](auto& space) -> ErrorOr<void> {
+        if (!MM.validate_user_stack(*space, VirtualAddress(user_sp.value() - 4)))
+            return EFAULT;
+        return {};
+    }));
 
     // FIXME: return EAGAIN if Thread::all_threads().size() is greater than PTHREAD_THREADS_MAX
 
@@ -60,7 +63,7 @@ ErrorOr<FlatPtr> Process::sys$create_thread(void* (*entry)(void*), Userspace<Sys
     regs.rdx = params.rdx;
     regs.rcx = params.rcx;
 #endif
-    regs.cr3 = address_space().page_directory().cr3();
+    regs.cr3 = address_space().with([](auto& space) { return space->page_directory().cr3(); });
 
     TRY(thread->make_thread_specific_region({}));
 
@@ -74,7 +77,7 @@ ErrorOr<FlatPtr> Process::sys$create_thread(void* (*entry)(void*), Userspace<Sys
 
 void Process::sys$exit_thread(Userspace<void*> exit_value, Userspace<void*> stack_location, size_t stack_size)
 {
-    VERIFY_PROCESS_BIG_LOCK_ACQUIRED(this)
+    VERIFY_PROCESS_BIG_LOCK_ACQUIRED(this);
 
     auto result = require_promise(Pledge::thread);
     if (result.is_error()) {
@@ -92,7 +95,9 @@ void Process::sys$exit_thread(Userspace<void*> exit_value, Userspace<void*> stac
     PerformanceManager::add_thread_exit_event(*current_thread);
 
     if (stack_location) {
-        auto unmap_result = address_space().unmap_mmap_range(stack_location.vaddr(), stack_size);
+        auto unmap_result = address_space().with([&](auto& space) {
+            return space->unmap_mmap_range(stack_location.vaddr(), stack_size);
+        });
         if (unmap_result.is_error())
             dbgln("Failed to unmap thread stack, terminating thread anyway. Error code: {}", unmap_result.error());
     }
@@ -103,7 +108,7 @@ void Process::sys$exit_thread(Userspace<void*> exit_value, Userspace<void*> stac
 
 ErrorOr<FlatPtr> Process::sys$detach_thread(pid_t tid)
 {
-    VERIFY_PROCESS_BIG_LOCK_ACQUIRED(this)
+    VERIFY_PROCESS_BIG_LOCK_ACQUIRED(this);
     TRY(require_promise(Pledge::thread));
     auto thread = Thread::from_tid(tid);
     if (!thread || thread->pid() != pid())
@@ -118,7 +123,7 @@ ErrorOr<FlatPtr> Process::sys$detach_thread(pid_t tid)
 
 ErrorOr<FlatPtr> Process::sys$join_thread(pid_t tid, Userspace<void**> exit_value)
 {
-    VERIFY_PROCESS_BIG_LOCK_ACQUIRED(this)
+    VERIFY_PROCESS_BIG_LOCK_ACQUIRED(this);
     TRY(require_promise(Pledge::thread));
 
     auto thread = Thread::from_tid(tid);
@@ -153,10 +158,10 @@ ErrorOr<FlatPtr> Process::sys$join_thread(pid_t tid, Userspace<void**> exit_valu
 
 ErrorOr<FlatPtr> Process::sys$kill_thread(pid_t tid, int signal)
 {
-    VERIFY_PROCESS_BIG_LOCK_ACQUIRED(this)
+    VERIFY_PROCESS_BIG_LOCK_ACQUIRED(this);
     TRY(require_promise(Pledge::thread));
 
-    if (signal < 0 || signal >= 32)
+    if (signal < 0 || signal >= NSIG)
         return EINVAL;
 
     auto thread = Thread::from_tid(tid);
@@ -171,7 +176,7 @@ ErrorOr<FlatPtr> Process::sys$kill_thread(pid_t tid, int signal)
 
 ErrorOr<FlatPtr> Process::sys$set_thread_name(pid_t tid, Userspace<char const*> user_name, size_t user_name_length)
 {
-    VERIFY_PROCESS_BIG_LOCK_ACQUIRED(this)
+    VERIFY_PROCESS_BIG_LOCK_ACQUIRED(this);
     TRY(require_promise(Pledge::stdio));
 
     auto name = TRY(try_copy_kstring_from_user(user_name, user_name_length));
@@ -190,7 +195,7 @@ ErrorOr<FlatPtr> Process::sys$set_thread_name(pid_t tid, Userspace<char const*> 
 
 ErrorOr<FlatPtr> Process::sys$get_thread_name(pid_t tid, Userspace<char*> buffer, size_t buffer_size)
 {
-    VERIFY_PROCESS_BIG_LOCK_ACQUIRED(this)
+    VERIFY_PROCESS_BIG_LOCK_ACQUIRED(this);
     TRY(require_promise(Pledge::thread));
     if (buffer_size == 0)
         return EINVAL;
@@ -217,7 +222,7 @@ ErrorOr<FlatPtr> Process::sys$get_thread_name(pid_t tid, Userspace<char*> buffer
 
 ErrorOr<FlatPtr> Process::sys$gettid()
 {
-    VERIFY_NO_PROCESS_BIG_LOCK(this)
+    VERIFY_NO_PROCESS_BIG_LOCK(this);
     TRY(require_promise(Pledge::stdio));
     return Thread::current()->tid().value();
 }

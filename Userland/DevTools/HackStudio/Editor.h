@@ -78,6 +78,7 @@ private:
     Gfx::IntRect gutter_icon_rect(size_t line_number) const;
     static Gfx::Bitmap const& breakpoint_icon_bitmap();
     static Gfx::Bitmap const& current_position_icon_bitmap();
+    static ErrorOr<void> initialize_tooltip_window();
 
     struct AutoCompleteRequestData {
         GUI::TextPosition position;
@@ -92,7 +93,7 @@ private:
         virtual ~LanguageServerAidedAutocompleteProvider() override { }
 
     private:
-        virtual void provide_completions(Function<void(Vector<Entry>)> callback) override;
+        virtual void provide_completions(Function<void(Vector<CodeComprehension::AutocompleteResultEntry>)> callback) override;
         LanguageClient& m_language_client;
     };
 
@@ -104,17 +105,11 @@ private:
     void set_autocomplete_provider_for(CodeDocument const&);
     void handle_function_parameters_hint_request();
     void on_token_info_timer_tick();
-    void on_tokens_info_result(Vector<GUI::AutocompleteProvider::TokenInfo> const& tokens_info);
+    void on_tokens_info_result(Vector<CodeComprehension::TokenInfo> const& tokens_info);
     void create_tokens_info_timer();
-    ErrorOr<void> initialize_documentation_tooltip();
-    ErrorOr<void> initialize_parameters_hint_tooltip();
 
     explicit Editor();
 
-    RefPtr<GUI::Window> m_documentation_tooltip_window;
-    RefPtr<GUI::Window> m_parameters_hint_tooltip_window;
-    RefPtr<WebView::OutOfProcessWebView> m_documentation_page_view;
-    RefPtr<WebView::OutOfProcessWebView> m_parameter_hint_page_view;
     String m_last_parsed_token;
     GUI::TextPosition m_previous_text_position { 0, 0 };
     bool m_hovering_editor { false };

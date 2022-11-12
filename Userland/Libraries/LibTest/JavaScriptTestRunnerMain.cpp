@@ -81,7 +81,7 @@ int main(int argc, char** argv)
 
     bool print_times = false;
     bool print_progress =
-#ifdef __serenity__
+#ifdef AK_OS_SERENITY
         true; // Use OSC 9 to print progress
 #else
         false;
@@ -95,7 +95,7 @@ int main(int argc, char** argv)
     Core::ArgsParser args_parser;
     args_parser.add_option(print_times, "Show duration of each test", "show-time", 't');
     args_parser.add_option(Core::ArgsParser::Option {
-        .requires_argument = true,
+        .argument_mode = Core::ArgsParser::OptionArgumentMode::Required,
         .help_string = "Show progress with OSC 9 (true, false)",
         .long_name = "show-progress",
         .short_name = 'p',
@@ -140,8 +140,8 @@ int main(int argc, char** argv)
     if (specified_test_root) {
         test_root = String { specified_test_root };
     } else {
-#ifdef __serenity__
-        test_root = LexicalPath::join("/home/anon/Tests", String::formatted("{}-tests", program_name.split_view('-').last())).string();
+#ifdef AK_OS_SERENITY
+        test_root = LexicalPath::join("/home/anon/Tests"sv, String::formatted("{}-tests", program_name.split_view('-').last())).string();
 #else
         char* serenity_source_dir = getenv("SERENITY_SOURCE_DIR");
         if (!serenity_source_dir) {
@@ -158,7 +158,7 @@ int main(int argc, char** argv)
     }
 
     if (common_path.is_empty()) {
-#ifdef __serenity__
+#ifdef AK_OS_SERENITY
         common_path = "/home/anon/Tests/js-tests/test-common.js";
 #else
         char* serenity_source_dir = getenv("SERENITY_SOURCE_DIR");

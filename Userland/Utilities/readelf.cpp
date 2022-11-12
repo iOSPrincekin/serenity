@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/LexicalPath.h>
 #include <AK/String.h>
 #include <AK/StringBuilder.h>
 #include <AK/StringView.h>
@@ -232,7 +233,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
     TRY(Core::System::pledge("stdio rpath"));
 
-    char const* path;
+    String path {};
     static bool display_all = false;
     static bool display_elf_header = false;
     static bool display_program_headers = false;
@@ -288,6 +289,8 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
         display_hardening = true;
     }
 
+    path = LexicalPath::absolute_path(TRY(Core::System::getcwd()), path);
+
     auto file_or_error = Core::MappedFile::map(path);
 
     if (file_or_error.is_error()) {
@@ -336,7 +339,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
         }
 
         int fd = TRY(Core::System::open(path, O_RDONLY));
-        auto result = ELF::DynamicLoader::try_create(fd, path, path);
+        auto result = ELF::DynamicLoader::try_create(fd, path);
         if (result.is_error()) {
             outln("{}", result.error().text);
             return 1;
@@ -367,8 +370,8 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
         }
         outln();
 
-        outln("  Type:                              {} ({})", header.e_type, ELF::Image::object_file_type_to_string(header.e_type).value_or("(?)"));
-        outln("  Machine:                           {} ({})", header.e_machine, ELF::Image::object_machine_type_to_string(header.e_machine).value_or("(?)"));
+        outln("  Type:                              {} ({})", header.e_type, ELF::Image::object_file_type_to_string(header.e_type).value_or("(?)"sv));
+        outln("  Machine:                           {} ({})", header.e_machine, ELF::Image::object_machine_type_to_string(header.e_machine).value_or("(?)"sv));
         outln("  Version:                           {:#x}", header.e_version);
         outln("  Entry point address:               {:#x}", header.e_entry);
         outln("  Start of program headers:          {} (bytes into file)", header.e_phoff);
@@ -416,7 +419,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 
     if (display_program_headers) {
         if (!display_all) {
-            outln("ELF file type is {} ({})", header.e_type, ELF::Image::object_file_type_to_string(header.e_type).value_or("(?)"));
+            outln("ELF file type is {} ({})", header.e_type, ELF::Image::object_file_type_to_string(header.e_type).value_or("(?)"sv));
             outln("Entry point {:#x}\n", header.e_entry);
             outln("There are {} program headers, starting at offset {}", header.e_phnum, header.e_phoff);
             outln();
@@ -549,7 +552,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 
     if (display_unwind_info) {
         // TODO: Unwind info
-        outln("Decoding of unwind sections for machine type {} is not supported.", ELF::Image::object_machine_type_to_string(header.e_machine).value_or("?"));
+        outln("Decoding of unwind sections for machine type {} is not supported.", ELF::Image::object_machine_type_to_string(header.e_machine).value_or("?"sv));
         outln();
     }
 
@@ -730,7 +733,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
         if (maybe_section.has_value()) {
             outln("String dump of section \'{}\':", string_dump_section);
             StringView data(maybe_section->raw_data(), maybe_section->size());
-            data.for_each_split_view('\0', false, [&data](auto string) {
+            data.for_each_split_view('\0', SplitBehavior::Nothing, [&data](auto string) {
                 auto offset = string.characters_without_null_termination() - data.characters_without_null_termination();
                 outln("[{:6x}] {}", offset, string);
             });

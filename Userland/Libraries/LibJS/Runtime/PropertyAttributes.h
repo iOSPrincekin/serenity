@@ -59,7 +59,6 @@ public:
     }
 
     bool operator==(PropertyAttributes const& other) const { return m_bits == other.m_bits; }
-    bool operator!=(PropertyAttributes const& other) const { return m_bits != other.m_bits; }
 
     [[nodiscard]] u8 bits() const { return m_bits; }
 
@@ -81,7 +80,7 @@ struct Formatter<JS::PropertyAttributes> : Formatter<StringView> {
         parts.append(String::formatted("[[Writable]]: {}", property_attributes.is_writable()));
         parts.append(String::formatted("[[Enumerable]]: {}", property_attributes.is_enumerable()));
         parts.append(String::formatted("[[Configurable]]: {}", property_attributes.is_configurable()));
-        return Formatter<StringView>::format(builder, String::formatted("PropertyAttributes {{ {} }}", String::join(", ", parts)));
+        return Formatter<StringView>::format(builder, String::formatted("PropertyAttributes {{ {} }}", String::join(", "sv, parts)));
     }
 };
 

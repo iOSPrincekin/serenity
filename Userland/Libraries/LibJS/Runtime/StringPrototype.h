@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <AK/Utf8View.h>
 #include <LibJS/Runtime/StringObject.h>
 
 namespace JS {
@@ -18,14 +19,14 @@ struct CodePoint {
 
 CodePoint code_point_at(Utf16View const& string, size_t position);
 static constexpr Utf8View whitespace_characters = Utf8View("\x09\x0A\x0B\x0C\x0D\x20\xC2\xA0\xE1\x9A\x80\xE2\x80\x80\xE2\x80\x81\xE2\x80\x82\xE2\x80\x83\xE2\x80\x84\xE2\x80\x85\xE2\x80\x86\xE2\x80\x87\xE2\x80\x88\xE2\x80\x89\xE2\x80\x8A\xE2\x80\xAF\xE2\x81\x9F\xE3\x80\x80\xE2\x80\xA8\xE2\x80\xA9\xEF\xBB\xBF"sv);
-ThrowCompletionOr<String> trim_string(GlobalObject&, Value string, TrimMode where);
+ThrowCompletionOr<String> trim_string(VM&, Value string, TrimMode where);
 
 class StringPrototype final : public StringObject {
     JS_OBJECT(StringPrototype, StringObject);
 
 public:
-    explicit StringPrototype(GlobalObject&);
-    virtual void initialize(GlobalObject&) override;
+    explicit StringPrototype(Realm&);
+    virtual void initialize(Realm&) override;
     virtual ~StringPrototype() override = default;
 
 private:
@@ -57,6 +58,7 @@ private:
     JS_DECLARE_NATIVE_FUNCTION(at);
     JS_DECLARE_NATIVE_FUNCTION(match);
     JS_DECLARE_NATIVE_FUNCTION(match_all);
+    JS_DECLARE_NATIVE_FUNCTION(normalize);
     JS_DECLARE_NATIVE_FUNCTION(replace);
     JS_DECLARE_NATIVE_FUNCTION(replace_all);
     JS_DECLARE_NATIVE_FUNCTION(search);

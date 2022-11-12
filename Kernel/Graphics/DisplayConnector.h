@@ -8,6 +8,7 @@
 
 #include <AK/Types.h>
 #include <Kernel/Devices/CharacterDevice.h>
+#include <Kernel/Memory/SharedFramebufferVMObject.h>
 #include <LibC/sys/ioctl_numbers.h>
 #include <LibEDID/EDID.h>
 
@@ -99,46 +100,73 @@ public:
 
     void set_display_mode(Badge<GraphicsManagement>, DisplayMode);
 
+    Memory::Region const& framebuffer_region() const { return *m_framebuffer_region; }
+
 protected:
     void set_edid_bytes(Array<u8, 128> const& edid_bytes);
 
-    // ^File
-    virtual bool is_seekable() const override { return true; }
-    virtual bool can_read(OpenFileDescription const&, u64) const final override { return true; }
-    virtual bool can_write(OpenFileDescription const&, u64) const final override { return true; }
-    virtual ErrorOr<size_t> read(OpenFileDescription&, u64, UserOrKernelBuffer&, size_t) override final;
-    virtual ErrorOr<size_t> write(OpenFileDescription&, u64, UserOrKernelBuffer const&, size_t) override final;
-    virtual ErrorOr<Memory::Region*> mmap(Process&, OpenFileDescription&, Memory::VirtualRange const&, u64, int, bool) override final;
-    virtual ErrorOr<void> ioctl(OpenFileDescription&, unsigned request, Userspace<void*> arg) override final;
-    virtual StringView class_name() const override final { return "DisplayConnector"sv; }
-
-    DisplayConnector();
-    virtual ErrorOr<size_t> write_to_first_surface(u64 offset, UserOrKernelBuffer const&, size_t length) = 0;
+    DisplayConnector(PhysicalAddress framebuffer_address, size_t framebuffer_resource_size, bool enable_write_combine_optimization);
+    DisplayConnector(size_t framebuffer_resource_size, bool enable_write_combine_optimization);
     virtual void enable_console() = 0;
     virtual void disable_console() = 0;
     virtual ErrorOr<void> flush_first_surface() = 0;
     virtual ErrorOr<void> flush_rectangle(size_t buffer_index, FBRect const& rect);
 
-    ErrorOr<void> initialize_edid_for_generic_monitor();
+    ErrorOr<void> initialize_edid_for_generic_monitor(Optional<Array<u8, 3>> manufacturer_id_string);
 
-    mutable Spinlock m_control_lock;
+    mutable Spinlock m_control_lock { LockRank::None };
     mutable Mutex m_flushing_lock;
 
     bool m_console_mode { false };
 
     bool m_vertical_offsetted { false };
 
-    mutable Spinlock m_modeset_lock;
+    mutable Spinlock m_modeset_lock { LockRank::None };
     ModeSetting m_current_mode_setting {};
 
     Optional<EDID::Parser> m_edid_parser;
     EDID::Parser::RawBytes m_edid_bytes {};
     bool m_edid_valid { false };
 
+    u8* framebuffer_data() { return m_framebuffer_data; }
+
 private:
+    // ^File
+    virtual bool is_seekable() const override { return true; }
+    virtual bool can_read(OpenFileDescription const&, u64) const final override { return true; }
+    virtual bool can_write(OpenFileDescription const&, u64) const final override { return true; }
+    virtual ErrorOr<size_t> read(OpenFileDescription&, u64, UserOrKernelBuffer&, size_t) override final;
+    virtual ErrorOr<size_t> write(OpenFileDescription&, u64, UserOrKernelBuffer const&, size_t) override final;
+    virtual ErrorOr<NonnullLockRefPtr<Memory::VMObject>> vmobject_for_mmap(Process&, Memory::VirtualRange const&, u64&, bool) override final;
+    virtual ErrorOr<void> ioctl(OpenFileDescription&, unsigned request, Userspace<void*> arg) override final;
+    virtual StringView class_name() const override final { return "DisplayConnector"sv; }
+
+    DisplayConnector& operator=(DisplayConnector const&) = delete;
+    DisplayConnector& operator=(DisplayConnector&&) = delete;
+    DisplayConnector(DisplayConnector&&) = delete;
+
     virtual void will_be_destroyed() override;
     virtual void after_inserting() override;
 
-    IntrusiveListNode<DisplayConnector, RefPtr<DisplayConnector>> m_list_node;
+    ErrorOr<bool> ioctl_requires_ownership(unsigned request) const;
+
+    OwnPtr<Memory::Region> m_framebuffer_region;
+    OwnPtr<Memory::Region> m_fake_writes_framebuffer_region;
+    u8* m_framebuffer_data {};
+
+    bool const m_enable_write_combine_optimization { false };
+    bool const m_framebuffer_at_arbitrary_physical_range { false };
+
+protected:
+    Optional<PhysicalAddress> const m_framebuffer_address;
+    size_t const m_framebuffer_resource_size;
+
+private:
+    LockRefPtr<Memory::SharedFramebufferVMObject> m_shared_framebuffer_vmobject;
+
+    LockWeakPtr<Process> m_responsible_process;
+    Spinlock m_responsible_process_lock { LockRank::None };
+
+    IntrusiveListNode<DisplayConnector, LockRefPtr<DisplayConnector>> m_list_node;
 };
 }

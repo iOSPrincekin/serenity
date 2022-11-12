@@ -104,6 +104,9 @@ set(SOURCES
     Runtime/Intl/DisplayNames.cpp
     Runtime/Intl/DisplayNamesConstructor.cpp
     Runtime/Intl/DisplayNamesPrototype.cpp
+    Runtime/Intl/DurationFormat.cpp
+    Runtime/Intl/DurationFormatConstructor.cpp
+    Runtime/Intl/DurationFormatPrototype.cpp
     Runtime/Intl/Intl.cpp
     Runtime/Intl/ListFormat.cpp
     Runtime/Intl/ListFormatConstructor.cpp
@@ -111,6 +114,7 @@ set(SOURCES
     Runtime/Intl/Locale.cpp
     Runtime/Intl/LocaleConstructor.cpp
     Runtime/Intl/LocalePrototype.cpp
+    Runtime/Intl/MathematicalValue.cpp
     Runtime/Intl/NumberFormat.cpp
     Runtime/Intl/NumberFormatConstructor.cpp
     Runtime/Intl/NumberFormatFunction.cpp
@@ -128,6 +132,7 @@ set(SOURCES
     Runtime/Intl/SegmentIterator.cpp
     Runtime/Intl/SegmentIteratorPrototype.cpp
     Runtime/Intl/SegmentsPrototype.cpp
+    Runtime/Intrinsics.cpp
     Runtime/IteratorOperations.cpp
     Runtime/IteratorPrototype.cpp
     Runtime/JSONObject.cpp
@@ -150,6 +155,7 @@ set(SOURCES
     Runtime/PrimitiveString.cpp
     Runtime/PrivateEnvironment.cpp
     Runtime/Promise.cpp
+    Runtime/PromiseCapability.cpp
     Runtime/PromiseConstructor.cpp
     Runtime/PromiseJobs.cpp
     Runtime/PromisePrototype.cpp
@@ -163,6 +169,7 @@ set(SOURCES
     Runtime/Reference.cpp
     Runtime/ReflectObject.cpp
     Runtime/RegExpConstructor.cpp
+    Runtime/RegExpLegacyStaticProperties.cpp
     Runtime/RegExpObject.cpp
     Runtime/RegExpPrototype.cpp
     Runtime/RegExpStringIterator.cpp
@@ -244,4 +251,4 @@ set(SOURCES
 )
 
 serenity_lib(LibJS js)
-target_link_libraries(LibJS LibM LibCore LibCrypto LibRegex LibSyntax LibUnicode)
+target_link_libraries(LibJS PRIVATE LibCore LibCrypto LibRegex LibSyntax LibLocale LibUnicode)

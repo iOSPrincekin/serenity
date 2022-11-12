@@ -40,7 +40,7 @@ void SprayTool::paint_it()
     if (!layer)
         return;
 
-    auto& bitmap = layer->currently_edited_bitmap();
+    auto& bitmap = layer->get_scratch_edited_bitmap();
     GUI::Painter painter(bitmap);
     VERIFY(bitmap.bpp() == 32);
     double const minimal_radius = 2;
@@ -88,7 +88,7 @@ void SprayTool::on_mouseup(Layer*, MouseEvent&)
 {
     if (m_timer->is_active()) {
         m_timer->stop();
-        m_editor->did_complete_action();
+        m_editor->did_complete_action(tool_name());
     }
 }
 

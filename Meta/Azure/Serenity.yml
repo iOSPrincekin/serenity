@@ -15,7 +15,7 @@ jobs:
       value: $(Build.SourcesDirectory)/.ccache
 
     pool:
-      vmImage: ubuntu-20.04
+      vmImage: ubuntu-22.04
 
     steps:
     - template: Setup.yml
@@ -47,10 +47,11 @@ jobs:
           -DSERENITY_TOOLCHAIN=Clang \
           -DENABLE_UNDEFINED_SANITIZER=ON \
           -DENABLE_USERSPACE_COVERAGE_COLLECTION=${{ parameters.coverage }} \
+          -DDUMP_REGIONS_ON_CRASH=ON \
           -DENABLE_PCI_IDS_DOWNLOAD=OFF \
           -DENABLE_USB_IDS_DOWNLOAD=OFF \
-          -DCMAKE_C_COMPILER=gcc-11 \
-          -DCMAKE_CXX_COMPILER=g++-11
+          -DCMAKE_C_COMPILER=gcc-12 \
+          -DCMAKE_CXX_COMPILER=g++-12
       displayName: 'Create Build Environment'
       workingDirectory: $(Build.SourcesDirectory)
       env:
@@ -90,7 +91,7 @@ jobs:
       timeoutInMinutes: 60
       env:
         SERENITY_QEMU_CPU: 'max,vmx=off'
-        SERENITY_KERNEL_CMDLINE: 'fbdev=off panic=shutdown system_mode=self-test'
+        SERENITY_KERNEL_CMDLINE: 'graphics_subsystem_mode=off panic=shutdown system_mode=self-test'
         SERENITY_RUN: 'ci'
 
     - script: |

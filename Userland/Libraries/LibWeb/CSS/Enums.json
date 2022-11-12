@@ -1,10 +1,54 @@
 {
-    "align-items": [
+    "align-content": [
         "flex-start",
         "flex-end",
         "center",
-        "baseline",
+        "space-between",
+        "space-around",
         "stretch"
+    ],
+    "align-items": [
+        "baseline",
+        "center",
+        "flex-end",
+        "flex-start",
+        "normal",
+        "safe",
+        "self-end",
+        "self-start",
+        "stretch",
+        "unsafe"
+    ],
+    "align-self": [
+        "auto",
+        "baseline",
+        "center",
+        "flex-end",
+        "flex-start",
+        "normal",
+        "safe",
+        "self-end",
+        "self-start",
+        "stretch",
+        "unsafe"
+    ],
+    "appearance": [
+        "auto",
+        "button",
+        "checkbox",
+        "listbox",
+        "menulist",
+        "meter",
+        "menulist-button",
+        "none",
+        "push-button",
+        "progress-bar",
+        "radio",
+        "searchfield",
+        "slider-horizontal",
+        "square-button",
+        "textarea",
+        "textfield"
     ],
     "background-attachment": [
         "fixed",
@@ -89,7 +133,9 @@
         "crisp-edges",
         "high-quality",
         "pixelated",
-        "smooth"
+        "smooth",
+        "optimizespeed=pixelated",
+        "optimizequality=smooth"
     ],
     "justify-content": [
         "flex-start",

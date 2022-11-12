@@ -12,7 +12,7 @@ namespace PDF {
 
 String OutlineItem::to_string(int indent) const
 {
-    auto indent_str = String::repeated("  ", indent + 1);
+    auto indent_str = String::repeated("  "sv, indent + 1);
 
     StringBuilder child_builder;
     child_builder.append('[');
@@ -21,7 +21,7 @@ String OutlineItem::to_string(int indent) const
     child_builder.appendff("{}]", indent_str);
 
     StringBuilder builder;
-    builder.append("OutlineItem {{\n");
+    builder.append("OutlineItem {{\n"sv);
     builder.appendff("{}title={}\n", indent_str, title);
     builder.appendff("{}count={}\n", indent_str, count);
     builder.appendff("{}dest={}\n", indent_str, dest);
@@ -29,14 +29,14 @@ String OutlineItem::to_string(int indent) const
     builder.appendff("{}italic={}\n", indent_str, italic);
     builder.appendff("{}bold={}\n", indent_str, bold);
     builder.appendff("{}children={}\n", indent_str, child_builder.to_string());
-    builder.appendff("{}}}", String::repeated("  ", indent));
+    builder.appendff("{}}}", String::repeated("  "sv, indent));
 
     return builder.to_string();
 }
 
 PDFErrorOr<NonnullRefPtr<Document>> Document::create(ReadonlyBytes bytes)
 {
-    auto parser = adopt_ref(*new Parser({}, bytes));
+    auto parser = adopt_ref(*new DocumentParser({}, bytes));
     auto document = adopt_ref(*new Document(parser));
 
     TRY(parser->initialize());
@@ -51,13 +51,13 @@ PDFErrorOr<NonnullRefPtr<Document>> Document::create(ReadonlyBytes bytes)
         // Automatically attempt to unencrypt the document with the empty string. The
         // result is not important; it is the caller's responsibility to ensure the
         // document is unencrypted before calling initialize().
-        document->m_security_handler->try_provide_user_password("");
+        document->m_security_handler->try_provide_user_password(""sv);
     }
 
     return document;
 }
 
-Document::Document(NonnullRefPtr<Parser> const& parser)
+Document::Document(NonnullRefPtr<DocumentParser> const& parser)
     : m_parser(parser)
 {
     m_parser->set_document(this);
@@ -109,15 +109,10 @@ PDFErrorOr<Page> Document::get_page(u32 index)
     auto page_object = TRY(get_or_load_value(page_object_index));
     auto raw_page_object = TRY(resolve_to<DictObject>(page_object));
 
-    if (!raw_page_object->contains(CommonNames::Resources)) {
-        // This page inherits its resource dictionary
-        TODO();
-    }
-
-    auto resources = TRY(raw_page_object->get_dict(this, CommonNames::Resources));
+    auto resources = TRY(get_inheritable_object(CommonNames::Resources, raw_page_object))->cast<DictObject>();
     auto contents = TRY(raw_page_object->get_object(this, CommonNames::Contents));
 
-    auto media_box_array = TRY(raw_page_object->get_array(this, CommonNames::MediaBox));
+    auto media_box_array = TRY(get_inheritable_object(CommonNames::MediaBox, raw_page_object))->cast<ArrayObject>();
     auto media_box = Rectangle {
         media_box_array->at(0).to_float(),
         media_box_array->at(1).to_float(),
@@ -260,6 +255,15 @@ PDFErrorOr<Destination> Document::create_destination_from_parameters(NonnullRefP
     }
 
     return Destination { type, page_ref, parameters };
+}
+
+PDFErrorOr<NonnullRefPtr<Object>> Document::get_inheritable_object(FlyString const& name, NonnullRefPtr<DictObject> object)
+{
+    if (!object->contains(name)) {
+        auto parent = TRY(object->get_dict(this, CommonNames::Parent));
+        return get_inheritable_object(name, parent);
+    }
+    return object->get_object(this, name);
 }
 
 PDFErrorOr<NonnullRefPtr<OutlineItem>> Document::build_outline_item(NonnullRefPtr<DictObject> const& outline_item_dict)

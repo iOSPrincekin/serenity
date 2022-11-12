@@ -24,12 +24,6 @@ constexpr int max_formatted_address_length = 21;
 ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
     TRY(Core::System::pledge("stdio rpath unix"));
-    TRY(Core::System::unveil("/proc/net", "r"));
-    TRY(Core::System::unveil("/proc/all", "r"));
-    TRY(Core::System::unveil("/etc/passwd", "r"));
-    TRY(Core::System::unveil("/etc/services", "r"));
-    TRY(Core::System::unveil("/tmp/portal/lookup", "rw"));
-    TRY(Core::System::unveil(nullptr, nullptr));
 
     bool flag_all = false;
     bool flag_list = false;
@@ -49,6 +43,13 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     args_parser.add_option(flag_program, "Show the PID and name of the program to which each socket belongs", "program", 'p');
     args_parser.add_option(flag_wide, "Do not truncate IP addresses by printing out the whole symbolic host", "wide", 'W');
     args_parser.parse(arguments);
+
+    TRY(Core::System::unveil("/sys/kernel/net", "r"));
+    TRY(Core::System::unveil("/sys/kernel/processes", "r"));
+    TRY(Core::System::unveil("/etc/passwd", "r"));
+    TRY(Core::System::unveil("/etc/services", "r"));
+    TRY(Core::System::unveil("/tmp/portal/lookup", "rw"));
+    TRY(Core::System::unveil(nullptr, nullptr));
 
     bool has_protocol_flag = (flag_tcp || flag_udp);
 
@@ -153,7 +154,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     }
 
     if (!has_protocol_flag || flag_tcp) {
-        auto file = Core::File::construct("/proc/net/tcp");
+        auto file = Core::File::construct("/sys/kernel/net/tcp");
         if (!file->open(Core::OpenMode::ReadOnly)) {
             warnln("Error: {}", file->error_string());
             return 1;
@@ -169,61 +170,61 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 
         Vector<JsonValue> sorted_regions = json.as_array().values();
         quick_sort(sorted_regions, [](auto& a, auto& b) {
-            return a.as_object().get("local_port").to_u32() < b.as_object().get("local_port").to_u32();
+            return a.as_object().get("local_port"sv).to_u32() < b.as_object().get("local_port"sv).to_u32();
         });
 
         for (auto& value : sorted_regions) {
             auto& if_object = value.as_object();
 
-            auto bytes_in = if_object.get("bytes_in").to_string();
-            auto bytes_out = if_object.get("bytes_out").to_string();
+            auto bytes_in = if_object.get("bytes_in"sv).to_string();
+            auto bytes_out = if_object.get("bytes_out"sv).to_string();
 
-            auto peer_address = if_object.get("peer_address").to_string();
+            auto peer_address = if_object.get("peer_address"sv).to_string();
             if (!flag_numeric) {
                 auto from_string = IPv4Address::from_string(peer_address);
                 auto addr = from_string.value().to_in_addr_t();
                 auto* hostent = gethostbyaddr(&addr, sizeof(in_addr), AF_INET);
                 if (hostent != nullptr) {
-                    auto host_name = StringView(hostent->h_name);
+                    auto host_name = StringView { hostent->h_name, strlen(hostent->h_name) };
                     if (!host_name.is_empty())
                         peer_address = host_name;
                 }
             }
 
-            auto peer_port = if_object.get("peer_port").to_string();
+            auto peer_port = if_object.get("peer_port"sv).to_string();
             if (!flag_numeric) {
-                auto service = getservbyport(htons(if_object.get("peer_port").to_u32()), "tcp");
+                auto service = getservbyport(htons(if_object.get("peer_port"sv).to_u32()), "tcp");
                 if (service != nullptr) {
-                    auto s_name = StringView(service->s_name);
+                    auto s_name = StringView { service->s_name, strlen(service->s_name) };
                     if (!s_name.is_empty())
                         peer_port = s_name;
                 }
             }
 
-            auto local_address = if_object.get("local_address").to_string();
+            auto local_address = if_object.get("local_address"sv).to_string();
             if (!flag_numeric) {
                 auto from_string = IPv4Address::from_string(local_address);
                 auto addr = from_string.value().to_in_addr_t();
                 auto* hostent = gethostbyaddr(&addr, sizeof(in_addr), AF_INET);
                 if (hostent != nullptr) {
-                    auto host_name = StringView(hostent->h_name);
+                    auto host_name = StringView { hostent->h_name, strlen(hostent->h_name) };
                     if (!host_name.is_empty())
                         local_address = host_name;
                 }
             }
 
-            auto local_port = if_object.get("local_port").to_string();
+            auto local_port = if_object.get("local_port"sv).to_string();
             if (!flag_numeric) {
-                auto service = getservbyport(htons(if_object.get("local_port").to_u32()), "tcp");
+                auto service = getservbyport(htons(if_object.get("local_port"sv).to_u32()), "tcp");
                 if (service != nullptr) {
-                    auto s_name = StringView(service->s_name);
+                    auto s_name = StringView { service->s_name, strlen(service->s_name) };
                     if (!s_name.is_empty())
                         local_port = s_name;
                 }
             }
 
-            auto state = if_object.get("state").to_string();
-            auto origin_pid = (if_object.has("origin_pid")) ? if_object.get("origin_pid").to_u32() : -1;
+            auto state = if_object.get("state"sv).to_string();
+            auto origin_pid = (if_object.has("origin_pid"sv)) ? if_object.get("origin_pid"sv).to_u32() : -1;
 
             if (!flag_all && ((state == "Listen" && !flag_list) || (state != "Listen" && flag_list)))
                 continue;
@@ -250,63 +251,63 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     }
 
     if (!has_protocol_flag || flag_udp) {
-        auto file = TRY(Core::File::open("/proc/net/udp", Core::OpenMode::ReadOnly));
+        auto file = TRY(Core::File::open("/sys/kernel/net/udp", Core::OpenMode::ReadOnly));
         auto file_contents = file->read_all();
         auto json = TRY(JsonValue::from_string(file_contents));
 
         Vector<JsonValue> sorted_regions = json.as_array().values();
         quick_sort(sorted_regions, [](auto& a, auto& b) {
-            return a.as_object().get("local_port").to_u32() < b.as_object().get("local_port").to_u32();
+            return a.as_object().get("local_port"sv).to_u32() < b.as_object().get("local_port"sv).to_u32();
         });
 
         for (auto& value : sorted_regions) {
             auto& if_object = value.as_object();
 
-            auto local_address = if_object.get("local_address").to_string();
+            auto local_address = if_object.get("local_address"sv).to_string();
             if (!flag_numeric) {
                 auto from_string = IPv4Address::from_string(local_address);
                 auto addr = from_string.value().to_in_addr_t();
                 auto* hostent = gethostbyaddr(&addr, sizeof(in_addr), AF_INET);
                 if (hostent != nullptr) {
-                    auto host_name = StringView(hostent->h_name);
+                    auto host_name = StringView { hostent->h_name, strlen(hostent->h_name) };
                     if (!host_name.is_empty())
                         local_address = host_name;
                 }
             }
 
-            auto local_port = if_object.get("local_port").to_string();
+            auto local_port = if_object.get("local_port"sv).to_string();
             if (!flag_numeric) {
-                auto service = getservbyport(htons(if_object.get("local_port").to_u32()), "udp");
+                auto service = getservbyport(htons(if_object.get("local_port"sv).to_u32()), "udp");
                 if (service != nullptr) {
-                    auto s_name = StringView(service->s_name);
+                    auto s_name = StringView { service->s_name, strlen(service->s_name) };
                     if (!s_name.is_empty())
                         local_port = s_name;
                 }
             }
 
-            auto peer_address = if_object.get("peer_address").to_string();
+            auto peer_address = if_object.get("peer_address"sv).to_string();
             if (!flag_numeric) {
                 auto from_string = IPv4Address::from_string(peer_address);
                 auto addr = from_string.value().to_in_addr_t();
                 auto* hostent = gethostbyaddr(&addr, sizeof(in_addr), AF_INET);
                 if (hostent != nullptr) {
-                    auto host_name = StringView(hostent->h_name);
+                    auto host_name = StringView { hostent->h_name, strlen(hostent->h_name) };
                     if (!host_name.is_empty())
                         peer_address = host_name;
                 }
             }
 
-            auto peer_port = if_object.get("peer_port").to_string();
+            auto peer_port = if_object.get("peer_port"sv).to_string();
             if (!flag_numeric) {
-                auto service = getservbyport(htons(if_object.get("peer_port").to_u32()), "udp");
+                auto service = getservbyport(htons(if_object.get("peer_port"sv).to_u32()), "udp");
                 if (service != nullptr) {
-                    auto s_name = StringView(service->s_name);
+                    auto s_name = StringView { service->s_name, strlen(service->s_name) };
                     if (!s_name.is_empty())
                         peer_port = s_name;
                 }
             }
 
-            auto origin_pid = (if_object.has("origin_pid")) ? if_object.get("origin_pid").to_u32() : -1;
+            auto origin_pid = (if_object.has("origin_pid"sv)) ? if_object.get("origin_pid"sv).to_u32() : -1;
 
             if (protocol_column != -1)
                 columns[protocol_column].buffer = "udp";

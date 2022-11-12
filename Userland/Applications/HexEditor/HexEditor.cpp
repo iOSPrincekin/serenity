@@ -49,21 +49,9 @@ HexEditor::HexEditor()
     m_blink_timer->start();
 }
 
-void HexEditor::set_readonly(bool readonly)
+ErrorOr<void> HexEditor::open_new_file(size_t size)
 {
-    if (m_readonly == readonly)
-        return;
-    m_readonly = readonly;
-}
-
-bool HexEditor::open_new_file(size_t size)
-{
-    auto maybe_buffer = ByteBuffer::create_zeroed(size);
-    if (maybe_buffer.is_error()) {
-        return false;
-    }
-
-    m_document = make<HexDocumentMemory>(maybe_buffer.release_value());
+    m_document = make<HexDocumentMemory>(TRY(ByteBuffer::create_zeroed(size)));
     set_content_length(m_document->size());
     m_position = 0;
     m_cursor_at_low_nibble = false;
@@ -73,7 +61,7 @@ bool HexEditor::open_new_file(size_t size)
     update();
     update_status();
 
-    return true;
+    return {};
 }
 
 void HexEditor::open_file(NonnullRefPtr<Core::File> file)
@@ -94,8 +82,22 @@ void HexEditor::fill_selection(u8 fill_byte)
     if (!has_selection())
         return;
 
-    for (size_t i = m_selection_start; i < m_selection_end; i++)
-        m_document->set(i, fill_byte);
+    ByteBuffer old_values;
+    ByteBuffer new_values;
+
+    size_t length = m_selection_end - m_selection_start;
+
+    new_values.resize(length);
+    old_values.resize(length);
+
+    for (size_t i = 0; i < length; i++) {
+        size_t position = m_selection_start + i;
+        old_values[i] = m_document->get(position).value;
+        new_values[i] = fill_byte;
+        m_document->set(position, fill_byte);
+    }
+
+    did_complete_action(m_selection_start, move(old_values), move(new_values));
 
     update();
     did_change();
@@ -128,13 +130,13 @@ void HexEditor::set_selection(size_t position, size_t length)
 bool HexEditor::save_as(NonnullRefPtr<Core::File> new_file)
 {
     if (m_document->type() == HexDocument::Type::File) {
-        HexDocumentFile* fileDocument = static_cast<HexDocumentFile*>(m_document.ptr());
-        if (!fileDocument->write_to_file(new_file))
+        auto& file_document = static_cast<HexDocumentFile&>(*m_document);
+        if (!file_document.write_to_file(new_file))
             return false;
-        fileDocument->set_file(new_file);
+        file_document.set_file(new_file);
     } else {
-        HexDocumentMemory* memoryDocument = static_cast<HexDocumentMemory*>(m_document.ptr());
-        if (!memoryDocument->write_to_file(new_file))
+        auto& memory_document = static_cast<HexDocumentMemory&>(*m_document);
+        if (!memory_document.write_to_file(new_file))
             return false;
         m_document = make<HexDocumentFile>(new_file);
     }
@@ -194,17 +196,17 @@ bool HexEditor::copy_selected_hex_to_clipboard_as_c_code()
 
     StringBuilder output_string_builder;
     output_string_builder.appendff("unsigned char raw_data[{}] = {{\n", m_selection_end - m_selection_start);
-    output_string_builder.append("    ");
+    output_string_builder.append("    "sv);
     for (size_t i = m_selection_start, j = 1; i < m_selection_end; i++, j++) {
         output_string_builder.appendff("{:#02X}", m_document->get(i).value);
         if (i >= m_selection_end - 1)
             continue;
         if ((j % 12) == 0)
-            output_string_builder.append(",\n    ");
+            output_string_builder.append(",\n    "sv);
         else
-            output_string_builder.append(", ");
+            output_string_builder.append(", "sv);
     }
-    output_string_builder.append("\n};\n");
+    output_string_builder.append("\n};\n"sv);
 
     GUI::Clipboard::the().set_plain_text(output_string_builder.to_string());
     return true;
@@ -447,20 +449,20 @@ void HexEditor::keydown_event(GUI::KeyEvent& event)
     }
 
     if (event.key() == KeyCode::Key_PageUp) {
-        auto cursor_location_change = min(bytes_per_row() * visible_content_rect().height(), m_position);
+        auto cursor_location_change = min(bytes_per_row() * floor(visible_content_rect().height() / line_height()), m_position);
         if (cursor_location_change > 0)
             move_and_update_cursor_by(-cursor_location_change);
         return;
     }
 
     if (event.key() == KeyCode::Key_PageDown) {
-        auto cursor_location_change = min(bytes_per_row() * visible_content_rect().height(), m_document->size() - m_position);
+        auto cursor_location_change = min(bytes_per_row() * floor(visible_content_rect().height() / line_height()), m_document->size() - m_position);
         if (cursor_location_change > 0)
             move_and_update_cursor_by(cursor_location_change);
         return;
     }
 
-    if (!is_readonly() && !event.ctrl() && !event.alt() && !event.text().is_empty()) {
+    if (!event.ctrl() && !event.alt() && !event.text().is_empty()) {
         if (m_edit_mode == EditMode::Hex) {
             hex_mode_keydown_event(event);
         } else {
@@ -477,6 +479,8 @@ void HexEditor::hex_mode_keydown_event(GUI::KeyEvent& event)
 
         VERIFY(m_position <= m_document->size());
 
+        auto old_value = m_document->get(m_position).value;
+
         // yes, this is terrible... but it works.
         auto value = (event.key() >= KeyCode::Key_0 && event.key() <= KeyCode::Key_9)
             ? event.key() - KeyCode::Key_0
@@ -484,11 +488,14 @@ void HexEditor::hex_mode_keydown_event(GUI::KeyEvent& event)
 
         if (!m_cursor_at_low_nibble) {
             u8 existing_change = m_document->get(m_position).value;
-            existing_change = value << 4 | (existing_change & 0xF); // shift new value left 4 bits, OR with existing last 4 bits
-            m_document->set(m_position, existing_change);
+            u8 new_value = value << 4 | (existing_change & 0xF); // shift new value left 4 bits, OR with existing last 4 bits
+            m_document->set(m_position, new_value);
+            did_complete_action(m_position, old_value, new_value);
             m_cursor_at_low_nibble = true;
         } else {
-            m_document->set(m_position, (m_document->get(m_position).value & 0xF0) | value); // save the first 4 bits, OR the new value in the last 4
+            u8 new_value = (m_document->get(m_position).value & 0xF0) | value; // save the first 4 bits, OR the new value in the last 4
+            m_document->set(m_position, new_value);
+            did_complete_action(m_position, old_value, new_value);
             if (m_position + 1 < m_document->size())
                 m_position++;
             m_cursor_at_low_nibble = false;
@@ -510,7 +517,11 @@ void HexEditor::text_mode_keydown_event(GUI::KeyEvent& event)
     if (event.code_point() == 0) // This is a control key
         return;
 
-    m_document->set(m_position, event.code_point());
+    auto old_value = m_document->get(m_position).value;
+    auto new_value = event.code_point();
+    m_document->set(m_position, new_value);
+    did_complete_action(m_position, old_value, new_value);
+
     if (m_position + 1 < m_document->size())
         m_position++;
     m_cursor_at_low_nibble = false;
@@ -530,7 +541,7 @@ void HexEditor::update_status()
 void HexEditor::did_change()
 {
     if (on_change)
-        on_change();
+        on_change(m_document->is_dirty());
 }
 
 void HexEditor::paint_event(GUI::PaintEvent& event)
@@ -598,14 +609,29 @@ void HexEditor::paint_event(GUI::PaintEvent& event)
             bool const highlight_flag = selection_inbetween_start_end || selection_inbetween_end_start;
 
             Gfx::IntRect hex_display_rect {
-                frame_thickness() + offset_margin_width() + static_cast<int>(j) * cell_width() + 2 * m_padding,
-                frame_thickness() + m_padding + static_cast<int>(i) * line_height(),
+                frame_thickness() + offset_margin_width() + j * cell_width() + 2 * m_padding,
+                frame_thickness() + m_padding + i * line_height(),
                 cell_width(),
                 line_height() - m_line_spacing
             };
+            Gfx::IntRect background_rect {
+                frame_thickness() + offset_margin_width() + j * cell_width() + 1 * m_padding,
+                frame_thickness() + m_line_spacing / 2 + i * line_height(),
+                cell_width(),
+                line_height()
+            };
+
+            const u8 cell_value = m_document->get(byte_position).value;
+            auto line = String::formatted("{:02X}", cell_value);
 
             Gfx::Color background_color = palette().color(background_role());
-            Gfx::Color text_color = edited_flag ? Color::Red : palette().color(foreground_role());
+            Gfx::Color text_color = [&]() -> Gfx::Color {
+                if (edited_flag)
+                    return Color::Red;
+                if (cell_value == 0x00)
+                    return palette().color(ColorRole::PlaceholderText);
+                return palette().color(foreground_role());
+            }();
 
             if (highlight_flag) {
                 background_color = edited_flag ? palette().selection().inverted() : palette().selection();
@@ -614,10 +640,8 @@ void HexEditor::paint_event(GUI::PaintEvent& event)
                 background_color = palette().inactive_selection();
                 text_color = palette().inactive_selection_text();
             }
-            painter.fill_rect(hex_display_rect, background_color);
+            painter.fill_rect(background_rect, background_color);
 
-            const u8 cell_value = m_document->get(byte_position).value;
-            auto line = String::formatted("{:02X}", cell_value);
             painter.draw_text(hex_display_rect, line, Gfx::TextAlignment::TopLeft, text_color);
 
             if (m_edit_mode == EditMode::Hex) {
@@ -633,14 +657,26 @@ void HexEditor::paint_event(GUI::PaintEvent& event)
             }
 
             Gfx::IntRect text_display_rect {
-                static_cast<int>(frame_thickness() + offset_margin_width() + bytes_per_row() * cell_width() + j * character_width() + 4 * m_padding),
-                static_cast<int>(frame_thickness() + m_padding + i * line_height()),
-                static_cast<int>(character_width()),
-                static_cast<int>(line_height() - m_line_spacing)
+                frame_thickness() + offset_margin_width() + bytes_per_row() * cell_width() + j * character_width() + 4 * m_padding,
+                frame_thickness() + m_padding + i * line_height(),
+                character_width(),
+                line_height() - m_line_spacing
+            };
+            Gfx::IntRect text_background_rect {
+                frame_thickness() + offset_margin_width() + bytes_per_row() * cell_width() + j * character_width() + 4 * m_padding,
+                frame_thickness() + m_line_spacing / 2 + i * line_height(),
+                character_width(),
+                line_height()
             };
 
             background_color = palette().color(background_role());
-            text_color = edited_flag ? Color::Red : palette().color(foreground_role());
+            text_color = [&]() -> Gfx::Color {
+                if (edited_flag)
+                    return Color::Red;
+                if (cell_value == 0x00)
+                    return palette().color(ColorRole::PlaceholderText);
+                return palette().color(foreground_role());
+            }();
 
             if (highlight_flag) {
                 background_color = edited_flag ? palette().selection().inverted() : palette().selection();
@@ -650,7 +686,7 @@ void HexEditor::paint_event(GUI::PaintEvent& event)
                 text_color = palette().inactive_selection_text();
             }
 
-            painter.fill_rect(text_display_rect, background_color);
+            painter.fill_rect(text_background_rect, background_color);
             painter.draw_text(text_display_rect, String::formatted("{:c}", isprint(cell_value) ? cell_value : '.'), Gfx::TextAlignment::TopLeft, text_color);
 
             if (m_edit_mode == EditMode::Text) {
@@ -667,7 +703,7 @@ void HexEditor::paint_event(GUI::PaintEvent& event)
 
 void HexEditor::select_all()
 {
-    highlight(0, m_document->size() - 1);
+    highlight(0, m_document->size());
     set_position(0);
 }
 
@@ -682,7 +718,7 @@ Optional<size_t> HexEditor::find_and_highlight(ByteBuffer& needle, size_t start)
 {
     auto end_of_match = find(needle, start);
     if (end_of_match.has_value()) {
-        highlight(end_of_match.value() - needle.size(), end_of_match.value() - 1);
+        highlight(end_of_match.value() - needle.size(), end_of_match.value());
     }
     return end_of_match;
 }
@@ -763,10 +799,8 @@ Vector<Match> HexEditor::find_all_strings(size_t min_length)
             }
             builder.append(c);
         } else {
-            if (builder.length() >= min_length) {
-                dbgln("find_all_strings: relative_offset={} string={}", offset, builder.to_string());
+            if (builder.length() >= min_length)
                 matches.append({ offset, builder.to_string() });
-            }
             builder.clear();
             found_string = false;
         }
@@ -785,4 +819,57 @@ void HexEditor::reset_cursor_blink_state()
 {
     m_cursor_blink_active = true;
     m_blink_timer->restart();
+}
+
+void HexEditor::did_complete_action(size_t position, u8 old_value, u8 new_value)
+{
+    if (old_value == new_value)
+        return;
+
+    auto command = make<HexDocumentUndoCommand>(m_document->make_weak_ptr(), position);
+
+    // We know this won't allocate because the buffers start empty
+    MUST(command->try_add_changed_byte(old_value, new_value));
+    // FIXME: Handle errors
+    MUST(m_undo_stack.try_push(move(command)));
+}
+
+void HexEditor::did_complete_action(size_t position, ByteBuffer&& old_values, ByteBuffer&& new_values)
+{
+    auto command = make<HexDocumentUndoCommand>(m_document->make_weak_ptr(), position);
+
+    // FIXME: Handle errors
+    MUST(command->try_add_changed_bytes(move(old_values), move(new_values)));
+    MUST(m_undo_stack.try_push(move(command)));
+}
+
+bool HexEditor::undo()
+{
+    if (!m_undo_stack.can_undo())
+        return false;
+
+    m_undo_stack.undo();
+    reset_cursor_blink_state();
+    update();
+    update_status();
+    did_change();
+    return true;
+}
+
+bool HexEditor::redo()
+{
+    if (!m_undo_stack.can_redo())
+        return false;
+
+    m_undo_stack.redo();
+    reset_cursor_blink_state();
+    update();
+    update_status();
+    did_change();
+    return true;
+}
+
+GUI::UndoStack& HexEditor::undo_stack()
+{
+    return m_undo_stack;
 }

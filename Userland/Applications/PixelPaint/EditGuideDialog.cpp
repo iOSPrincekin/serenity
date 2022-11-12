@@ -20,7 +20,7 @@ EditGuideDialog::EditGuideDialog(GUI::Window* parent_window, String const& offse
 {
     set_title("Create new Guide");
     set_icon(parent_window->icon());
-    resize(200, 120);
+    resize(200, 130);
     set_resizable(false);
 
     auto& main_widget = set_main_widget<GUI::Widget>();
@@ -70,6 +70,7 @@ EditGuideDialog::EditGuideDialog(GUI::Window* parent_window, String const& offse
 
         done(ExecResult::OK);
     };
+    ok_button->set_default(true);
 
     cancel_button->on_click = [this](auto) {
         done(ExecResult::Cancel);

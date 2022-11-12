@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2018-2021, Andreas Kling <kling@serenityos.org>
  * Copyright (c) 2022, the SerenityOS developers.
+ * Copyright (c) 2022, networkException <networkexception@serenityos.org>
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
@@ -93,7 +94,7 @@ void AbstractButton::mousemove_event(MouseEvent& event)
 {
     bool is_over = rect().contains(event.position());
     m_hovered = is_over;
-    if (event.buttons() & MouseButton::Primary) {
+    if (event.buttons() & m_pressed_mouse_button) {
         bool being_pressed = is_over;
         if (being_pressed != m_being_pressed) {
             m_being_pressed = being_pressed;
@@ -111,8 +112,9 @@ void AbstractButton::mousemove_event(MouseEvent& event)
 
 void AbstractButton::mousedown_event(MouseEvent& event)
 {
-    if (event.button() == MouseButton::Primary) {
+    if (event.button() & m_allowed_mouse_buttons_for_pressing) {
         m_being_pressed = true;
+        m_pressed_mouse_button = event.button();
         repaint();
 
         if (m_auto_repeat_interval) {
@@ -126,14 +128,26 @@ void AbstractButton::mousedown_event(MouseEvent& event)
 
 void AbstractButton::mouseup_event(MouseEvent& event)
 {
-    if (event.button() == MouseButton::Primary && m_being_pressed) {
+    if (event.button() == m_pressed_mouse_button && m_being_pressed) {
         bool was_auto_repeating = m_auto_repeat_timer->is_active();
         m_auto_repeat_timer->stop();
         bool was_being_pressed = m_being_pressed;
         m_being_pressed = false;
-        repaint();
-        if (was_being_pressed && !was_auto_repeating)
-            click(event.modifiers());
+        m_pressed_mouse_button = MouseButton::None;
+        if (!is_checkable() || is_checked())
+            repaint();
+        if (was_being_pressed && !was_auto_repeating) {
+            switch (event.button()) {
+            case MouseButton::Primary:
+                click(event.modifiers());
+                break;
+            case MouseButton::Middle:
+                middle_mouse_click(event.modifiers());
+                break;
+            default:
+                VERIFY_NOT_REACHED();
+            }
+        }
     }
     Widget::mouseup_event(event);
 }
@@ -199,7 +213,7 @@ void AbstractButton::keydown_event(KeyEvent& event)
             new_checked_index = this_index == 0 ? exclusive_siblings.size() - 1 : this_index - 1;
         else
             new_checked_index = this_index == exclusive_siblings.size() - 1 ? 0 : this_index + 1;
-        exclusive_siblings[new_checked_index].set_checked(true);
+        exclusive_siblings[new_checked_index].click();
         return;
     }
     Widget::keydown_event(event);
@@ -236,6 +250,8 @@ void AbstractButton::paint_text(Painter& painter, Gfx::IntRect const& rect, Gfx:
 void AbstractButton::change_event(Event& event)
 {
     if (event.type() == Event::Type::EnabledChange) {
+        if (m_auto_repeat_timer->is_active())
+            m_auto_repeat_timer->stop();
         if (!is_enabled()) {
             bool was_being_pressed = m_being_pressed;
             m_being_pressed = false;

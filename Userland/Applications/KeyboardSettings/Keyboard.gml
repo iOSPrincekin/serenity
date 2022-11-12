@@ -1,8 +1,7 @@
 @GUI::Frame {
     fill_with_background_color: true
     layout: @GUI::VerticalBoxLayout {
-        margins: [10]
-        spacing: 5
+        margins: [8]
     }
 
     @GUI::GroupBox {
@@ -60,7 +59,7 @@
     }
 
     @GUI::GroupBox {
-        title: "Test input"
+        title: "Test Input"
         layout: @GUI::HorizontalBoxLayout {
             margins: [16, 8, 8]
             spacing: 16

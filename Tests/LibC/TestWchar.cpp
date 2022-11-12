@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, the SerenityOS developers.
+ * Copyright (c) 2021-2022, the SerenityOS developers.
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <string.h>
+#include <time.h>
 #include <wchar.h>
 
 TEST_CASE(wcspbrk)
@@ -238,17 +239,17 @@ TEST_CASE(mbrtowc)
     // Ensure that we can parse normal ASCII characters.
     ret = mbrtowc(&wc, "Hello", 5, &state);
     EXPECT_EQ(ret, 1ul);
-    EXPECT_EQ(wc, 'H');
+    EXPECT_EQ(wc, static_cast<wchar_t>('H'));
 
     // Try two three-byte codepoints (™™), only one of which should be consumed.
     ret = mbrtowc(&wc, "\xe2\x84\xa2\xe2\x84\xa2", 6, &state);
     EXPECT_EQ(ret, 3ul);
-    EXPECT_EQ(wc, 0x2122);
+    EXPECT_EQ(wc, static_cast<wchar_t>(0x2122));
 
     // Try a null character, which should return 0 and reset the state to the initial state.
     ret = mbrtowc(&wc, "\x00\x00", 2, &state);
     EXPECT_EQ(ret, 0ul);
-    EXPECT_EQ(wc, 0);
+    EXPECT_EQ(wc, static_cast<wchar_t>(0));
     EXPECT_NE(mbsinit(&state), 0);
 
     // Try an incomplete multibyte character.
@@ -261,7 +262,7 @@ TEST_CASE(mbrtowc)
     // Finish the previous multibyte character.
     ret = mbrtowc(&wc, "\xa2", 1, &state);
     EXPECT_EQ(ret, 1ul);
-    EXPECT_EQ(wc, 0x2122);
+    EXPECT_EQ(wc, static_cast<wchar_t>(0x2122));
 
     // Try an invalid multibyte sequence.
     // Reset the state afterwards because the effects are undefined.
@@ -549,17 +550,17 @@ TEST_CASE(mbtowc)
     // Ensure that we can parse normal ASCII characters.
     ret = mbtowc(&wc, "Hello", 5);
     EXPECT_EQ(ret, 1);
-    EXPECT_EQ(wc, 'H');
+    EXPECT_EQ(wc, static_cast<wchar_t>('H'));
 
     // Try two three-byte codepoints (™™), only one of which should be consumed.
     ret = mbtowc(&wc, "\xe2\x84\xa2\xe2\x84\xa2", 6);
     EXPECT_EQ(ret, 3);
-    EXPECT_EQ(wc, 0x2122);
+    EXPECT_EQ(wc, static_cast<wchar_t>(0x2122));
 
     // Try a null character, which should return 0.
     ret = mbtowc(&wc, "\x00\x00", 2);
     EXPECT_EQ(ret, 0);
-    EXPECT_EQ(wc, 0);
+    EXPECT_EQ(wc, static_cast<wchar_t>(0));
 
     // Try an incomplete multibyte character.
     ret = mbtowc(&wc, "\xe2\x84", 2);
@@ -613,4 +614,47 @@ TEST_CASE(mblen)
     ret = mblen("\xff", 1);
     EXPECT_EQ(ret, -1);
     EXPECT_EQ(errno, EILSEQ);
+}
+
+TEST_CASE(wcsftime)
+{
+    // FIXME: Test actual wide char inputs once those are implemented.
+
+    auto* buf = static_cast<wchar_t*>(malloc(32 * sizeof(wchar_t)));
+    if (!buf) {
+        FAIL("Could not allocate space for copy target");
+        return;
+    }
+
+    struct tm time = {
+        .tm_sec = 54,
+        .tm_min = 44,
+        .tm_hour = 12,
+        .tm_mday = 27,
+        .tm_mon = 4,
+        .tm_year = 121,
+        .tm_wday = 4,
+        .tm_yday = 0,
+        .tm_isdst = 0,
+    };
+
+    size_t ret;
+
+    // Normal behavior.
+    ret = wcsftime(buf, 32, L"%a, %d %b %Y %H:%M:%S", &time);
+    EXPECT_EQ(ret, 25ul);
+    EXPECT_EQ(wcscmp(buf, L"Thu, 27 May 2021 12:44:54"), 0);
+
+    // String fits exactly.
+    ret = wcsftime(buf, 26, L"%a, %d %b %Y %H:%M:%S", &time);
+    EXPECT_EQ(ret, 25ul);
+    EXPECT_EQ(wcscmp(buf, L"Thu, 27 May 2021 12:44:54"), 0);
+
+    // Buffer is too small.
+    ret = wcsftime(buf, 25, L"%a, %d %b %Y %H:%M:%S", &time);
+    EXPECT_EQ(ret, 0ul);
+    ret = wcsftime(buf, 1, L"%a, %d %b %Y %H:%M:%S", &time);
+    EXPECT_EQ(ret, 0ul);
+    ret = wcsftime(nullptr, 0, L"%a, %d %b %Y %H:%M:%S", &time);
+    EXPECT_EQ(ret, 0ul);
 }

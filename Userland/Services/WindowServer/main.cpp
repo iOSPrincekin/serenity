@@ -9,6 +9,7 @@
 #include "EventLoop.h"
 #include "Screen.h"
 #include "WindowManager.h"
+#include <Kernel/API/Graphics.h>
 #include <LibCore/ConfigFile.h>
 #include <LibCore/DirIterator.h>
 #include <LibCore/File.h>
@@ -26,9 +27,11 @@ ErrorOr<int> serenity_main(Main::Arguments)
     TRY(Core::System::unveil("/tmp", "cw"));
     TRY(Core::System::unveil("/etc/WindowServer.ini", "rwc"));
     TRY(Core::System::unveil("/etc/Keyboard.ini", "r"));
-    TRY(Core::System::unveil("/dev", "rw"));
+    TRY(Core::System::unveil("/dev/tty", "rw"));
+    TRY(Core::System::unveil("/dev/gpu/", "rw"));
+    TRY(Core::System::unveil("/dev/input/", "rw"));
     TRY(Core::System::unveil("/bin/keymap", "x"));
-    TRY(Core::System::unveil("/proc/keymap", "r"));
+    TRY(Core::System::unveil("/sys/kernel/keymap", "r"));
 
     struct sigaction act = {};
     act.sa_flags = SA_NOCLDWAIT;
@@ -46,14 +49,16 @@ ErrorOr<int> serenity_main(Main::Arguments)
 
     auto default_font_query = wm_config->read_entry("Fonts", "Default", "Katica 10 400 0");
     auto fixed_width_font_query = wm_config->read_entry("Fonts", "FixedWidth", "Csilla 10 400 0");
+    auto window_title_font_query = wm_config->read_entry("Fonts", "WindowTitle", "Katica 10 700 0");
 
     Gfx::FontDatabase::set_default_font_query(default_font_query);
     Gfx::FontDatabase::set_fixed_width_font_query(fixed_width_font_query);
+    Gfx::FontDatabase::set_window_title_font_query(window_title_font_query);
 
     {
         // FIXME: Map switched tty from screens.
         // FIXME: Gracefully cleanup the TTY graphics mode.
-        int tty_fd = TRY(Core::System::open("/dev/tty", O_RDWR));
+        int tty_fd = TRY(Core::System::open("/dev/tty"sv, O_RDWR));
         TRY(Core::System::ioctl(tty_fd, KDSETMODE, KD_GRAPHICS));
         TRY(Core::System::close(tty_fd));
     }
@@ -68,28 +73,33 @@ ErrorOr<int> serenity_main(Main::Arguments)
         WindowServer::ScreenLayout screen_layout;
         String error_msg;
 
-        auto add_unconfigured_display_connector_devices = [&]() {
-            // Enumerate the /dev/fbX devices and try to set up any ones we find that we haven't already used
+        auto add_unconfigured_display_connector_devices = [&]() -> ErrorOr<void> {
+            // Enumerate the /dev/gpu/connectorX devices and try to set up any ones we find that we haven't already used
             Core::DirIterator di("/dev/gpu", Core::DirIterator::SkipParentAndBaseDir);
             while (di.has_next()) {
                 auto path = di.next_path();
-                if (!path.starts_with("connector"))
+                if (!path.starts_with("connector"sv))
                     continue;
                 auto full_path = String::formatted("/dev/gpu/{}", path);
                 if (!Core::File::is_device(full_path))
                     continue;
+                auto display_connector_fd = TRY(Core::System::open(full_path, O_RDWR | O_CLOEXEC));
+                if (int rc = graphics_connector_set_responsible(display_connector_fd); rc != 0)
+                    return Error::from_syscall("graphics_connector_set_responsible"sv, rc);
+                TRY(Core::System::close(display_connector_fd));
                 if (fb_devices_configured.find(full_path) != fb_devices_configured.end())
                     continue;
                 if (!screen_layout.try_auto_add_display_connector(full_path))
-                    dbgln("Could not auto-add framebuffer device {} to screen layout", full_path);
+                    dbgln("Could not auto-add display connector device {} to screen layout", full_path);
             }
+            return {};
         };
 
-        auto apply_and_generate_generic_screen_layout = [&]() {
+        auto apply_and_generate_generic_screen_layout = [&]() -> ErrorOr<bool> {
             screen_layout = {};
             fb_devices_configured = {};
 
-            add_unconfigured_display_connector_devices();
+            TRY(add_unconfigured_display_connector_devices());
             if (!WindowServer::Screen::apply_layout(move(screen_layout), error_msg)) {
                 dbgln("Failed to apply generated fallback screen layout: {}", error_msg);
                 return false;
@@ -104,23 +114,27 @@ ErrorOr<int> serenity_main(Main::Arguments)
                 if (screen_info.mode == WindowServer::ScreenLayout::Screen::Mode::Device)
                     fb_devices_configured.set(screen_info.device.value());
 
-            add_unconfigured_display_connector_devices();
+            TRY(add_unconfigured_display_connector_devices());
 
             if (!WindowServer::Screen::apply_layout(move(screen_layout), error_msg)) {
                 dbgln("Error applying screen layout: {}", error_msg);
-                if (!apply_and_generate_generic_screen_layout())
-                    return 1;
+                TRY(apply_and_generate_generic_screen_layout());
             }
         } else {
             dbgln("Error loading screen configuration: {}", error_msg);
-            if (!apply_and_generate_generic_screen_layout())
-                return 1;
+            TRY(apply_and_generate_generic_screen_layout());
         }
     }
 
     auto& screen_input = WindowServer::ScreenInput::the();
     screen_input.set_cursor_location(WindowServer::Screen::main().rect().center());
-    screen_input.set_acceleration_factor(atof(wm_config->read_entry("Mouse", "AccelerationFactor", "1.0").characters()));
+    double f = atof(wm_config->read_entry("Mouse", "AccelerationFactor", "1.0").characters());
+    if (f < WindowServer::mouse_accel_min || f > WindowServer::mouse_accel_max) {
+        dbgln("Mouse.AccelerationFactor out of range resetting to 1.0");
+        f = 1.0;
+        wm_config->write_entry("Mouse", "AccelerationFactor", "1.0");
+    }
+    screen_input.set_acceleration_factor(f);
     screen_input.set_scroll_step_size(wm_config->read_num_entry("Mouse", "ScrollStepSize", 4));
 
     WindowServer::Compositor::the();
@@ -129,10 +143,6 @@ ErrorOr<int> serenity_main(Main::Arguments)
     auto mm = WindowServer::MenuManager::construct();
 
     TRY(Core::System::unveil("/tmp", ""));
-
-    // NOTE: Because we dynamically need to be able to open new /dev/fb*
-    // devices we can't really unveil all of /dev unless we have some
-    // other mechanism that can hand us file descriptors for these.
 
     TRY(Core::System::unveil(nullptr, nullptr));
 

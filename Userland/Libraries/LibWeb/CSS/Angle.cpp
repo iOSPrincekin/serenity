@@ -58,7 +58,7 @@ float Angle::to_degrees() const
     case Type::Grad:
         return m_value * (360.0f / 400.0f);
     case Type::Rad:
-        return m_value * (360.0f / 2 * AK::Pi<float>);
+        return m_value * (180.0f / AK::Pi<float>);
     case Type::Turn:
         return m_value * 360.0f;
     }
@@ -94,6 +94,12 @@ Optional<Angle::Type> Angle::unit_from_name(StringView name)
         return Type::Turn;
     }
     return {};
+}
+
+NonnullRefPtr<CalculatedStyleValue> Angle::calculated_style_value() const
+{
+    VERIFY(!m_calculated_style.is_null());
+    return *m_calculated_style;
 }
 
 }

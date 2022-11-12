@@ -8,7 +8,6 @@
 #pragma once
 
 #include <AK/CircularQueue.h>
-#include <AK/DoublyLinkedList.h>
 #include <AK/Types.h>
 #include <Kernel/API/KeyCode.h>
 #include <Kernel/Devices/CharacterDevice.h>
@@ -46,7 +45,7 @@ public:
 
 protected:
     KeyboardDevice();
-    mutable Spinlock m_queue_lock;
+    mutable Spinlock m_queue_lock { LockRank::None };
     CircularQueue<Event, 16> m_queue;
     // ^CharacterDevice
     virtual StringView class_name() const override { return "KeyboardDevice"sv; }

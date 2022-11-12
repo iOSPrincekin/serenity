@@ -13,10 +13,11 @@ namespace Web::Layout {
 
 class SVGFormattingContext : public FormattingContext {
 public:
-    explicit SVGFormattingContext(FormattingState&, Box const&, FormattingContext* parent);
+    explicit SVGFormattingContext(LayoutState&, Box const&, FormattingContext* parent);
     ~SVGFormattingContext();
 
-    virtual void run(Box const&, LayoutMode) override;
+    virtual void run(Box const&, LayoutMode, AvailableSpace const&) override;
+    virtual float automatic_content_height() const override;
 };
 
 }

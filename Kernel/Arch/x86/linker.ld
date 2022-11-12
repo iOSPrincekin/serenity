@@ -9,7 +9,6 @@ ENTRY(init)
 PHDRS
 {
   elf_headers PT_LOAD FILEHDR PHDRS FLAGS(PF_R) ;
-  super_pages PT_LOAD FLAGS(PF_R | PF_W) ;
   text PT_LOAD FLAGS(PF_R | PF_X) ;
   data PT_LOAD FLAGS(PF_R | PF_W) ;
   bss PT_LOAD FLAGS(PF_R | PF_W) ;
@@ -26,11 +25,6 @@ SECTIONS
     {
         start_of_elf_headers = .;
     } :elf_headers
-
-    .super_pages ALIGN(4K) (NOLOAD) : AT (ADDR(.super_pages))
-    {
-        *(.super_pages)
-    } :super_pages
 
     .text ALIGN(4K) : AT (ADDR(.text))
     {
@@ -77,7 +71,7 @@ SECTIONS
         end_of_kernel_data = .;
     } :data
 
-    .ro_after_init ALIGN(4K) (NOLOAD) : AT(ADDR(.ro_after_init))
+    .ro_after_init ALIGN(4K) : AT(ADDR(.ro_after_init))
     {
         start_of_ro_after_init = .;
         *(.ro_after_init);

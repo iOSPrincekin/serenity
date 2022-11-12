@@ -22,7 +22,13 @@ public:
         Invalid,
         HEAD,
         GET,
-        POST
+        POST,
+        DELETE,
+        PATCH,
+        OPTIONS,
+        TRACE,
+        CONNECT,
+        PUT,
     };
 
     struct Header {
@@ -66,5 +72,7 @@ private:
     Vector<Header> m_headers;
     ByteBuffer m_body;
 };
+
+String to_string(HttpRequest::Method);
 
 }

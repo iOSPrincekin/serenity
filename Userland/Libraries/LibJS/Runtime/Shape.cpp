@@ -5,15 +5,14 @@
  */
 
 #include <LibJS/Heap/DeferGC.h>
-#include <LibJS/Runtime/GlobalObject.h>
 #include <LibJS/Runtime/Shape.h>
+#include <LibJS/Runtime/VM.h>
 
 namespace JS {
 
 Shape* Shape::create_unique_clone() const
 {
-    VERIFY(m_global_object);
-    auto* new_shape = heap().allocate_without_global_object<Shape>(*m_global_object);
+    auto* new_shape = heap().allocate_without_realm<Shape>(m_realm);
     new_shape->m_unique = true;
     new_shape->m_prototype = m_prototype;
     ensure_property_table();
@@ -58,7 +57,7 @@ Shape* Shape::create_put_transition(StringOrSymbol const& property_key, Property
     TransitionKey key { property_key, attributes };
     if (auto* existing_shape = get_or_prune_cached_forward_transition(key))
         return existing_shape;
-    auto* new_shape = heap().allocate_without_global_object<Shape>(*this, property_key, attributes, TransitionType::Put);
+    auto* new_shape = heap().allocate_without_realm<Shape>(*this, property_key, attributes, TransitionType::Put);
     if (!m_forward_transitions)
         m_forward_transitions = make<HashMap<TransitionKey, WeakPtr<Shape>>>();
     m_forward_transitions->set(key, new_shape);
@@ -70,7 +69,7 @@ Shape* Shape::create_configure_transition(StringOrSymbol const& property_key, Pr
     TransitionKey key { property_key, attributes };
     if (auto* existing_shape = get_or_prune_cached_forward_transition(key))
         return existing_shape;
-    auto* new_shape = heap().allocate_without_global_object<Shape>(*this, property_key, attributes, TransitionType::Configure);
+    auto* new_shape = heap().allocate_without_realm<Shape>(*this, property_key, attributes, TransitionType::Configure);
     if (!m_forward_transitions)
         m_forward_transitions = make<HashMap<TransitionKey, WeakPtr<Shape>>>();
     m_forward_transitions->set(key, new_shape);
@@ -81,20 +80,20 @@ Shape* Shape::create_prototype_transition(Object* new_prototype)
 {
     if (auto* existing_shape = get_or_prune_cached_prototype_transition(new_prototype))
         return existing_shape;
-    auto* new_shape = heap().allocate_without_global_object<Shape>(*this, new_prototype);
+    auto* new_shape = heap().allocate_without_realm<Shape>(*this, new_prototype);
     if (!m_prototype_transitions)
         m_prototype_transitions = make<HashMap<Object*, WeakPtr<Shape>>>();
     m_prototype_transitions->set(new_prototype, new_shape);
     return new_shape;
 }
 
-Shape::Shape(Object& global_object)
-    : m_global_object(&global_object)
+Shape::Shape(Realm& realm)
+    : m_realm(realm)
 {
 }
 
 Shape::Shape(Shape& previous_shape, StringOrSymbol const& property_key, PropertyAttributes attributes, TransitionType transition_type)
-    : m_global_object(previous_shape.m_global_object)
+    : m_realm(previous_shape.m_realm)
     , m_previous(&previous_shape)
     , m_property_key(property_key)
     , m_prototype(previous_shape.m_prototype)
@@ -105,7 +104,7 @@ Shape::Shape(Shape& previous_shape, StringOrSymbol const& property_key, Property
 }
 
 Shape::Shape(Shape& previous_shape, Object* new_prototype)
-    : m_global_object(previous_shape.m_global_object)
+    : m_realm(previous_shape.m_realm)
     , m_previous(&previous_shape)
     , m_prototype(new_prototype)
     , m_property_count(previous_shape.m_property_count)
@@ -116,7 +115,7 @@ Shape::Shape(Shape& previous_shape, Object* new_prototype)
 void Shape::visit_edges(Cell::Visitor& visitor)
 {
     Cell::visit_edges(visitor);
-    visitor.visit(m_global_object);
+    visitor.visit(&m_realm);
     visitor.visit(m_prototype);
     visitor.visit(m_previous);
     m_property_key.visit_edges(visitor);

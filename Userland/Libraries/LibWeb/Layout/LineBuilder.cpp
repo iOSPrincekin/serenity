@@ -4,16 +4,16 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <LibWeb/Layout/BlockFormattingContext.h>
 #include <LibWeb/Layout/LineBuilder.h>
 #include <LibWeb/Layout/TextNode.h>
 
 namespace Web::Layout {
 
-LineBuilder::LineBuilder(InlineFormattingContext& context, FormattingState& formatting_state, LayoutMode layout_mode)
+LineBuilder::LineBuilder(InlineFormattingContext& context, LayoutState& layout_state)
     : m_context(context)
-    , m_formatting_state(formatting_state)
-    , m_containing_block_state(formatting_state.get_mutable(context.containing_block()))
-    , m_layout_mode(layout_mode)
+    , m_layout_state(layout_state)
+    , m_containing_block_state(layout_state.get_mutable(context.containing_block()))
 {
     begin_new_line(false);
 }
@@ -24,31 +24,44 @@ LineBuilder::~LineBuilder()
         update_last_line();
 }
 
-void LineBuilder::break_line()
+void LineBuilder::break_line(Optional<float> next_item_width)
 {
     update_last_line();
-    m_containing_block_state.line_boxes.append(LineBox());
-    begin_new_line(true);
+    size_t break_count = 0;
+    bool floats_intrude_at_current_y = false;
+    do {
+        m_containing_block_state.line_boxes.append(LineBox());
+        begin_new_line(true, break_count == 0);
+        break_count++;
+        floats_intrude_at_current_y = m_context.any_floats_intrude_at_y(m_current_y);
+    } while ((floats_intrude_at_current_y && !m_context.can_fit_new_line_at_y(m_current_y))
+        || (next_item_width.has_value()
+            && next_item_width.value() > m_available_width_for_current_line
+            && floats_intrude_at_current_y));
 }
 
-void LineBuilder::begin_new_line(bool increment_y)
+void LineBuilder::begin_new_line(bool increment_y, bool is_first_break_in_sequence)
 {
-    if (increment_y)
-        m_current_y += max(m_max_height_on_current_line, m_context.containing_block().line_height());
-
-    switch (m_layout_mode) {
-    case LayoutMode::Normal:
-        m_available_width_for_current_line = m_context.available_space_for_line(m_current_y);
-        break;
-    case LayoutMode::MinContent:
-        m_available_width_for_current_line = 0;
-        break;
-    case LayoutMode::MaxContent:
-        m_available_width_for_current_line = INFINITY;
-        break;
+    if (increment_y) {
+        if (is_first_break_in_sequence) {
+            // First break is simple, just go to the start of the next line.
+            m_current_y += max(m_max_height_on_current_line, m_context.containing_block().line_height());
+        } else {
+            // We're doing more than one break in a row.
+            // This means we're trying to squeeze past intruding floats.
+            // Scan 1px at a time until we find a Y value where a new line can fit.
+            // FIXME: This is super dumb and inefficient.
+            float candidate_y = m_current_y + 1;
+            while (true) {
+                if (m_context.can_fit_new_line_at_y(candidate_y))
+                    break;
+                ++candidate_y;
+            }
+            m_current_y = candidate_y;
+        }
     }
+    recalculate_available_space();
     m_max_height_on_current_line = 0;
-
     m_last_line_needs_update = true;
 }
 
@@ -62,9 +75,9 @@ LineBox& LineBuilder::ensure_last_line_box()
 
 void LineBuilder::append_box(Box const& box, float leading_size, float trailing_size, float leading_margin, float trailing_margin)
 {
-    auto& box_state = m_formatting_state.get_mutable(box);
+    auto& box_state = m_layout_state.get_mutable(box);
     auto& line_box = ensure_last_line_box();
-    line_box.add_fragment(box, 0, 0, leading_size, trailing_size, leading_margin, trailing_margin, box_state.content_width, box_state.content_height, box_state.border_box_top(), box_state.border_box_bottom());
+    line_box.add_fragment(box, 0, 0, leading_size, trailing_size, leading_margin, trailing_margin, box_state.content_width(), box_state.content_height(), box_state.border_box_top(), box_state.border_box_bottom());
     m_max_height_on_current_line = max(m_max_height_on_current_line, box_state.border_box_height());
 
     box_state.containing_line_box_fragment = LineBoxFragmentCoordinate {
@@ -79,20 +92,56 @@ void LineBuilder::append_text_chunk(TextNode const& text_node, size_t offset_in_
     m_max_height_on_current_line = max(m_max_height_on_current_line, content_height);
 }
 
-bool LineBuilder::should_break(LayoutMode layout_mode, float next_item_width)
+float LineBuilder::y_for_float_to_be_inserted_here(Box const& box)
 {
-    if (layout_mode == LayoutMode::MinContent)
-        return true;
-    if (layout_mode == LayoutMode::MaxContent)
+    auto const& box_state = m_layout_state.get(box);
+    auto const width = box_state.margin_box_width();
+    auto const height = box_state.margin_box_height();
+
+    float candidate_y = m_current_y;
+
+    float current_line_width = ensure_last_line_box().width();
+    // If there's already inline content on the current line, check if the new float can fit
+    // alongside the content. If not, place it on the next line.
+    if (current_line_width > 0 && (current_line_width + width) > m_available_width_for_current_line)
+        candidate_y += m_context.containing_block().line_height();
+
+    // Then, look for the next Y position where we can fit the new float.
+    // FIXME: This is super dumb, we move 1px downwards per iteration and stop
+    //        when we find an Y value where we don't collide with other floats.
+    while (true) {
+        auto space_at_y_top = m_context.available_space_for_line(candidate_y);
+        auto space_at_y_bottom = m_context.available_space_for_line(candidate_y + height);
+        if (width > space_at_y_top || width > space_at_y_bottom) {
+            if (!m_context.any_floats_intrude_at_y(candidate_y) && !m_context.any_floats_intrude_at_y(candidate_y + height)) {
+                return candidate_y;
+            }
+        } else {
+            return candidate_y;
+        }
+        candidate_y += 1;
+    }
+}
+
+bool LineBuilder::should_break(float next_item_width)
+{
+    if (!isfinite(m_available_width_for_current_line))
         return false;
+
     auto const& line_boxes = m_containing_block_state.line_boxes;
-    if (line_boxes.is_empty() || line_boxes.last().is_empty())
-        return false;
-    auto current_line_width = line_boxes.last().width();
+    if (line_boxes.is_empty() || line_boxes.last().is_empty()) {
+        // If we don't have a single line box yet *and* there are no floats intruding
+        // at this Y coordinate, we don't need to break before inserting anything.
+        if (!m_context.any_floats_intrude_at_y(m_current_y))
+            return false;
+        if (!m_context.any_floats_intrude_at_y(m_current_y + m_context.containing_block().line_height()))
+            return false;
+    }
+    auto current_line_width = ensure_last_line_box().width();
     return (current_line_width + next_item_width) > m_available_width_for_current_line;
 }
 
-static float box_baseline(FormattingState const& state, Box const& box)
+static float box_baseline(LayoutState const& state, Box const& box)
 {
     auto const& box_state = state.get(box);
 
@@ -102,7 +151,7 @@ static float box_baseline(FormattingState const& state, Box const& box)
         case CSS::VerticalAlign::Top:
             return box_state.border_box_top();
         case CSS::VerticalAlign::Bottom:
-            return box_state.content_height + box_state.border_box_bottom();
+            return box_state.content_height() + box_state.border_box_bottom();
         default:
             break;
         }
@@ -129,8 +178,13 @@ void LineBuilder::update_last_line()
     auto& line_box = line_boxes.last();
 
     auto text_align = m_context.containing_block().computed_values().text_align();
-    float x_offset = m_context.leftmost_x_offset_at(m_current_y);
-    float excess_horizontal_space = m_containing_block_state.content_width - line_box.width();
+
+    auto current_line_height = max(m_max_height_on_current_line, m_context.containing_block().line_height());
+    float x_offset_top = m_context.leftmost_x_offset_at(m_current_y);
+    float x_offset_bottom = m_context.leftmost_x_offset_at(m_current_y + current_line_height - 1);
+    float x_offset = max(x_offset_top, x_offset_bottom);
+
+    float excess_horizontal_space = m_available_width_for_current_line - line_box.width();
 
     switch (text_align) {
     case CSS::TextAlign::Center:
@@ -160,13 +214,11 @@ void LineBuilder::update_last_line()
 
             float fragment_baseline = 0;
             if (fragment.layout_node().is_text_node()) {
-                fragment_baseline = font_metrics.ascent;
+                fragment_baseline = font_metrics.ascent + half_leading;
             } else {
                 auto const& box = verify_cast<Layout::Box>(fragment.layout_node());
-                fragment_baseline = box_baseline(m_formatting_state, box);
+                fragment_baseline = box_baseline(m_layout_state, box);
             }
-
-            fragment_baseline += half_leading;
 
             // Remember the baseline used for this fragment. This will be used when painting the fragment.
             fragment.set_baseline(fragment_baseline);
@@ -228,10 +280,10 @@ void LineBuilder::update_last_line()
         float bottom_of_inline_box = 0;
         {
             // FIXME: Support inline-table elements.
-            if (fragment.layout_node().is_replaced_box() || fragment.layout_node().is_inline_block()) {
-                auto const& fragment_box_state = m_formatting_state.get(static_cast<Box const&>(fragment.layout_node()));
+            if (fragment.layout_node().is_replaced_box() || (fragment.layout_node().display().is_inline_outside() && !fragment.layout_node().display().is_flow_inside())) {
+                auto const& fragment_box_state = m_layout_state.get(static_cast<Box const&>(fragment.layout_node()));
                 top_of_inline_box = fragment.offset().y() - fragment_box_state.margin_box_top();
-                bottom_of_inline_box = fragment.offset().y() + fragment_box_state.content_height + fragment_box_state.margin_box_bottom();
+                bottom_of_inline_box = fragment.offset().y() + fragment_box_state.content_height() + fragment_box_state.margin_box_bottom();
             } else {
                 auto font_metrics = fragment.layout_node().font().pixel_metrics();
                 auto typographic_height = font_metrics.ascent + font_metrics.descent;
@@ -265,19 +317,12 @@ void LineBuilder::remove_last_line_if_empty()
     }
 }
 
-void LineBuilder::adjust_last_line_after_inserting_floating_box(Badge<BlockFormattingContext>, CSS::Float float_, float space_used_by_float)
+void LineBuilder::recalculate_available_space()
 {
-    // NOTE: LineBuilder generates lines from left-to-right, so if we've just added a left-side float,
-    //       that means every fragment already on this line has to move towards the right.
-    if (float_ == CSS::Float::Left && !m_containing_block_state.line_boxes.is_empty()) {
-        for (auto& fragment : m_containing_block_state.line_boxes.last().fragments())
-            fragment.set_offset(fragment.offset().translated(space_used_by_float, 0));
-        m_containing_block_state.line_boxes.last().m_width += space_used_by_float;
-    }
-
-    m_available_width_for_current_line -= space_used_by_float;
-    if (m_available_width_for_current_line < 0)
-        m_available_width_for_current_line = 0;
+    auto current_line_height = max(m_max_height_on_current_line, m_context.containing_block().line_height());
+    auto available_at_top_of_line_box = m_context.available_space_for_line(m_current_y);
+    auto available_at_bottom_of_line_box = m_context.available_space_for_line(m_current_y + current_line_height - 1);
+    m_available_width_for_current_line = min(available_at_bottom_of_line_box, available_at_top_of_line_box);
 }
 
 }

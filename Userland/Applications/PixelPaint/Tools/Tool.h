@@ -27,6 +27,7 @@ public:
     class MouseEvent {
     public:
         enum class Action {
+            DoubleClick,
             MouseDown,
             MouseMove,
             MouseUp
@@ -53,6 +54,7 @@ public:
         GUI::MouseEvent& m_raw_event;
     };
 
+    virtual void on_doubleclick(Layer*, MouseEvent&) { }
     virtual void on_mousedown(Layer*, MouseEvent&) { }
     virtual void on_mousemove(Layer*, MouseEvent&) { }
     virtual void on_mouseup(Layer*, MouseEvent&) { }
@@ -64,6 +66,7 @@ public:
     virtual void on_tool_activation() { }
     virtual GUI::Widget* get_properties_widget() { return nullptr; }
     virtual Variant<Gfx::StandardCursor, NonnullRefPtr<Gfx::Bitmap>> cursor() { return Gfx::StandardCursor::None; }
+    virtual Gfx::IntPoint point_position_to_preferred_cell(Gfx::FloatPoint const& position) const { return position.to_type<int>(); }
 
     void clear() { m_editor = nullptr; }
     void setup(ImageEditor&);
@@ -74,10 +77,17 @@ public:
     GUI::Action* action() { return m_action; }
     void set_action(GUI::Action*);
 
+    virtual StringView tool_name() const = 0;
+
+    // We only set the override_alt_key flag to true since the override is false by default. If false is desired do not call method.
+    virtual bool is_overriding_alt() { return false; };
+
 protected:
     Tool() = default;
     WeakPtr<ImageEditor> m_editor;
     RefPtr<GUI::Action> m_action;
+
+    Gfx::IntPoint editor_layer_location(Layer const& layer) const;
 
     virtual Gfx::IntPoint editor_stroke_position(Gfx::IntPoint const& pixel_coords, int stroke_thickness) const;
 

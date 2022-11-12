@@ -24,13 +24,14 @@ GUI::Variant SheetModel::data(const GUI::ModelIndex& index, GUI::ModelRole role)
             return String::empty();
 
         Function<String(JS::Value)> to_string_as_exception = [&](JS::Value value) {
+            auto& vm = cell->sheet().global_object().vm();
             StringBuilder builder;
             builder.append("Error: "sv);
             if (value.is_object()) {
                 auto& object = value.as_object();
                 if (is<JS::Error>(object)) {
                     auto message = object.get_without_side_effects("message");
-                    auto error = message.to_string(cell->sheet().global_object());
+                    auto error = message.to_string(vm);
                     if (error.is_throw_completion())
                         builder.append(message.to_string_without_side_effects());
                     else
@@ -38,7 +39,7 @@ GUI::Variant SheetModel::data(const GUI::ModelIndex& index, GUI::ModelRole role)
                     return builder.to_string();
                 }
             }
-            auto error_message = value.to_string(cell->sheet().global_object());
+            auto error_message = value.to_string(vm);
 
             if (error_message.is_throw_completion())
                 return to_string_as_exception(*error_message.release_error().value());
@@ -101,6 +102,36 @@ GUI::Variant SheetModel::data(const GUI::ModelIndex& index, GUI::ModelRole role)
             return color.value();
 
         return {};
+    }
+
+    if (to_underlying(role) == to_underlying(Role::Tooltip)) {
+        auto const* cell = m_sheet->at({ (size_t)index.column(), (size_t)index.row() });
+        if (!cell || !cell->thrown_value().has_value())
+            return {};
+
+        auto value = cell->thrown_value().value();
+        if (!value.is_object())
+            return {};
+
+        auto& object = value.as_object();
+        if (!is<JS::Error>(object))
+            return {};
+
+        auto& error = static_cast<JS::Error&>(object);
+        auto const& trace = error.traceback();
+        StringBuilder builder;
+        builder.appendff("{}\n", error.get_without_side_effects(object.vm().names.message).to_string_without_side_effects());
+        for (auto const& frame : trace.in_reverse()) {
+            if (frame.source_range.filename.contains("runtime.js"sv)) {
+                if (frame.function_name == "<unknown>")
+                    builder.appendff("  in a builtin function at line {}, column {}\n", frame.source_range.start.line, frame.source_range.start.column);
+                else
+                    builder.appendff("  while evaluating builtin '{}'\n", frame.function_name);
+            } else if (frame.source_range.filename.starts_with("cell "sv)) {
+                builder.appendff("  in cell '{}', at line {}, column {}\n", frame.source_range.filename.substring_view(5), frame.source_range.start.line, frame.source_range.start.column);
+            }
+        }
+        return builder.to_string();
     }
 
     return {};

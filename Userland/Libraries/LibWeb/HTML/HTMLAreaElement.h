@@ -15,15 +15,17 @@ namespace Web::HTML {
 class HTMLAreaElement final
     : public HTMLElement
     , public HTMLHyperlinkElementUtils {
-public:
-    using WrapperType = Bindings::HTMLAreaElementWrapper;
+    WEB_PLATFORM_OBJECT(HTMLAreaElement, HTMLElement);
 
-    HTMLAreaElement(DOM::Document&, DOM::QualifiedName);
+public:
     virtual ~HTMLAreaElement() override;
 
 private:
+    HTMLAreaElement(DOM::Document&, DOM::QualifiedName);
+
     // ^DOM::Element
     virtual void parse_attribute(FlyString const& name, String const& value) override;
+    virtual i32 default_tab_index_value() const override;
 
     // ^HTML::HTMLHyperlinkElementUtils
     virtual DOM::Document& hyperlink_element_utils_document() override { return document(); }

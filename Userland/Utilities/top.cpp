@@ -138,13 +138,13 @@ static struct winsize g_window_size;
 static void parse_args(Main::Arguments arguments, TopOption& top_option)
 {
     Core::ArgsParser::Option sort_by_option {
-        true,
+        Core::ArgsParser::OptionArgumentMode::Required,
         "Sort by field [pid, tid, pri, user, state, virt, phys, cpu, name]",
         "sort-by",
         's',
         nullptr,
         [&top_option](char const* s) {
-            StringView sort_by_option { s };
+            StringView sort_by_option { s, strlen(s) };
             if (sort_by_option == "pid"sv)
                 top_option.sort_by = TopOption::SortBy::Pid;
             else if (sort_by_option == "tid"sv)
@@ -201,7 +201,7 @@ static void enable_nonblocking_stdin()
 ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
     TRY(Core::System::pledge("stdio rpath tty sigaction"));
-    TRY(Core::System::unveil("/proc/all", "r"));
+    TRY(Core::System::unveil("/sys/kernel/processes", "r"));
     TRY(Core::System::unveil("/etc/passwd", "r"));
     unveil(nullptr, nullptr);
 

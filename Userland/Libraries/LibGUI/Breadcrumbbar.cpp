@@ -68,6 +68,7 @@ void Breadcrumbbar::clear_segments()
 {
     m_segments.clear();
     remove_all_children();
+    m_selected_segment = {};
 }
 
 void Breadcrumbbar::append_segment(String text, Gfx::Bitmap const* icon, String data, String tooltip)
@@ -83,10 +84,12 @@ void Breadcrumbbar::append_segment(String text, Gfx::Bitmap const* icon, String 
     button.on_click = [this, index = m_segments.size()](auto) {
         if (on_segment_click)
             on_segment_click(index);
+        if (on_segment_change && m_selected_segment != index)
+            on_segment_change(index);
     };
     button.on_focus_change = [this, index = m_segments.size()](auto has_focus, auto) {
-        if (has_focus && on_segment_click)
-            on_segment_click(index);
+        if (has_focus && on_segment_change && m_selected_segment != index)
+            on_segment_change(index);
     };
     button.on_drop = [this, index = m_segments.size()](auto& drop_event) {
         if (on_segment_drop)
@@ -106,7 +109,8 @@ void Breadcrumbbar::append_segment(String text, Gfx::Bitmap const* icon, String 
     auto button_width = min(button_text_width + icon_width + icon_padding + 16, max_button_width);
     auto shrunken_width = icon_width + icon_padding + (icon ? 4 : 16);
 
-    button.set_fixed_size(button_width, 16 + 8);
+    button.set_max_size(button_width, 16 + 8);
+    button.set_min_size(shrunken_width, 16 + 8);
 
     Segment segment { icon, text, data, button_width, shrunken_width, button.make_weak_ptr<GUI::Button>() };
 
@@ -120,6 +124,8 @@ void Breadcrumbbar::remove_end_segments(size_t start_segment_index)
         auto segment = m_segments.take_last();
         remove_child(*segment.button);
     }
+    if (m_selected_segment.has_value() && *m_selected_segment >= start_segment_index)
+        m_selected_segment = {};
 }
 
 Optional<size_t> Breadcrumbbar::find_segment_with_data(String const& data)
@@ -133,6 +139,10 @@ Optional<size_t> Breadcrumbbar::find_segment_with_data(String const& data)
 
 void Breadcrumbbar::set_selected_segment(Optional<size_t> index)
 {
+    if (m_selected_segment == index)
+        return;
+    m_selected_segment = index;
+
     if (!index.has_value()) {
         for_each_child_of_type<GUI::AbstractButton>([&](auto& button) {
             button.set_checked(false);
@@ -144,6 +154,8 @@ void Breadcrumbbar::set_selected_segment(Optional<size_t> index)
     auto& segment = m_segments[index.value()];
     VERIFY(segment.button);
     segment.button->set_checked(true);
+    if (on_segment_change)
+        on_segment_change(index);
     relayout();
 }
 
@@ -167,11 +179,11 @@ void Breadcrumbbar::relayout()
 
     for (auto& segment : m_segments) {
         if (remaining_width > width() && !segment.button->is_checked()) {
-            segment.button->set_fixed_width(segment.shrunken_width);
+            segment.button->set_preferred_width(segment.shrunken_width);
             remaining_width -= (segment.width - segment.shrunken_width);
             continue;
         }
-        segment.button->set_fixed_width(segment.width);
+        segment.button->set_preferred_width(segment.width);
     }
 }
 

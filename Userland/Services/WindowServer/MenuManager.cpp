@@ -68,11 +68,12 @@ void MenuManager::event(Core::Event& event)
 
             if (auto* shortcut_item_indices = m_current_menu->items_with_alt_shortcut(key_event.code_point())) {
                 VERIFY(!shortcut_item_indices->is_empty());
-                // FIXME: If there are multiple items with the same Alt shortcut, we should cycle through them
-                //        with each keypress instead of activating immediately.
-                auto index = shortcut_item_indices->at(0);
+                auto it = shortcut_item_indices->find_if([&](int const& i) { return i > m_current_menu->hovered_item_index(); });
+                auto index = shortcut_item_indices->at(it.is_end() ? 0 : it.index());
                 auto& item = m_current_menu->item(index);
                 m_current_menu->set_hovered_index(index);
+                if (shortcut_item_indices->size() > 1)
+                    return;
                 if (item.is_submenu())
                     m_current_menu->descend_into_submenu_at_hovered_item();
                 else
@@ -197,7 +198,7 @@ void MenuManager::handle_mouse_event(MouseEvent& mouse_event)
     }
 
     if (mouse_event.type() == Event::MouseMove) {
-        for (auto& menu : m_open_menu_stack) {
+        for (auto& menu : m_open_menu_stack.in_reverse()) {
             if (!menu)
                 continue;
             if (!menu->menu_window()->rect().contains(mouse_event.position()))
@@ -227,6 +228,14 @@ void MenuManager::close_everyone()
     }
     m_open_menu_stack.clear();
     clear_current_menu();
+}
+
+Menu* MenuManager::closest_open_ancestor_of(Menu const& other) const
+{
+    for (auto& menu : m_open_menu_stack.in_reverse())
+        if (menu->is_menu_ancestor_of(other))
+            return menu.ptr();
+    return nullptr;
 }
 
 void MenuManager::close_everyone_not_in_lineage(Menu& menu)
@@ -323,17 +332,14 @@ void MenuManager::open_menu(Menu& menu, bool as_current_menu)
 
 void MenuManager::clear_current_menu()
 {
-    Menu* previous_current_menu = m_current_menu;
-    m_current_menu = nullptr;
-    if (previous_current_menu) {
-        // When closing the last menu, restore the previous active input window
+    if (m_current_menu) {
         auto& wm = WindowManager::the();
-        wm.restore_active_input_window(m_previous_input_window);
         if (auto* window = wm.window_with_active_menu()) {
             window->invalidate_menubar();
         }
         wm.set_window_with_active_menu(nullptr);
     }
+    m_current_menu = nullptr;
 }
 
 void MenuManager::set_current_menu(Menu* menu)
@@ -348,19 +354,17 @@ void MenuManager::set_current_menu(Menu* menu)
         return;
     }
 
-    Menu* previous_current_menu = m_current_menu;
     m_current_menu = menu;
 
     auto& wm = WindowManager::the();
-    if (!previous_current_menu) {
-        // When opening the first menu, store the current active input window
-        if (auto* active_input = wm.active_input_window())
-            m_previous_input_window = *active_input;
-        else
-            m_previous_input_window = nullptr;
+    if (auto* window = wm.active_input_window()) {
+        InputPreemptor preemptor { InputPreemptor::OtherMenu };
+        if (window->rect().contains(m_current_menu->unadjusted_position()))
+            preemptor = InputPreemptor::ContextMenu;
+        else if (!m_current_menu->rect_in_window_menubar().is_null())
+            preemptor = InputPreemptor::MenubarMenu;
+        wm.notify_input_preempted(*window, preemptor);
     }
-
-    wm.set_active_input_window(m_current_menu->menu_window());
 }
 
 Menu* MenuManager::previous_menu(Menu* current)

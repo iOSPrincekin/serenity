@@ -12,11 +12,13 @@
 
 namespace Kernel {
 
+extern Spinlock g_console_lock;
+
 class ConsoleDevice final : public CharacterDevice {
     friend class DeviceManagement;
 
 public:
-    static NonnullRefPtr<ConsoleDevice> must_create();
+    static NonnullLockRefPtr<ConsoleDevice> must_create();
 
     virtual ~ConsoleDevice() override;
 

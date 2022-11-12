@@ -4,19 +4,12 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
-#include <AK/Format.h>
-#include <AK/HashMap.h>
 #include <AK/LexicalPath.h>
-#include <AK/String.h>
-#include <AK/StringBuilder.h>
-#include <AK/Utf8View.h>
-#include <AK/Vector.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/System.h>
+#include <LibLine/Editor.h>
 #include <LibMain/Main.h>
 #include <csignal>
-#include <ctype.h>
-#include <fcntl.h>
 #include <stdio.h>
 #include <sys/ioctl.h>
 #include <termios.h>
@@ -59,41 +52,15 @@ static ErrorOr<void> teardown_tty(bool switch_buffer)
 
 static Vector<StringView> wrap_line(String const& string, size_t width)
 {
-    Utf8View utf8(string);
-    Vector<size_t> splits;
-
-    size_t offset = 0;
-
-    bool in_ansi = false;
-    // for (auto codepoint : string) {
-    for (auto it = utf8.begin(); it != utf8.end(); ++it) {
-        if (offset >= width) {
-            splits.append(utf8.byte_offset_of(it));
-            offset = 0;
-        }
-
-        if (*it == '\e')
-            in_ansi = true;
-
-        if (!in_ansi) {
-            if (*it == '\t') {
-                // Tabs are a special case, because their width is variable.
-                offset += (8 - (offset % 8));
-            } else {
-                // FIXME: calculate the printed width of the character.
-                offset++;
-            }
-        }
-
-        if (isalpha(*it))
-            in_ansi = false;
-    }
+    auto const result = Line::Editor::actual_rendered_string_metrics(string, {}, width);
 
     Vector<StringView> spans;
     size_t span_start = 0;
-    for (auto split : splits) {
-        spans.append(string.substring_view(span_start, split - span_start));
-        span_start = split;
+    for (auto const& line_metric : result.line_metrics) {
+        VERIFY(line_metric.bit_length.has_value());
+        auto const bit_length = line_metric.bit_length.value();
+        spans.append(string.substring_view(span_start, bit_length));
+        span_start += bit_length;
     }
     spans.append(string.substring_view(span_start));
 
@@ -324,7 +291,7 @@ private:
     void read_enough_for_line(size_t line)
     {
         // This might read a bounded number of extra lines.
-        while (m_lines.size() < line + m_height - 1) {
+        while (m_lines.size() < line + m_height) {
             if (!read_line())
                 break;
         }
@@ -332,7 +299,7 @@ private:
 
     size_t render_status_line(StringView prompt, size_t off = 0, char end = '\0', bool ignored = false)
     {
-        for (; prompt[off] != end && off < prompt.length(); ++off) {
+        for (; off < prompt.length() && prompt[off] != end; ++off) {
             if (ignored)
                 continue;
 
@@ -365,7 +332,7 @@ private:
                     out(m_tty, "{}", m_filename);
                     break;
                 case 'l':
-                    out(m_tty, "{}", m_line);
+                    out(m_tty, "{}", m_line + 1);
                     break;
                 default:
                     out(m_tty, "?");
@@ -526,8 +493,9 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
     TRY(Core::System::pledge("stdio rpath tty sigaction"));
 
-    char const* filename = "-";
-    char const* prompt = "?f%f :.(line %l)?e (END):.";
+    // FIXME: Make these into StringViews once we stop using fopen below.
+    String filename = "-";
+    String prompt = "?f%f :.(line %l)?e (END):.";
     bool dont_switch_buffer = false;
     bool quit_at_eof = false;
     bool emulate_more = false;
@@ -546,7 +514,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     FILE* file;
     if (String("-") == filename) {
         file = stdin;
-    } else if ((file = fopen(filename, "r")) == nullptr) {
+    } else if ((file = fopen(filename.characters(), "r")) == nullptr) {
         perror("fopen");
         exit(1);
     }

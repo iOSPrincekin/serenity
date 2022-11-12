@@ -7,20 +7,22 @@
 #pragma once
 
 #include <AK/Bitmap.h>
+#include <AK/HashMap.h>
 #include <AK/Try.h>
 #include <AK/Vector.h>
 #include <Kernel/Bus/PCI/Controller/HostController.h>
 #include <Kernel/Bus/PCI/Definitions.h>
-#include <Kernel/FileSystem/SysFS.h>
 #include <Kernel/Locking/Spinlock.h>
 
 namespace Kernel::PCI {
 
-class HostBridge;
 class Access {
 public:
     static bool initialize_for_multiple_pci_domains(PhysicalAddress mcfg_table);
+
+#if ARCH(I386) || ARCH(X86_64)
     static bool initialize_for_one_pci_domain();
+#endif
 
     ErrorOr<void> fast_enumerate(Function<void(DeviceIdentifier const&)>&) const;
     void rescan_hardware();
@@ -28,6 +30,7 @@ public:
     static Access& the();
     static bool is_initialized();
     static bool is_disabled();
+    static bool is_hardware_disabled();
 
     void write8_field(Address address, u32 field, u8 value);
     void write16_field(Address address, u32 field, u16 value);
@@ -53,10 +56,10 @@ private:
     Vector<Capability> get_capabilities(Address);
     Optional<u8> get_capabilities_pointer(Address address);
 
-    mutable RecursiveSpinlock m_access_lock;
-    mutable Spinlock m_scan_lock;
+    mutable RecursiveSpinlock m_access_lock { LockRank::None };
+    mutable Spinlock m_scan_lock { LockRank::None };
 
-    HashMap<u32, NonnullOwnPtr<HostController>> m_host_controllers;
+    HashMap<u32, NonnullOwnPtr<PCI::HostController>> m_host_controllers;
     Vector<DeviceIdentifier> m_device_identifiers;
 };
 }

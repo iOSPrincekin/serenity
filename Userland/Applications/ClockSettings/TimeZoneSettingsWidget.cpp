@@ -15,10 +15,11 @@
 #include <LibGUI/Layout.h>
 #include <LibGUI/Margins.h>
 #include <LibGUI/Painter.h>
+#include <LibGUI/Process.h>
 #include <LibGfx/Palette.h>
+#include <LibLocale/DateTimeFormat.h>
+#include <LibLocale/Locale.h>
 #include <LibTimeZone/TimeZone.h>
-#include <LibUnicode/DateTimeFormat.h>
-#include <LibUnicode/Locale.h>
 #include <math.h>
 #include <spawn.h>
 #include <unistd.h>
@@ -61,7 +62,7 @@ TimeZoneSettingsWidget::TimeZoneSettingsWidget()
     m_time_zone_map = *find_descendant_of_type_named<GUI::ImageWidget>("time_zone_map");
     m_time_zone_map->set_bitmap(time_zone_map_bitmap);
 
-    auto time_zone_marker = Gfx::Bitmap::try_load_from_file("/res/icons/32x32/ladyball.png").release_value_but_fixme_should_propagate_errors();
+    auto time_zone_marker = Gfx::Bitmap::try_load_from_file("/res/icons/32x32/ladyball.png"sv).release_value_but_fixme_should_propagate_errors();
     m_time_zone_marker = time_zone_marker->scaled(0.75f, 0.75f).release_value_but_fixme_should_propagate_errors();
 
     set_time_zone_location();
@@ -124,11 +125,11 @@ void TimeZoneSettingsWidget::set_time_zone_location()
 {
     m_time_zone_location = compute_time_zone_location();
 
-    auto locale = Unicode::default_locale();
+    auto locale = Locale::default_locale();
     auto now = AK::Time::now_realtime();
 
-    auto name = Unicode::format_time_zone(locale, m_time_zone, Unicode::CalendarPatternStyle::Long, now);
-    auto offset = Unicode::format_time_zone(locale, m_time_zone, Unicode::CalendarPatternStyle::LongOffset, now);
+    auto name = Locale::format_time_zone(locale, m_time_zone, Locale::CalendarPatternStyle::Long, now);
+    auto offset = Locale::format_time_zone(locale, m_time_zone, Locale::CalendarPatternStyle::LongOffset, now);
 
     m_time_zone_text = String::formatted("{}\n({})", name, offset);
 }
@@ -156,13 +157,7 @@ Optional<Gfx::FloatPoint> TimeZoneSettingsWidget::compute_time_zone_location() c
     return Gfx::FloatPoint { mercadian_x, mercadian_y };
 }
 
-void TimeZoneSettingsWidget::set_time_zone() const
+void TimeZoneSettingsWidget::set_time_zone()
 {
-    pid_t child_pid = 0;
-    char const* argv[] = { "/bin/timezone", m_time_zone.characters(), nullptr };
-
-    if ((errno = posix_spawn(&child_pid, "/bin/timezone", nullptr, nullptr, const_cast<char**>(argv), environ))) {
-        perror("posix_spawn");
-        exit(1);
-    }
+    GUI::Process::spawn_or_show_error(window(), "/bin/timezone"sv, Array { m_time_zone.characters() });
 }

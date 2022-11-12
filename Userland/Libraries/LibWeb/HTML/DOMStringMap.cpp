@@ -5,17 +5,32 @@
  */
 
 #include <AK/CharacterTypes.h>
+#include <LibWeb/Bindings/Intrinsics.h>
+#include <LibWeb/DOM/Document.h>
 #include <LibWeb/DOM/Element.h>
 #include <LibWeb/HTML/DOMStringMap.h>
 
 namespace Web::HTML {
 
-DOMStringMap::DOMStringMap(DOM::Element& associated_element)
-    : m_associated_element(associated_element)
+JS::NonnullGCPtr<DOMStringMap> DOMStringMap::create(DOM::Element& element)
+{
+    auto& realm = element.realm();
+    return *realm.heap().allocate<DOMStringMap>(realm, element);
+}
+
+DOMStringMap::DOMStringMap(DOM::Element& element)
+    : LegacyPlatformObject(Bindings::cached_web_prototype(element.realm(), "DOMStringMap"))
+    , m_associated_element(element)
 {
 }
 
 DOMStringMap::~DOMStringMap() = default;
+
+void DOMStringMap::visit_edges(Cell::Visitor& visitor)
+{
+    Base::visit_edges(visitor);
+    visitor.visit(m_associated_element.ptr());
+}
 
 // https://html.spec.whatwg.org/multipage/dom.html#concept-domstringmap-pairs
 Vector<DOMStringMap::NameValuePair> DOMStringMap::get_name_value_pairs() const
@@ -27,7 +42,7 @@ Vector<DOMStringMap::NameValuePair> DOMStringMap::get_name_value_pairs() const
     //    in the order that those attributes are listed in the element's attribute list, add a name-value pair to list whose name is the attribute's name with the first five characters removed and whose value
     //    is the attribute's value.
     m_associated_element->for_each_attribute([&](auto& name, auto& value) {
-        if (!name.starts_with("data-"))
+        if (!name.starts_with("data-"sv))
             return;
 
         auto name_after_starting_data = name.view().substring_view(5);
@@ -96,13 +111,13 @@ String DOMStringMap::determine_value_of_named_property(String const& name) const
 }
 
 // https://html.spec.whatwg.org/multipage/dom.html#dom-domstringmap-setitem
-DOM::ExceptionOr<void> DOMStringMap::set_value_of_new_named_property(String const& name, String const& value)
+WebIDL::ExceptionOr<void> DOMStringMap::set_value_of_new_named_property(String const& name, String const& value)
 {
     AK::StringBuilder builder;
 
     // 3. Insert the string data- at the front of name.
     // NOTE: This is done out of order because StringBuilder doesn't have prepend.
-    builder.append("data-");
+    builder.append("data-"sv);
 
     for (size_t character_index = 0; character_index < name.length(); ++character_index) {
         // 1. If name contains a U+002D HYPHEN-MINUS character (-) followed by an ASCII lower alpha, then throw a "SyntaxError" DOMException.
@@ -111,7 +126,7 @@ DOM::ExceptionOr<void> DOMStringMap::set_value_of_new_named_property(String cons
         if (current_character == '-' && character_index + 1 < name.length()) {
             auto next_character = name[character_index + 1];
             if (is_ascii_lower_alpha(next_character))
-                return DOM::SyntaxError::create("Name cannot contain a '-' followed by a lowercase character.");
+                return WebIDL::SyntaxError::create(realm(), "Name cannot contain a '-' followed by a lowercase character.");
         }
 
         // 2. For each ASCII upper alpha in name, insert a U+002D HYPHEN-MINUS character (-) before the character and replace the character with the same character converted to ASCII lowercase.
@@ -129,13 +144,13 @@ DOM::ExceptionOr<void> DOMStringMap::set_value_of_new_named_property(String cons
     // FIXME: 4. If name does not match the XML Name production, throw an "InvalidCharacterError" DOMException.
 
     // 5. Set an attribute value for the DOMStringMap's associated element using name and value.
-    m_associated_element->set_attribute(data_name, value);
+    MUST(m_associated_element->set_attribute(data_name, value));
 
     return {};
 }
 
 // https://html.spec.whatwg.org/multipage/dom.html#dom-domstringmap-setitem
-DOM::ExceptionOr<void> DOMStringMap::set_value_of_existing_named_property(String const& name, String const& value)
+WebIDL::ExceptionOr<void> DOMStringMap::set_value_of_existing_named_property(String const& name, String const& value)
 {
     return set_value_of_new_named_property(name, value);
 }
@@ -147,7 +162,7 @@ bool DOMStringMap::delete_existing_named_property(String const& name)
 
     // 2. Insert the string data- at the front of name.
     // NOTE: This is done out of order because StringBuilder doesn't have prepend.
-    builder.append("data-");
+    builder.append("data-"sv);
 
     for (auto character : name) {
         // 1. For each ASCII upper alpha in name, insert a U+002D HYPHEN-MINUS character (-) before the character and replace the character with the same character converted to ASCII lowercase.
@@ -166,6 +181,11 @@ bool DOMStringMap::delete_existing_named_property(String const& name)
 
     // The spec doesn't have the step. This indicates that the deletion was successful.
     return true;
+}
+
+JS::Value DOMStringMap::named_item_value(FlyString const& name) const
+{
+    return js_string(vm(), determine_value_of_named_property(name));
 }
 
 }

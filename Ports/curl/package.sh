@@ -1,8 +1,8 @@
 #!/usr/bin/env -S bash ../.port_include.sh
 port=curl
-version=7.83.1
+version=7.86.0
 useconfigure=true
-files="https://curl.se/download/curl-${version}.tar.bz2 curl-${version}.tar.bz2 f539a36fb44a8260ec5d977e4e0dbdd2eee29ed90fcedaa9bc3c9f78a113bff0"
+files="https://curl.se/download/curl-${version}.tar.bz2 curl-${version}.tar.bz2 f5ca69db03eea17fa8705bdfb1a9f58d76a46c9010518109bb38f313137e0a28"
 auth_type=sha256
 depends=("ca-certificates" "openssl" "zlib" "zstd")
 configopts=("-DCMAKE_TOOLCHAIN_FILE=${SERENITY_BUILD_DIR}/CMakeToolchain.txt")

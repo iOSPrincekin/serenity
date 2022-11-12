@@ -15,12 +15,19 @@
 #include <LibWeb/Loader/LoadRequest.h>
 #include <LibWeb/Loader/ResourceLoader.h>
 #include <LibWeb/Page/Page.h>
+#include <LibWeb/Painting/GradientPainting.h>
 
 namespace Web::CSS {
 
 StyleValue::StyleValue(Type type)
     : m_type(type)
 {
+}
+
+AbstractImageStyleValue const& StyleValue::as_abstract_image() const
+{
+    VERIFY(is_abstract_image());
+    return static_cast<AbstractImageStyleValue const&>(*this);
 }
 
 AngleStyleValue const& StyleValue::as_angle() const
@@ -83,10 +90,22 @@ ColorStyleValue const& StyleValue::as_color() const
     return static_cast<ColorStyleValue const&>(*this);
 }
 
+ConicGradientStyleValue const& StyleValue::as_conic_gradient() const
+{
+    VERIFY(is_conic_gradient());
+    return static_cast<ConicGradientStyleValue const&>(*this);
+}
+
 ContentStyleValue const& StyleValue::as_content() const
 {
     VERIFY(is_content());
     return static_cast<ContentStyleValue const&>(*this);
+}
+
+FilterValueListStyleValue const& StyleValue::as_filter_value_list() const
+{
+    VERIFY(is_filter_value_list());
+    return static_cast<FilterValueListStyleValue const&>(*this);
 }
 
 FlexStyleValue const& StyleValue::as_flex() const
@@ -111,6 +130,18 @@ FrequencyStyleValue const& StyleValue::as_frequency() const
 {
     VERIFY(is_frequency());
     return static_cast<FrequencyStyleValue const&>(*this);
+}
+
+GridTrackPlacementShorthandStyleValue const& StyleValue::as_grid_track_placement_shorthand() const
+{
+    VERIFY(is_grid_track_placement_shorthand());
+    return static_cast<GridTrackPlacementShorthandStyleValue const&>(*this);
+}
+
+GridTrackPlacementStyleValue const& StyleValue::as_grid_track_placement() const
+{
+    VERIFY(is_grid_track_placement());
+    return static_cast<GridTrackPlacementStyleValue const&>(*this);
 }
 
 IdentifierStyleValue const& StyleValue::as_identifier() const
@@ -143,6 +174,18 @@ LengthStyleValue const& StyleValue::as_length() const
     return static_cast<LengthStyleValue const&>(*this);
 }
 
+GridTrackSizeStyleValue const& StyleValue::as_grid_track_size_list() const
+{
+    VERIFY(is_grid_track_size_list());
+    return static_cast<GridTrackSizeStyleValue const&>(*this);
+}
+
+LinearGradientStyleValue const& StyleValue::as_linear_gradient() const
+{
+    VERIFY(is_linear_gradient());
+    return static_cast<LinearGradientStyleValue const&>(*this);
+}
+
 ListStyleStyleValue const& StyleValue::as_list_style() const
 {
     VERIFY(is_list_style());
@@ -171,6 +214,12 @@ PositionStyleValue const& StyleValue::as_position() const
 {
     VERIFY(is_position());
     return static_cast<PositionStyleValue const&>(*this);
+}
+
+RectStyleValue const& StyleValue::as_rect() const
+{
+    VERIFY(is_rect());
+    return static_cast<RectStyleValue const&>(*this);
 }
 
 ResolutionStyleValue const& StyleValue::as_resolution() const
@@ -272,7 +321,7 @@ String BackgroundStyleValue::to_string() const
     StringBuilder builder;
     for (size_t i = 0; i < m_layer_count; i++) {
         if (i)
-            builder.append(", ");
+            builder.append(", "sv);
         if (i == m_layer_count - 1)
             builder.appendff("{} ", m_color->to_string());
         builder.appendff("{} {} {} {} {} {} {}", get_layer_value_string(m_image, i), get_layer_value_string(m_position, i), get_layer_value_string(m_size, i), get_layer_value_string(m_repeat, i), get_layer_value_string(m_attachment, i), get_layer_value_string(m_origin, i), get_layer_value_string(m_clip, i));
@@ -478,10 +527,13 @@ void CalculatedStyleValue::CalculationResult::add_or_subtract_internal(SumOperat
 
             // Other side isn't a percentage, so the easiest way to handle it without duplicating all the logic, is just to swap `this` and `other`.
             CalculationResult new_value = other;
-            if (op == SumOperation::Add)
+            if (op == SumOperation::Add) {
                 new_value.add(*this, layout_node, percentage_basis);
-            else
-                new_value.subtract(*this, layout_node, percentage_basis);
+            } else {
+                // Turn 'this - other' into '-other + this', as 'A + B == B + A', but 'A - B != B - A'
+                new_value.multiply_by({ Number { Number::Type::Integer, -1.0f } }, layout_node);
+                new_value.add(*this, layout_node, percentage_basis);
+            }
 
             *this = new_value;
         });
@@ -652,18 +704,18 @@ Optional<Angle> CalculatedStyleValue::resolve_angle() const
     return {};
 }
 
-Optional<AnglePercentage> CalculatedStyleValue::resolve_angle_percentage(Angle const& percentage_basis) const
+Optional<Angle> CalculatedStyleValue::resolve_angle_percentage(Angle const& percentage_basis) const
 {
     auto result = m_expression->resolve(nullptr, percentage_basis);
 
     return result.value().visit(
-        [&](Angle const& angle) -> Optional<AnglePercentage> {
+        [&](Angle const& angle) -> Optional<Angle> {
             return angle;
         },
-        [&](Percentage const& percentage) -> Optional<AnglePercentage> {
-            return percentage;
+        [&](Percentage const& percentage) -> Optional<Angle> {
+            return percentage_basis.percentage_of(percentage);
         },
-        [&](auto const&) -> Optional<AnglePercentage> {
+        [&](auto const&) -> Optional<Angle> {
             return {};
         });
 }
@@ -677,18 +729,18 @@ Optional<Frequency> CalculatedStyleValue::resolve_frequency() const
     return {};
 }
 
-Optional<FrequencyPercentage> CalculatedStyleValue::resolve_frequency_percentage(Frequency const& percentage_basis) const
+Optional<Frequency> CalculatedStyleValue::resolve_frequency_percentage(Frequency const& percentage_basis) const
 {
     auto result = m_expression->resolve(nullptr, percentage_basis);
 
     return result.value().visit(
-        [&](Frequency const& frequency) -> Optional<FrequencyPercentage> {
+        [&](Frequency const& frequency) -> Optional<Frequency> {
             return frequency;
         },
-        [&](Percentage const& percentage) -> Optional<FrequencyPercentage> {
-            return percentage;
+        [&](Percentage const& percentage) -> Optional<Frequency> {
+            return percentage_basis.percentage_of(percentage);
         },
-        [&](auto const&) -> Optional<FrequencyPercentage> {
+        [&](auto const&) -> Optional<Frequency> {
             return {};
         });
 }
@@ -702,18 +754,18 @@ Optional<Length> CalculatedStyleValue::resolve_length(Layout::Node const& layout
     return {};
 }
 
-Optional<LengthPercentage> CalculatedStyleValue::resolve_length_percentage(Layout::Node const& layout_node, Length const& percentage_basis) const
+Optional<Length> CalculatedStyleValue::resolve_length_percentage(Layout::Node const& layout_node, Length const& percentage_basis) const
 {
     auto result = m_expression->resolve(&layout_node, percentage_basis);
 
     return result.value().visit(
-        [&](Length const& length) -> Optional<LengthPercentage> {
+        [&](Length const& length) -> Optional<Length> {
             return length;
         },
-        [&](Percentage const& percentage) -> Optional<LengthPercentage> {
-            return percentage;
+        [&](Percentage const& percentage) -> Optional<Length> {
+            return percentage_basis.percentage_of(percentage);
         },
-        [&](auto const&) -> Optional<LengthPercentage> {
+        [&](auto const&) -> Optional<Length> {
             return {};
         });
 }
@@ -735,18 +787,15 @@ Optional<Time> CalculatedStyleValue::resolve_time() const
     return {};
 }
 
-Optional<TimePercentage> CalculatedStyleValue::resolve_time_percentage(Time const& percentage_basis) const
+Optional<Time> CalculatedStyleValue::resolve_time_percentage(Time const& percentage_basis) const
 {
     auto result = m_expression->resolve(nullptr, percentage_basis);
 
     return result.value().visit(
-        [&](Time const& time) -> Optional<TimePercentage> {
+        [&](Time const& time) -> Optional<Time> {
             return time;
         },
-        [&](Percentage const& percentage) -> Optional<TimePercentage> {
-            return percentage;
-        },
-        [&](auto const&) -> Optional<TimePercentage> {
+        [&](auto const&) -> Optional<Time> {
             return {};
         });
 }
@@ -822,6 +871,31 @@ Optional<CalculatedStyleValue::ResolvedType> CalculatedStyleValue::CalcSum::reso
         return {};
     auto type = maybe_type.value();
     return resolve_sum_type(type, zero_or_more_additional_calc_products);
+}
+
+// https://www.w3.org/TR/CSS2/visufx.html#value-def-shape
+Gfx::FloatRect EdgeRect::resolved(Layout::Node const& layout_node, Gfx::FloatRect border_box) const
+{
+    // In CSS 2.1, the only valid <shape> value is: rect(<top>, <right>, <bottom>, <left>) where
+    // <top> and <bottom> specify offsets from the top border edge of the box, and <right>, and
+    // <left> specify offsets from the left border edge of the box.
+
+    // The value 'auto' means that a given edge of the clipping region will be the same as the edge
+    // of the element's generated border box (i.e., 'auto' means the same as '0' for <top> and
+    // <left>, the same as the used value of the height plus the sum of vertical padding and border
+    // widths for <bottom>, and the same as the used value of the width plus the sum of the
+    // horizontal padding and border widths for <right>, such that four 'auto' values result in the
+    // clipping region being the same as the element's border box).
+    auto left = border_box.left() + (left_edge.is_auto() ? 0 : left_edge.to_px(layout_node));
+    auto top = border_box.top() + (top_edge.is_auto() ? 0 : top_edge.to_px(layout_node));
+    auto right = border_box.left() + (right_edge.is_auto() ? border_box.width() : right_edge.to_px(layout_node));
+    auto bottom = border_box.top() + (bottom_edge.is_auto() ? border_box.height() : bottom_edge.to_px(layout_node));
+    return Gfx::FloatRect {
+        left,
+        top,
+        right - left,
+        bottom - top
+    };
 }
 
 Optional<CalculatedStyleValue::ResolvedType> CalculatedStyleValue::CalcNumberSum::resolved_type() const
@@ -1068,15 +1142,9 @@ CalculatedStyleValue::CalculationResult CalculatedStyleValue::CalcNumberSumPartW
     return value->resolve(layout_node, percentage_basis);
 }
 
-// https://www.w3.org/TR/css-color-4/#serializing-sRGB-values
 String ColorStyleValue::to_string() const
 {
-    // The serialized form is derived from the computed value and thus, uses either the rgb() or rgba() form
-    // (depending on whether the alpha is exactly 1, or not), with lowercase letters for the function name.
-    // NOTE: Since we use Gfx::Color, having an "alpha of 1" means its value is 255.
-    if (m_color.alpha() == 255)
-        return String::formatted("rgb({}, {}, {})", m_color.red(), m_color.green(), m_color.blue());
-    return String::formatted("rgba({}, {}, {}, {})", m_color.red(), m_color.green(), m_color.blue(), (float)(m_color.alpha()) / 255.0f);
+    return serialize_a_srgb_value(m_color);
 }
 
 bool ColorStyleValue::equals(StyleValue const& other) const
@@ -1104,6 +1172,171 @@ bool ContentStyleValue::equals(StyleValue const& other) const
         return false;
     if (!m_alt_text.is_null())
         return m_alt_text->equals(*typed_other.m_alt_text);
+    return true;
+}
+
+float Filter::Blur::resolved_radius(Layout::Node const& node) const
+{
+    // Default value when omitted is 0px.
+    auto sigma = 0;
+    if (radius.has_value())
+        sigma = radius->resolved(node).to_px(node);
+    // Note: The radius/sigma of the blur needs to be doubled for LibGfx's blur functions.
+    return sigma * 2;
+}
+
+Filter::DropShadow::Resolved Filter::DropShadow::resolved(Layout::Node const& node) const
+{
+    // The default value for omitted values is missing length values set to 0
+    // and the missing used color is taken from the color property.
+    return Resolved {
+        offset_x.resolved(node).to_px(node),
+        offset_y.resolved(node).to_px(node),
+        radius.has_value() ? radius->resolved(node).to_px(node) : 0.0f,
+        color.has_value() ? *color : node.computed_values().color()
+    };
+}
+
+float Filter::HueRotate::angle_degrees() const
+{
+    // Default value when omitted is 0deg.
+    if (!angle.has_value())
+        return 0.0f;
+    return angle->visit([&](Angle const& angle) { return angle.to_degrees(); }, [&](auto) { return 0.0f; });
+}
+
+float Filter::Color::resolved_amount() const
+{
+    if (amount.has_value()) {
+        if (amount->is_percentage())
+            return amount->percentage().as_fraction();
+        return amount->number().value();
+    }
+    // All color filters (brightness, sepia, etc) have a default amount of 1.
+    return 1.0f;
+}
+
+String FilterValueListStyleValue::to_string() const
+{
+    StringBuilder builder {};
+    bool first = true;
+    for (auto& filter_function : filter_value_list()) {
+        if (!first)
+            builder.append(' ');
+        filter_function.visit(
+            [&](Filter::Blur const& blur) {
+                builder.append("blur("sv);
+                if (blur.radius.has_value())
+                    builder.append(blur.radius->to_string());
+            },
+            [&](Filter::DropShadow const& drop_shadow) {
+                builder.appendff("drop-shadow({} {}"sv,
+                    drop_shadow.offset_x, drop_shadow.offset_y);
+                if (drop_shadow.radius.has_value())
+                    builder.appendff(" {}", drop_shadow.radius->to_string());
+                if (drop_shadow.color.has_value()) {
+                    builder.append(' ');
+                    serialize_a_srgb_value(builder, *drop_shadow.color);
+                }
+            },
+            [&](Filter::HueRotate const& hue_rotate) {
+                builder.append("hue-rotate("sv);
+                if (hue_rotate.angle.has_value()) {
+                    hue_rotate.angle->visit(
+                        [&](Angle const& angle) {
+                            builder.append(angle.to_string());
+                        },
+                        [&](auto&) {
+                            builder.append('0');
+                        });
+                }
+            },
+            [&](Filter::Color const& color) {
+                builder.appendff("{}(",
+                    [&] {
+                        switch (color.operation) {
+                        case Filter::Color::Operation::Brightness:
+                            return "brightness"sv;
+                        case Filter::Color::Operation::Contrast:
+                            return "contrast"sv;
+                        case Filter::Color::Operation::Grayscale:
+                            return "grayscale"sv;
+                        case Filter::Color::Operation::Invert:
+                            return "invert"sv;
+                        case Filter::Color::Operation::Opacity:
+                            return "opacity"sv;
+                        case Filter::Color::Operation::Saturate:
+                            return "saturate"sv;
+                        case Filter::Color::Operation::Sepia:
+                            return "sepia"sv;
+                        default:
+                            VERIFY_NOT_REACHED();
+                        }
+                    }());
+                if (color.amount.has_value())
+                    builder.append(color.amount->to_string());
+            });
+        builder.append(')');
+        first = false;
+    }
+    return builder.to_string();
+}
+
+static bool operator==(Filter::Blur const& a, Filter::Blur const& b)
+{
+    return a.radius == b.radius;
+}
+
+static bool operator==(Filter::DropShadow const& a, Filter::DropShadow const& b)
+{
+    return a.offset_x == b.offset_x && a.offset_y == b.offset_y && a.radius == b.radius && a.color == b.color;
+}
+
+static bool operator==(Filter::HueRotate::Zero const&, Filter::HueRotate::Zero const&)
+{
+    return true;
+}
+
+static bool operator==(Filter::Color const& a, Filter::Color const& b)
+{
+    return a.operation == b.operation && a.amount == b.amount;
+}
+
+static bool operator==(Filter::HueRotate const& a, Filter::HueRotate const& b)
+{
+    return a.angle == b.angle;
+}
+
+static bool variant_equals(auto const& a, auto const& b)
+{
+    return a.visit([&](auto const& held_value) {
+        using HeldType = AK::Detail::Decay<decltype(held_value)>;
+        bool other_holds_same_type = b.template has<HeldType>();
+        return other_holds_same_type && held_value == b.template get<HeldType>();
+    });
+}
+
+static bool operator==(Filter::HueRotate::AngleOrZero const& a, Filter::HueRotate::AngleOrZero const& b)
+{
+    return variant_equals(a, b);
+}
+
+static bool operator==(FilterFunction const& a, FilterFunction const& b)
+{
+    return variant_equals(a, b);
+}
+
+bool FilterValueListStyleValue::equals(StyleValue const& other) const
+{
+    if (type() != other.type())
+        return false;
+    auto const& typed_other = other.as_filter_value_list();
+    if (m_filter_value_list.size() != typed_other.m_filter_value_list.size())
+        return false;
+    for (size_t i = 0; i < m_filter_value_list.size(); i++) {
+        if (m_filter_value_list[i] != typed_other.m_filter_value_list[i])
+            return false;
+    }
     return true;
 }
 
@@ -1158,6 +1391,48 @@ bool FrequencyStyleValue::equals(StyleValue const& other) const
     if (type() != other.type())
         return false;
     return m_frequency == other.as_frequency().m_frequency;
+}
+
+String GridTrackPlacementShorthandStyleValue::to_string() const
+{
+    if (m_end->grid_track_placement().is_auto())
+        return String::formatted("{}", m_start->grid_track_placement().to_string());
+    return String::formatted("{} / {}", m_start->grid_track_placement().to_string(), m_end->grid_track_placement().to_string());
+}
+
+bool GridTrackPlacementShorthandStyleValue::equals(StyleValue const& other) const
+{
+    if (type() != other.type())
+        return false;
+    auto const& typed_other = other.as_grid_track_placement_shorthand();
+    return m_start->equals(typed_other.m_start)
+        && m_end->equals(typed_other.m_end);
+}
+
+String GridTrackPlacementStyleValue::to_string() const
+{
+    return m_grid_track_placement.to_string();
+}
+
+bool GridTrackPlacementStyleValue::equals(StyleValue const& other) const
+{
+    if (type() != other.type())
+        return false;
+    auto const& typed_other = other.as_grid_track_placement();
+    return m_grid_track_placement == typed_other.grid_track_placement();
+}
+
+String GridTrackSizeStyleValue::to_string() const
+{
+    return m_grid_track_size_list.to_string();
+}
+
+bool GridTrackSizeStyleValue::equals(StyleValue const& other) const
+{
+    if (type() != other.type())
+        return false;
+    auto const& typed_other = other.as_grid_track_size_list();
+    return m_grid_track_size_list == typed_other.grid_track_size_list();
 }
 
 String IdentifierStyleValue::to_string() const
@@ -1368,14 +1643,17 @@ Color IdentifierStyleValue::to_color(Layout::NodeWithStyle const& node) const
 }
 
 ImageStyleValue::ImageStyleValue(AK::URL const& url)
-    : StyleValue(Type::Image)
+    : AbstractImageStyleValue(Type::Image)
     , m_url(url)
 {
 }
 
-void ImageStyleValue::load_bitmap(DOM::Document& document)
+void ImageStyleValue::load_any_resources(DOM::Document& document)
 {
     if (m_bitmap)
+        return;
+
+    if (resource())
         return;
 
     m_document = &document;
@@ -1390,7 +1668,7 @@ void ImageStyleValue::resource_did_load()
     m_bitmap = resource()->bitmap();
     // FIXME: Do less than a full repaint if possible?
     if (m_document && m_document->browsing_context())
-        m_document->browsing_context()->set_needs_display({});
+        m_document->browsing_context()->set_needs_display();
 }
 
 String ImageStyleValue::to_string() const
@@ -1403,6 +1681,324 @@ bool ImageStyleValue::equals(StyleValue const& other) const
     if (type() != other.type())
         return false;
     return m_url == other.as_image().m_url;
+}
+
+Optional<int> ImageStyleValue::natural_width() const
+{
+    if (m_bitmap)
+        return m_bitmap->width();
+    return {};
+}
+
+Optional<int> ImageStyleValue::natural_height() const
+{
+    if (m_bitmap)
+        return m_bitmap->height();
+    return {};
+}
+
+void ImageStyleValue::paint(PaintContext& context, Gfx::IntRect const& dest_rect, CSS::ImageRendering image_rendering) const
+{
+    if (m_bitmap)
+        context.painter().draw_scaled_bitmap(dest_rect, *m_bitmap, m_bitmap->rect(), 1.0f, to_gfx_scaling_mode(image_rendering));
+}
+
+static void serialize_color_stop_list(StringBuilder& builder, auto const& color_stop_list)
+{
+    bool first = true;
+    for (auto const& element : color_stop_list) {
+        if (!first)
+            builder.append(", "sv);
+
+        if (element.transition_hint.has_value()) {
+            builder.appendff("{}, "sv, element.transition_hint->value.to_string());
+        }
+
+        serialize_a_srgb_value(builder, element.color_stop.color);
+        for (auto position : Array { &element.color_stop.position, &element.color_stop.second_position }) {
+            if (position->has_value())
+                builder.appendff(" {}"sv, (*position)->to_string());
+        }
+        first = false;
+    }
+}
+
+String LinearGradientStyleValue::to_string() const
+{
+    StringBuilder builder;
+    auto side_or_corner_to_string = [](SideOrCorner value) {
+        switch (value) {
+        case SideOrCorner::Top:
+            return "top"sv;
+        case SideOrCorner::Bottom:
+            return "bottom"sv;
+        case SideOrCorner::Left:
+            return "left"sv;
+        case SideOrCorner::Right:
+            return "right"sv;
+        case SideOrCorner::TopLeft:
+            return "top left"sv;
+        case SideOrCorner::TopRight:
+            return "top right"sv;
+        case SideOrCorner::BottomLeft:
+            return "bottom left"sv;
+        case SideOrCorner::BottomRight:
+            return "bottom right"sv;
+        default:
+            VERIFY_NOT_REACHED();
+        }
+    };
+
+    if (m_gradient_type == GradientType::WebKit)
+        builder.append("-webkit-"sv);
+    if (is_repeating())
+        builder.append("repeating-"sv);
+    builder.append("linear-gradient("sv);
+    m_direction.visit(
+        [&](SideOrCorner side_or_corner) {
+            builder.appendff("{}{}, "sv, m_gradient_type == GradientType::Standard ? "to "sv : ""sv, side_or_corner_to_string(side_or_corner));
+        },
+        [&](Angle const& angle) {
+            builder.appendff("{}, "sv, angle.to_string());
+        });
+
+    serialize_color_stop_list(builder, m_color_stop_list);
+    builder.append(")"sv);
+    return builder.to_string();
+}
+
+static bool operator==(LinearGradientStyleValue::GradientDirection const& a, LinearGradientStyleValue::GradientDirection const& b)
+{
+    if (a.has<SideOrCorner>() && b.has<SideOrCorner>())
+        return a.get<SideOrCorner>() == b.get<SideOrCorner>();
+    if (a.has<Angle>() && b.has<Angle>())
+        return a.get<Angle>() == b.get<Angle>();
+    return false;
+}
+
+static bool operator==(EdgeRect const& a, EdgeRect const& b)
+{
+    return a.top_edge == b.top_edge && a.right_edge == b.right_edge && a.bottom_edge == b.bottom_edge && a.left_edge == b.left_edge;
+}
+
+bool LinearGradientStyleValue::equals(StyleValue const& other_) const
+{
+    if (type() != other_.type())
+        return false;
+    auto& other = other_.as_linear_gradient();
+
+    if (m_gradient_type != other.m_gradient_type
+        || m_repeating != other.m_repeating
+        || m_direction != other.m_direction
+        || m_color_stop_list.size() != other.m_color_stop_list.size()) {
+        return false;
+    }
+
+    for (size_t i = 0; i < m_color_stop_list.size(); i++) {
+        if (m_color_stop_list[i] != other.m_color_stop_list[i])
+            return false;
+    }
+    return true;
+}
+
+float LinearGradientStyleValue::angle_degrees(Gfx::FloatSize const& gradient_size) const
+{
+    auto corner_angle_degrees = [&] {
+        return static_cast<float>(atan2(gradient_size.height(), gradient_size.width())) * 180 / AK::Pi<float>;
+    };
+    return m_direction.visit(
+        [&](SideOrCorner side_or_corner) {
+            auto angle = [&] {
+                switch (side_or_corner) {
+                case SideOrCorner::Top:
+                    return 0.0f;
+                case SideOrCorner::Bottom:
+                    return 180.0f;
+                case SideOrCorner::Left:
+                    return 270.0f;
+                case SideOrCorner::Right:
+                    return 90.0f;
+                case SideOrCorner::TopRight:
+                    return corner_angle_degrees();
+                case SideOrCorner::BottomLeft:
+                    return corner_angle_degrees() + 180.0f;
+                case SideOrCorner::TopLeft:
+                    return -corner_angle_degrees();
+                case SideOrCorner::BottomRight:
+                    return -(corner_angle_degrees() + 180.0f);
+                default:
+                    VERIFY_NOT_REACHED();
+                }
+            }();
+            // Note: For unknowable reasons the angles are opposite on the -webkit- version
+            if (m_gradient_type == GradientType::WebKit)
+                return angle + 180.0f;
+            return angle;
+        },
+        [&](Angle const& angle) {
+            return angle.to_degrees();
+        });
+}
+
+void LinearGradientStyleValue::resolve_for_size(Layout::Node const& node, Gfx::FloatSize const& size) const
+{
+    if (m_resolved.has_value() && m_resolved->size == size)
+        return;
+    m_resolved = ResolvedData { Painting::resolve_linear_gradient_data(node, size, *this), size };
+}
+
+void LinearGradientStyleValue::paint(PaintContext& context, Gfx::IntRect const& dest_rect, CSS::ImageRendering) const
+{
+    VERIFY(m_resolved.has_value());
+    Painting::paint_linear_gradient(context, dest_rect, m_resolved->data);
+}
+
+Gfx::FloatPoint PositionValue::resolved(Layout::Node const& node, Gfx::FloatRect const& rect) const
+{
+    // Note: A preset + a none default x/y_relative_to is impossible in the syntax (and makes little sense)
+    float x = horizontal_position.visit(
+        [&](HorizontalPreset preset) {
+            return rect.width() * [&] {
+                switch (preset) {
+                case HorizontalPreset::Left:
+                    return 0.0f;
+                case HorizontalPreset::Center:
+                    return 0.5f;
+                case HorizontalPreset::Right:
+                    return 1.0f;
+                default:
+                    VERIFY_NOT_REACHED();
+                }
+            }();
+        },
+        [&](LengthPercentage length_percentage) {
+            return length_percentage.resolved(node, Length::make_px(rect.width())).to_px(node);
+        });
+    float y = vertical_position.visit(
+        [&](VerticalPreset preset) {
+            return rect.height() * [&] {
+                switch (preset) {
+                case VerticalPreset::Top:
+                    return 0.0f;
+                case VerticalPreset::Center:
+                    return 0.5f;
+                case VerticalPreset::Bottom:
+                    return 1.0f;
+                default:
+                    VERIFY_NOT_REACHED();
+                }
+            }();
+        },
+        [&](LengthPercentage length_percentage) {
+            return length_percentage.resolved(node, Length::make_px(rect.height())).to_px(node);
+        });
+    if (x_relative_to == HorizontalEdge::Right)
+        x = rect.width() - x;
+    if (y_relative_to == VerticalEdge::Bottom)
+        y = rect.height() - y;
+    return Gfx::FloatPoint { rect.x() + x, rect.y() + y };
+}
+
+void PositionValue::serialize(StringBuilder& builder) const
+{
+    // Note: This means our serialization with simplify any with explicit edges that are just `top left`.
+    bool has_relative_edges = x_relative_to == HorizontalEdge::Right || y_relative_to == VerticalEdge::Bottom;
+    if (has_relative_edges)
+        builder.append(x_relative_to == HorizontalEdge::Left ? "left "sv : "right "sv);
+    horizontal_position.visit(
+        [&](HorizontalPreset preset) {
+            builder.append([&] {
+                switch (preset) {
+                case HorizontalPreset::Left:
+                    return "left"sv;
+                case HorizontalPreset::Center:
+                    return "center"sv;
+                case HorizontalPreset::Right:
+                    return "right"sv;
+                default:
+                    VERIFY_NOT_REACHED();
+                }
+            }());
+        },
+        [&](LengthPercentage length_percentage) {
+            builder.append(length_percentage.to_string());
+        });
+    builder.append(' ');
+    if (has_relative_edges)
+        builder.append(y_relative_to == VerticalEdge::Top ? "top "sv : "bottom "sv);
+    vertical_position.visit(
+        [&](VerticalPreset preset) {
+            builder.append([&] {
+                switch (preset) {
+                case VerticalPreset::Top:
+                    return "top"sv;
+                case VerticalPreset::Center:
+                    return "center"sv;
+                case VerticalPreset::Bottom:
+                    return "bottom"sv;
+                default:
+                    VERIFY_NOT_REACHED();
+                }
+            }());
+        },
+        [&](LengthPercentage length_percentage) {
+            builder.append(length_percentage.to_string());
+        });
+}
+
+bool PositionValue::operator==(PositionValue const& other) const
+{
+    return (
+        x_relative_to == other.x_relative_to
+        && y_relative_to == other.y_relative_to
+        && variant_equals(horizontal_position, other.horizontal_position)
+        && variant_equals(vertical_position, other.vertical_position));
+}
+
+String ConicGradientStyleValue::to_string() const
+{
+    StringBuilder builder;
+    if (is_repeating())
+        builder.append("repeating-"sv);
+    builder.append("conic-gradient("sv);
+    bool has_from_angle = false;
+    bool has_at_position = false;
+    if ((has_from_angle = m_from_angle.to_degrees() != 0))
+        builder.appendff("from {}", m_from_angle.to_string());
+    if ((has_at_position = m_position != PositionValue::center())) {
+        if (has_from_angle)
+            builder.append(' ');
+        builder.appendff("at "sv);
+        m_position.serialize(builder);
+    }
+    if (has_from_angle || has_at_position)
+        builder.append(", "sv);
+    serialize_color_stop_list(builder, m_color_stop_list);
+    builder.append(')');
+    return builder.to_string();
+}
+
+void ConicGradientStyleValue::resolve_for_size(Layout::Node const& node, Gfx::FloatSize const& size) const
+{
+    if (!m_resolved.has_value())
+        m_resolved = ResolvedData { Painting::resolve_conic_gradient_data(node, *this), {} };
+    m_resolved->position = m_position.resolved(node, Gfx::FloatRect { { 0, 0 }, size });
+}
+
+void ConicGradientStyleValue::paint(PaintContext& context, Gfx::IntRect const& dest_rect, CSS::ImageRendering) const
+{
+    VERIFY(m_resolved.has_value());
+    Painting::paint_conic_gradient(context, dest_rect, m_resolved->data, m_resolved->position.to_rounded<int>());
+}
+
+bool ConicGradientStyleValue::equals(StyleValue const&) const
+{
+    return false;
+}
+
+float ConicGradientStyleValue::angle_degrees() const
+{
+    return m_from_angle.to_degrees();
 }
 
 bool InheritStyleValue::equals(StyleValue const& other) const
@@ -1515,6 +2111,19 @@ bool PositionStyleValue::equals(StyleValue const& other) const
         && m_offset_y == typed_other.m_offset_y;
 }
 
+String RectStyleValue::to_string() const
+{
+    return String::formatted("rect({} {} {} {})", m_rect.top_edge, m_rect.right_edge, m_rect.bottom_edge, m_rect.left_edge);
+}
+
+bool RectStyleValue::equals(StyleValue const& other) const
+{
+    if (type() != other.type())
+        return false;
+    auto const& typed_other = other.as_rect();
+    return m_rect == typed_other.rect();
+}
+
 bool ResolutionStyleValue::equals(StyleValue const& other) const
 {
     if (type() != other.type())
@@ -1527,7 +2136,7 @@ String ShadowStyleValue::to_string() const
     StringBuilder builder;
     builder.appendff("{} {} {} {} {}", m_color.to_string(), m_offset_x.to_string(), m_offset_y.to_string(), m_blur_radius.to_string(), m_spread_distance.to_string());
     if (m_placement == ShadowPlacement::Inner)
-        builder.append(" inset");
+        builder.append(" inset"sv);
     return builder.to_string();
 }
 
@@ -1579,7 +2188,7 @@ String TransformationStyleValue::to_string() const
     StringBuilder builder;
     builder.append(CSS::to_string(m_transform_function));
     builder.append('(');
-    builder.join(", ", m_values);
+    builder.join(", "sv, m_values);
     builder.append(')');
 
     return builder.to_string();
@@ -1675,6 +2284,26 @@ NonnullRefPtr<ColorStyleValue> ColorStyleValue::create(Color color)
     return adopt_ref(*new ColorStyleValue(color));
 }
 
+NonnullRefPtr<GridTrackPlacementStyleValue> GridTrackPlacementStyleValue::create(CSS::GridTrackPlacement grid_track_placement)
+{
+    return adopt_ref(*new GridTrackPlacementStyleValue(grid_track_placement));
+}
+
+NonnullRefPtr<GridTrackSizeStyleValue> GridTrackSizeStyleValue::create(CSS::GridTrackSizeList grid_track_size_list)
+{
+    return adopt_ref(*new GridTrackSizeStyleValue(grid_track_size_list));
+}
+
+NonnullRefPtr<GridTrackSizeStyleValue> GridTrackSizeStyleValue::make_auto()
+{
+    return adopt_ref(*new GridTrackSizeStyleValue(CSS::GridTrackSizeList()));
+}
+
+NonnullRefPtr<RectStyleValue> RectStyleValue::create(EdgeRect rect)
+{
+    return adopt_ref(*new RectStyleValue(rect));
+}
+
 NonnullRefPtr<LengthStyleValue> LengthStyleValue::create(Length const& length)
 {
     if (length.is_auto()) {
@@ -1737,6 +2366,58 @@ NonnullRefPtr<StyleValue> BorderRadiusStyleValue::absolutized(Gfx::IntRect const
     if (!m_vertical_radius.is_percentage())
         absolutized_vertical_radius = absolutized_length(m_vertical_radius.length(), viewport_rect, font_metrics, font_size, root_font_size).value_or(m_vertical_radius.length());
     return BorderRadiusStyleValue::create(absolutized_horizontal_radius, absolutized_vertical_radius);
+}
+
+bool CalculatedStyleValue::contains_percentage() const
+{
+    return m_expression->contains_percentage();
+}
+
+bool CalculatedStyleValue::CalcSum::contains_percentage() const
+{
+    if (first_calc_product->contains_percentage())
+        return true;
+    for (auto& part : zero_or_more_additional_calc_products) {
+        if (part.contains_percentage())
+            return true;
+    }
+    return false;
+}
+
+bool CalculatedStyleValue::CalcSumPartWithOperator::contains_percentage() const
+{
+    return value->contains_percentage();
+}
+
+bool CalculatedStyleValue::CalcProduct::contains_percentage() const
+{
+    if (first_calc_value.contains_percentage())
+        return true;
+    for (auto& part : zero_or_more_additional_calc_values) {
+        if (part.contains_percentage())
+            return true;
+    }
+    return false;
+}
+
+bool CalculatedStyleValue::CalcProductPartWithOperator::contains_percentage() const
+{
+    return value.visit(
+        [](CalcValue const& value) { return value.contains_percentage(); },
+        [](CalcNumberValue const&) { return false; });
+}
+
+bool CalculatedStyleValue::CalcValue::contains_percentage() const
+{
+    return value.visit(
+        [](Percentage const&) { return true; },
+        [](NonnullOwnPtr<CalcSum> const& sum) { return sum->contains_percentage(); },
+        [](auto const&) { return false; });
+}
+
+bool calculated_style_value_contains_percentage(CalculatedStyleValue const& value)
+{
+    return value.contains_percentage();
 }
 
 }

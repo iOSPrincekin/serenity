@@ -56,8 +56,8 @@ public:
     Gfx::IntRect rect() const;
     Gfx::IntRect render_rect() const;
     Gfx::IntRect unconstrained_render_rect() const;
-    Gfx::DisjointRectSet opaque_render_rects() const;
-    Gfx::DisjointRectSet transparent_render_rects() const;
+    Gfx::DisjointIntRectSet opaque_render_rects() const;
+    Gfx::DisjointIntRectSet transparent_render_rects() const;
 
     void paint(Screen&, Gfx::Painter&, Gfx::IntRect const&);
     void render(Screen&, Gfx::Painter&);
@@ -122,7 +122,6 @@ public:
 private:
     void paint_notification_frame(Gfx::Painter&);
     void paint_normal_frame(Gfx::Painter&);
-    void paint_tool_window_frame(Gfx::Painter&);
     void paint_menubar(Gfx::Painter&);
     MultiScaleBitmaps const* shadow_bitmap() const;
     Gfx::IntRect inflated_for_shadow(Gfx::IntRect const&) const;

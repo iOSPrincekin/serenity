@@ -78,9 +78,22 @@ struct ContextParameter {
     } value;
 };
 
+struct VertexAttribPointer {
+    GLint size { 4 };
+    GLenum type { GL_FLOAT };
+    bool normalize;
+    GLsizei stride { 0 };
+    void const* pointer { 0 };
+};
+
 enum Face {
     Front = 0,
     Back = 1,
+};
+
+enum class PackingType {
+    Pack,
+    Unpack,
 };
 
 class GLContext final {
@@ -90,6 +103,12 @@ public:
 
     NonnullRefPtr<Gfx::Bitmap> frontbuffer() const { return m_frontbuffer; };
     void present();
+
+    // Used by WebGL to preserve the clear values when implicitly clearing the front buffer.
+    // FIXME: Add ContextParameters for these and expose them through methods such as gl_get_floatv instead of having a public API like this.
+    FloatVector4 current_clear_color() const { return m_clear_color; }
+    GLdouble current_clear_depth() const { return m_clear_depth; }
+    GLint current_clear_stencil() const { return m_clear_stencil; }
 
     void gl_begin(GLenum mode);
     void gl_clear(GLbitfield mask);
@@ -102,7 +121,7 @@ public:
     void gl_frustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble near_val, GLdouble far_val);
     void gl_gen_textures(GLsizei n, GLuint* textures);
     GLenum gl_get_error();
-    GLubyte* gl_get_string(GLenum name);
+    GLubyte const* gl_get_string(GLenum name);
     void gl_load_identity();
     void gl_load_matrix(FloatMatrix4x4 const& matrix);
     void gl_matrix_mode(GLenum mode);
@@ -166,7 +185,7 @@ public:
     void gl_depth_func(GLenum func);
     void gl_polygon_mode(GLenum face, GLenum mode);
     void gl_polygon_offset(GLfloat factor, GLfloat units);
-    void gl_fogfv(GLenum pname, GLfloat* params);
+    void gl_fogfv(GLenum pname, GLfloat const* params);
     void gl_fogf(GLenum pname, GLfloat param);
     void gl_fogi(GLenum pname, GLint param);
     void gl_pixel_storei(GLenum pname, GLint param);
@@ -183,6 +202,7 @@ public:
     void gl_light_model(GLenum pname, GLfloat x, GLfloat y, GLfloat z, GLfloat w);
     void gl_bitmap(GLsizei width, GLsizei height, GLfloat xorig, GLfloat yorig, GLfloat xmove, GLfloat ymove, GLubyte const* bitmap);
     void gl_copy_tex_image_2d(GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height, GLint border);
+    void gl_get_tex_image(GLenum target, GLint level, GLenum format, GLenum type, void* pixels);
     void gl_get_tex_parameter_integerv(GLenum target, GLint level, GLenum pname, GLint* params);
     void gl_rect(GLdouble x1, GLdouble y1, GLdouble x2, GLdouble y2);
     void gl_tex_gen(GLenum coord, GLenum pname, GLint param);
@@ -201,11 +221,16 @@ public:
     void gl_array_element(GLint i);
     void gl_copy_tex_sub_image_2d(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height);
     void gl_point_size(GLfloat size);
+    void gl_bind_buffer(GLenum target, GLuint buffer);
+    void gl_buffer_data(GLenum target, GLsizeiptr size, void const* data, GLenum usage);
+    void gl_buffer_sub_data(GLenum target, GLintptr offset, GLsizeiptr size, void const* data);
+    void gl_delete_buffers(GLsizei n, GLuint const* buffers);
+    void gl_gen_buffers(GLsizei n, GLuint* buffers);
 
 private:
     void sync_device_config();
     void sync_device_sampler_config();
-    void sync_device_texcoord_config();
+    void sync_device_texture_units();
     void sync_light_state();
     void sync_stencil_configuration();
     void sync_clip_planes();
@@ -229,6 +254,7 @@ private:
     }
 
     Optional<ContextParameter> get_context_parameter(GLenum pname);
+    GPU::PackingSpecification get_packing_specification(PackingType);
 
     template<typename T>
     void get_floating_point(GLenum pname, T* params);
@@ -241,18 +267,31 @@ private:
     [[nodiscard]] bool should_append_to_listing() const { return m_current_listing_index.has_value(); }
     [[nodiscard]] bool should_execute_after_appending_to_listing() const { return m_current_listing_index.has_value() && m_current_listing_index->mode == GL_COMPILE_AND_EXECUTE; }
 
+    // FIXME: we store GPU::Texture objects that do not point back to either the driver or device, so we need
+    //        to destruct the latter two at the very end. Fix this by making all GPU objects point back to
+    //        the device that created them, and the device back to the driver.
+    RefPtr<GPU::Driver> m_driver;
+    NonnullOwnPtr<GPU::Device> m_rasterizer;
+    GPU::DeviceInfo const m_device_info;
+
     GLenum m_current_draw_mode;
     GLenum m_current_matrix_mode { GL_MODELVIEW };
-    FloatMatrix4x4 m_projection_matrix { FloatMatrix4x4::identity() };
-    FloatMatrix4x4 m_model_view_matrix { FloatMatrix4x4::identity() };
-    FloatMatrix4x4 m_texture_matrix { FloatMatrix4x4::identity() };
-    FloatMatrix4x4* m_current_matrix { &m_model_view_matrix };
 
-    Vector<FloatMatrix4x4> m_projection_matrix_stack;
-    Vector<FloatMatrix4x4> m_model_view_matrix_stack;
-    // FIXME: implement multi-texturing: the texture matrix stack should live inside a texture unit
-    Vector<FloatMatrix4x4> m_texture_matrix_stack;
+    FloatMatrix4x4& projection_matrix() { return m_projection_matrix_stack.last(); }
+    FloatMatrix4x4& model_view_matrix() { return m_model_view_matrix_stack.last(); }
+
+    Vector<FloatMatrix4x4> m_projection_matrix_stack { FloatMatrix4x4::identity() };
+    Vector<FloatMatrix4x4> m_model_view_matrix_stack { FloatMatrix4x4::identity() };
     Vector<FloatMatrix4x4>* m_current_matrix_stack { &m_model_view_matrix_stack };
+    FloatMatrix4x4* m_current_matrix { &m_current_matrix_stack->last() };
+
+    ALWAYS_INLINE void update_current_matrix(FloatMatrix4x4 const& new_matrix)
+    {
+        *m_current_matrix = new_matrix;
+
+        if (m_current_matrix_mode == GL_TEXTURE)
+            m_texture_units_dirty = true;
+    }
 
     Gfx::IntRect m_viewport;
 
@@ -320,7 +359,7 @@ private:
     bool m_client_side_vertex_array_enabled { false };
     bool m_client_side_color_array_enabled { false };
     Vector<bool> m_client_side_texture_coord_array_enabled;
-    size_t m_client_active_texture = 0;
+    size_t m_client_active_texture { 0 };
     bool m_client_side_normal_array_enabled { false };
 
     NonnullRefPtr<Gfx::Bitmap> m_frontbuffer;
@@ -340,6 +379,7 @@ private:
     Vector<TextureUnit> m_texture_units;
     TextureUnit* m_active_texture_unit;
     size_t m_active_texture_unit_index { 0 };
+    bool m_texture_units_dirty { true };
 
     // Texture coordinate generation state
     struct TextureCoordinateGeneration {
@@ -349,16 +389,11 @@ private:
         FloatVector4 eye_plane_coefficients { 0.0f, 0.0f, 0.0f, 0.0f };
     };
     Vector<Array<TextureCoordinateGeneration, 4>> m_texture_coordinate_generation;
-    bool m_texcoord_generation_dirty { true };
-
     ALWAYS_INLINE TextureCoordinateGeneration& texture_coordinate_generation(size_t texture_unit, GLenum capability)
     {
         return m_texture_coordinate_generation[texture_unit][capability - GL_TEXTURE_GEN_S];
     }
 
-    RefPtr<GPU::Driver> m_driver;
-    NonnullOwnPtr<GPU::Device> m_rasterizer;
-    GPU::DeviceInfo const m_device_info;
     bool m_sampler_config_is_dirty { true };
     bool m_light_state_is_dirty { true };
 
@@ -419,8 +454,6 @@ private:
             decltype(&GLContext::gl_tex_parameter),
             decltype(&GLContext::gl_tex_parameterfv),
             decltype(&GLContext::gl_depth_mask),
-            decltype(&GLContext::gl_draw_arrays),
-            decltype(&GLContext::gl_draw_elements),
             decltype(&GLContext::gl_draw_pixels),
             decltype(&GLContext::gl_depth_range),
             decltype(&GLContext::gl_polygon_offset),
@@ -451,7 +484,6 @@ private:
             decltype(&GLContext::gl_color_material),
             decltype(&GLContext::gl_get_light),
             decltype(&GLContext::gl_clip_plane),
-            decltype(&GLContext::gl_array_element),
             decltype(&GLContext::gl_copy_tex_sub_image_2d),
             decltype(&GLContext::gl_point_size)>;
 
@@ -473,24 +505,23 @@ private:
     };
     Optional<CurrentListing> m_current_listing_index;
 
-    struct VertexAttribPointer {
-        GLint size { 4 };
-        GLenum type { GL_FLOAT };
-        bool normalize { true };
-        GLsizei stride { 0 };
-        void const* pointer { 0 };
-    };
-
-    static void read_from_vertex_attribute_pointer(VertexAttribPointer const&, int index, float* elements);
-
     VertexAttribPointer m_client_vertex_pointer;
     VertexAttribPointer m_client_color_pointer;
     Vector<VertexAttribPointer> m_client_tex_coord_pointer;
     VertexAttribPointer m_client_normal_pointer;
 
-    u8 m_pack_alignment { 4 };
-    GLsizei m_unpack_row_length { 0 };
-    u8 m_unpack_alignment { 4 };
+    struct PixelParameters {
+        i32 image_height { 0 };
+        bool least_significant_bit_first { false };
+        u8 pack_alignment { 4 };
+        i32 row_length { 0 };
+        i32 skip_images { 0 };
+        i32 skip_pixels { 0 };
+        i32 skip_rows { 0 };
+        bool swap_bytes { false };
+    };
+    PixelParameters m_packing_parameters;
+    PixelParameters m_unpacking_parameters;
 
     // Point drawing configuration
     bool m_point_smooth { false };
@@ -514,8 +545,7 @@ private:
     String m_extensions;
 };
 
-NonnullOwnPtr<GLContext> create_context(Gfx::Bitmap&);
+ErrorOr<NonnullOwnPtr<GLContext>> create_context(Gfx::Bitmap&);
 void make_context_current(GLContext*);
-void present_context(GLContext*);
 
 }

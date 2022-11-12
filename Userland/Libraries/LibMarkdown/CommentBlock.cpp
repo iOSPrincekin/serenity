@@ -14,10 +14,10 @@ String CommentBlock::render_to_html(bool) const
 {
     StringBuilder builder;
 
-    builder.append("<!--");
+    builder.append("<!--"sv);
     builder.append(escape_html_entities(m_comment));
     // TODO: This is probably incorrect, because we technically need to escape "--" in some form. However, Browser does not care about this.
-    builder.append("-->\n");
+    builder.append("-->\n"sv);
 
     return builder.build();
 }
@@ -53,7 +53,7 @@ OwnPtr<CommentBlock> CommentBlock::parse(LineIterator& lines)
     StringBuilder builder;
 
     while (true) {
-        // Invariant: At the beginning of the loop, `line` is valid and should be added the the builder.
+        // Invariant: At the beginning of the loop, `line` is valid and should be added to the builder.
         bool ends_here = line.ends_with(comment_end);
         if (ends_here)
             line = line.substring_view(0, line.length() - comment_end.length());

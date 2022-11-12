@@ -12,11 +12,18 @@
 #ifdef KERNEL
 #    include <Kernel/Arch/Processor.h>
 #    include <Kernel/Arch/ScopedCritical.h>
+#    include <Kernel/Locking/SpinlockProtected.h>
+#elif defined(AK_OS_WINDOWS)
+// Forward declare to avoid pulling Windows.h into every file in existence.
+extern "C" __declspec(dllimport) void __stdcall Sleep(unsigned long);
+#    ifndef sched_yield
+#        define sched_yield() Sleep(0)
+#    endif
 #else
 #    include <sched.h>
 #endif
 
-#ifndef __serenity__
+#ifndef AK_OS_SERENITY
 #    include <new>
 #endif
 
@@ -29,6 +36,18 @@ struct SingletonInstanceCreator {
         return new T();
     }
 };
+
+#ifdef KERNEL
+
+// FIXME: Find a nice way of injecting the lock rank into the singleton.
+template<typename T>
+struct SingletonInstanceCreator<Kernel::SpinlockProtected<T>> {
+    static Kernel::SpinlockProtected<T>* create()
+    {
+        return new Kernel::SpinlockProtected<T> { Kernel::LockRank::None };
+    }
+};
+#endif
 
 template<typename T, T* (*InitFunction)() = SingletonInstanceCreator<T>::create>
 class Singleton {

@@ -10,7 +10,7 @@
 #include "Player.h"
 #include "SampleWidget.h"
 #include "SoundPlayerWidgetAdvancedView.h"
-#include <LibAudio/ConnectionFromClient.h>
+#include <LibAudio/ConnectionToServer.h>
 #include <LibCore/System.h>
 #include <LibGUI/Action.h>
 #include <LibGUI/ActionGroup.h>
@@ -28,11 +28,11 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     TRY(Core::System::pledge("stdio recvfd sendfd rpath thread unix"));
 
     auto app = TRY(GUI::Application::try_create(arguments));
-    auto audio_client = TRY(Audio::ConnectionFromClient::try_create());
+    auto audio_client = TRY(Audio::ConnectionToServer::try_create());
 
     TRY(Core::System::pledge("stdio recvfd sendfd rpath thread"));
 
-    auto app_icon = GUI::Icon::default_icon("app-sound-player");
+    auto app_icon = GUI::Icon::default_icon("app-sound-player"sv);
 
     auto window = TRY(GUI::Window::try_create());
     window->set_title("Sound Player");
@@ -131,6 +131,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     visualization_actions.add_action(album_cover_visualization);
 
     auto help_menu = TRY(window->try_add_menu("&Help"));
+    TRY(help_menu->try_add_action(GUI::CommonActions::make_command_palette_action(window)));
     TRY(help_menu->try_add_action(GUI::CommonActions::make_about_action("Sound Player", app_icon, window)));
 
     window->show();

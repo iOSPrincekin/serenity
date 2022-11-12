@@ -225,7 +225,15 @@ void Action::set_group(Badge<ActionGroup>, ActionGroup* group)
 
 void Action::set_icon(Gfx::Bitmap const* icon)
 {
+    if (m_icon == icon)
+        return;
     m_icon = icon;
+    for_each_toolbar_button([icon](auto& button) {
+        button.set_icon(icon);
+    });
+    for_each_menu_item([](auto& menu_item) {
+        menu_item.update_from_action({});
+    });
 }
 
 void Action::set_text(String text)
@@ -233,6 +241,9 @@ void Action::set_text(String text)
     if (m_text == text)
         return;
     m_text = move(text);
+    for_each_toolbar_button([&](auto& button) {
+        button.set_text_from_action();
+    });
     for_each_menu_item([&](auto& menu_item) {
         menu_item.update_from_action({});
     });

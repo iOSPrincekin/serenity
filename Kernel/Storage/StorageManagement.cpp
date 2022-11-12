@@ -6,45 +6,70 @@
  */
 
 #include <AK/IterationDecision.h>
+#include <AK/Platform.h>
 #include <AK/Singleton.h>
 #include <AK/StringView.h>
 #include <AK/UUID.h>
+#if ARCH(I386) || ARCH(X86_64)
+#    include <Kernel/Arch/x86/ISABus/IDEController.h>
+#    include <Kernel/Arch/x86/PCI/IDELegacyModeController.h>
+#endif
 #include <Kernel/Bus/PCI/API.h>
 #include <Kernel/Bus/PCI/Access.h>
 #include <Kernel/Bus/PCI/Controller/VolumeManagementDevice.h>
 #include <Kernel/CommandLine.h>
 #include <Kernel/Devices/BlockDevice.h>
-#include <Kernel/FileSystem/Ext2FileSystem.h>
+#include <Kernel/Devices/DeviceManagement.h>
+#include <Kernel/FileSystem/Ext2FS/FileSystem.h>
+#include <Kernel/FileSystem/VirtualFileSystem.h>
 #include <Kernel/Panic.h>
-#include <Kernel/Storage/ATA/AHCIController.h>
-#include <Kernel/Storage/ATA/ISAIDEController.h>
-#include <Kernel/Storage/ATA/PCIIDEController.h>
+#include <Kernel/Storage/ATA/AHCI/Controller.h>
+#include <Kernel/Storage/ATA/GenericIDE/Controller.h>
 #include <Kernel/Storage/NVMe/NVMeController.h>
-#include <Kernel/Storage/Partition/EBRPartitionTable.h>
-#include <Kernel/Storage/Partition/GUIDPartitionTable.h>
-#include <Kernel/Storage/Partition/MBRPartitionTable.h>
-#include <Kernel/Storage/Ramdisk/Controller.h>
 #include <Kernel/Storage/StorageManagement.h>
+#include <LibPartition/EBRPartitionTable.h>
+#include <LibPartition/GUIDPartitionTable.h>
+#include <LibPartition/MBRPartitionTable.h>
 
 namespace Kernel {
 
 static Singleton<StorageManagement> s_the;
-static Atomic<u32> s_device_minor_number;
+static Atomic<u32> s_storage_device_minor_number;
+static Atomic<u32> s_partition_device_minor_number;
+static Atomic<u32> s_controller_id;
+
+static Atomic<u32> s_relative_ata_controller_id;
+static Atomic<u32> s_relative_nvme_controller_id;
 
 static constexpr StringView partition_uuid_prefix = "PARTUUID:"sv;
+
+static constexpr StringView partition_number_prefix = "part"sv;
+static constexpr StringView block_device_prefix = "block"sv;
+
+static constexpr StringView ata_device_prefix = "ata"sv;
+static constexpr StringView nvme_device_prefix = "nvme"sv;
+static constexpr StringView logical_unit_number_device_prefix = "lun"sv;
 
 UNMAP_AFTER_INIT StorageManagement::StorageManagement()
 {
 }
 
+u32 StorageManagement::generate_relative_nvme_controller_id(Badge<NVMeController>)
+{
+    auto controller_id = s_relative_nvme_controller_id.load();
+    s_relative_nvme_controller_id++;
+    return controller_id;
+}
+u32 StorageManagement::generate_relative_ata_controller_id(Badge<ATAController>)
+{
+    auto controller_id = s_relative_ata_controller_id.load();
+    s_relative_ata_controller_id++;
+    return controller_id;
+}
+
 void StorageManagement::remove_device(StorageDevice& device)
 {
     m_storage_devices.remove(device);
-}
-
-bool StorageManagement::boot_argument_contains_partition_uuid()
-{
-    return m_boot_argument.starts_with(partition_uuid_prefix);
 }
 
 UNMAP_AFTER_INIT void StorageManagement::enumerate_pci_controllers(bool force_pio, bool nvme_poll)
@@ -78,9 +103,16 @@ UNMAP_AFTER_INIT void StorageManagement::enumerate_pci_controllers(bool force_pi
             }
 
             auto subclass_code = static_cast<SubclassID>(device_identifier.subclass_code().value());
+#if ARCH(I386) || ARCH(X86_64)
             if (subclass_code == SubclassID::IDEController && kernel_command_line().is_ide_enabled()) {
-                m_controllers.append(PCIIDEController::initialize(device_identifier, force_pio));
+                m_controllers.append(PCIIDELegacyModeController::initialize(device_identifier, force_pio));
             }
+#elif ARCH(AARCH64)
+            (void)force_pio;
+            TODO_AARCH64();
+#else
+#    error Unknown architecture
+#endif
 
             if (subclass_code == SubclassID::SATAController
                 && device_identifier.prog_if().value() == to_underlying(PCI::MassStorage::SATAProgIF::AHCI)) {
@@ -117,34 +149,33 @@ UNMAP_AFTER_INIT void StorageManagement::dump_storage_devices_and_partitions() c
     for (auto const& storage_device : m_storage_devices) {
         auto const& partitions = storage_device.partitions();
         if (partitions.is_empty()) {
-            dbgln("  Device: {} (no partitions)", storage_device.early_storage_name());
+            dbgln("  Device: block{}:{} (no partitions)", storage_device.major(), storage_device.minor());
         } else {
-            dbgln("  Device: {} ({} partitions)", storage_device.early_storage_name(), partitions.size());
+            dbgln("  Device: block{}:{} ({} partitions)", storage_device.major(), storage_device.minor(), partitions.size());
             unsigned partition_number = 1;
             for (auto const& partition : partitions) {
-                dbgln("    Partition: {} (UUID {})", partition_number, partition.metadata().unique_guid().to_string());
+                dbgln("    Partition: {}, block{}:{} (UUID {})", partition_number, partition.major(), partition.minor(), partition.metadata().unique_guid().to_string());
                 partition_number++;
             }
         }
     }
 }
 
-UNMAP_AFTER_INIT ErrorOr<NonnullOwnPtr<PartitionTable>> StorageManagement::try_to_initialize_partition_table(StorageDevice const& device) const
+UNMAP_AFTER_INIT ErrorOr<NonnullOwnPtr<Partition::PartitionTable>> StorageManagement::try_to_initialize_partition_table(StorageDevice const& device) const
 {
-    auto mbr_table_or_error = MBRPartitionTable::try_to_initialize(device);
+    auto mbr_table_or_error = Partition::MBRPartitionTable::try_to_initialize(device);
     if (!mbr_table_or_error.is_error())
         return mbr_table_or_error.release_value();
-    auto ebr_table_or_error = EBRPartitionTable::try_to_initialize(device);
+    auto ebr_table_or_error = Partition::EBRPartitionTable::try_to_initialize(device);
     if (!ebr_table_or_error.is_error()) {
         return ebr_table_or_error.release_value();
     }
-    return TRY(GUIDPartitionTable::try_to_initialize(device));
+    return TRY(Partition::GUIDPartitionTable::try_to_initialize(device));
 }
 
 UNMAP_AFTER_INIT void StorageManagement::enumerate_disk_partitions()
 {
     VERIFY(!m_storage_devices.is_empty());
-    size_t device_index = 0;
     for (auto& device : m_storage_devices) {
         auto partition_table_or_error = try_to_initialize_partition_table(device);
         if (partition_table_or_error.is_error())
@@ -154,59 +185,178 @@ UNMAP_AFTER_INIT void StorageManagement::enumerate_disk_partitions()
             auto partition_metadata = partition_table->partition(partition_index);
             if (!partition_metadata.has_value())
                 continue;
-            // FIXME: Try to not hardcode a maximum of 16 partitions per drive!
-            auto disk_partition = DiskPartition::create(device, (partition_index + (16 * device_index)), partition_metadata.value());
+            auto disk_partition = DiskPartition::create(device, generate_partition_minor_number(), partition_metadata.value());
             device.add_partition(disk_partition);
         }
-        device_index++;
     }
+}
+
+UNMAP_AFTER_INIT Optional<unsigned> StorageManagement::extract_boot_device_partition_number_parameter(StringView device_prefix)
+{
+    VERIFY(m_boot_argument.starts_with(device_prefix));
+    VERIFY(!m_boot_argument.starts_with(partition_uuid_prefix));
+    auto storage_device_relative_address_view = m_boot_argument.substring_view(device_prefix.length());
+    auto parameter_view = storage_device_relative_address_view.find_last_split_view(';');
+    if (parameter_view == storage_device_relative_address_view)
+        return {};
+    if (!parameter_view.starts_with(partition_number_prefix)) {
+        PANIC("StorageManagement: Invalid root boot parameter.");
+    }
+
+    auto parameter_number = parameter_view.substring_view(partition_number_prefix.length()).to_uint<unsigned>();
+    if (!parameter_number.has_value()) {
+        PANIC("StorageManagement: Invalid root boot parameter.");
+    }
+
+    return parameter_number.value();
+}
+
+UNMAP_AFTER_INIT Array<unsigned, 3> StorageManagement::extract_boot_device_address_parameters(StringView device_prefix)
+{
+    VERIFY(!m_boot_argument.starts_with(partition_uuid_prefix));
+    Array<unsigned, 3> address_parameters;
+    auto parameters_view = m_boot_argument.substring_view(device_prefix.length()).find_first_split_view(';');
+    size_t parts_count = 0;
+    bool parse_failure = false;
+    parameters_view.for_each_split_view(':', SplitBehavior::Nothing, [&](StringView parameter_view) {
+        if (parse_failure)
+            return;
+        if (parts_count > 2)
+            return;
+        auto parameter_number = parameter_view.to_uint<unsigned>();
+        if (!parameter_number.has_value()) {
+            parse_failure = true;
+            return;
+        }
+        address_parameters[parts_count] = parameter_number.value();
+        parts_count++;
+    });
+
+    if (parts_count > 3) {
+        dbgln("StorageManagement: Detected {} parts in boot device parameter.", parts_count);
+        PANIC("StorageManagement: Invalid root boot parameter.");
+    }
+    if (parse_failure) {
+        PANIC("StorageManagement: Invalid root boot parameter.");
+    }
+
+    return address_parameters;
+}
+
+UNMAP_AFTER_INIT void StorageManagement::resolve_partition_from_boot_device_parameter(StorageDevice const& chosen_storage_device, StringView boot_device_prefix)
+{
+    auto possible_partition_number = extract_boot_device_partition_number_parameter(boot_device_prefix);
+    if (!possible_partition_number.has_value())
+        return;
+
+    auto partition_number = possible_partition_number.value();
+    if (chosen_storage_device.partitions().size() <= partition_number)
+        PANIC("StorageManagement: Invalid partition number parameter.");
+    m_boot_block_device = chosen_storage_device.partitions()[partition_number];
+}
+
+UNMAP_AFTER_INIT void StorageManagement::determine_hardware_relative_boot_device(StringView relative_hardware_prefix, Function<bool(StorageDevice const&)> filter_device_callback)
+{
+    VERIFY(m_boot_argument.starts_with(relative_hardware_prefix));
+    auto address_parameters = extract_boot_device_address_parameters(relative_hardware_prefix);
+
+    RefPtr<StorageDevice> chosen_storage_device;
+
+    for (auto& storage_device : m_storage_devices) {
+        if (!filter_device_callback(storage_device))
+            continue;
+        auto storage_device_lun = storage_device.logical_unit_number_address();
+        if (storage_device.parent_controller_hardware_relative_id() == address_parameters[0]
+            && storage_device_lun.target_id == address_parameters[1]
+            && storage_device_lun.disk_id == address_parameters[2]) {
+            m_boot_block_device = storage_device;
+            chosen_storage_device = storage_device;
+            break;
+        }
+    }
+
+    if (chosen_storage_device)
+        resolve_partition_from_boot_device_parameter(*chosen_storage_device, relative_hardware_prefix);
+}
+
+UNMAP_AFTER_INIT void StorageManagement::determine_ata_boot_device()
+{
+    determine_hardware_relative_boot_device(ata_device_prefix, [](StorageDevice const& device) -> bool {
+        return device.command_set() == StorageDevice::CommandSet::ATA;
+    });
+}
+
+UNMAP_AFTER_INIT void StorageManagement::determine_nvme_boot_device()
+{
+    determine_hardware_relative_boot_device(nvme_device_prefix, [](StorageDevice const& device) -> bool {
+        return device.command_set() == StorageDevice::CommandSet::NVMe;
+    });
+}
+
+UNMAP_AFTER_INIT void StorageManagement::determine_block_boot_device()
+{
+    VERIFY(m_boot_argument.starts_with(block_device_prefix));
+    auto parameters_view = extract_boot_device_address_parameters(block_device_prefix);
+
+    // Note: We simply fetch the corresponding BlockDevice with the major and minor parameters.
+    // We don't try to accept and resolve a partition number as it will make this code much more
+    // complicated. This rule is also explained in the boot_device_addressing(7) manual page.
+    LockRefPtr<Device> device = DeviceManagement::the().get_device(parameters_view[0], parameters_view[1]);
+    if (device && device->is_block_device())
+        m_boot_block_device = static_ptr_cast<BlockDevice>(device);
+}
+
+UNMAP_AFTER_INIT void StorageManagement::determine_boot_device_with_logical_unit_number()
+{
+    VERIFY(m_boot_argument.starts_with(logical_unit_number_device_prefix));
+    auto address_parameters = extract_boot_device_address_parameters(logical_unit_number_device_prefix);
+
+    RefPtr<StorageDevice> chosen_storage_device;
+
+    for (auto& storage_device : m_storage_devices) {
+        auto storage_device_lun = storage_device.logical_unit_number_address();
+        if (storage_device_lun.controller_id == address_parameters[0]
+            && storage_device_lun.target_id == address_parameters[1]
+            && storage_device_lun.disk_id == address_parameters[2]) {
+            m_boot_block_device = storage_device;
+            chosen_storage_device = storage_device;
+            break;
+        }
+    }
+
+    if (chosen_storage_device)
+        resolve_partition_from_boot_device_parameter(*chosen_storage_device, logical_unit_number_device_prefix);
 }
 
 UNMAP_AFTER_INIT void StorageManagement::determine_boot_device()
 {
     VERIFY(!m_controllers.is_empty());
-    if (m_boot_argument.starts_with("/dev/"sv)) {
-        StringView storage_name = m_boot_argument.substring_view(5);
-        for (auto& storage_device : m_storage_devices) {
-            if (storage_device.early_storage_name() == storage_name) {
-                m_boot_block_device = storage_device;
-                break;
-            }
 
-            // If the early storage name's last character is a digit (e.g. in the case of NVMe where the last
-            // number in the device name indicates the node, e.g. /dev/nvme0n1 we need to append a "p" character
-            // so that we can properly distinguish the partition index from the device itself
-            char storage_name_last_char = *(storage_device.early_storage_name().end() - 1);
-            OwnPtr<KString> normalized_name;
-            StringView early_storage_name;
-            if (storage_name_last_char >= '0' && storage_name_last_char <= '9') {
-                normalized_name = MUST(KString::formatted("{}p", storage_device.early_storage_name()));
-                early_storage_name = normalized_name->view();
-            } else {
-                early_storage_name = storage_device.early_storage_name();
-            }
-
-            auto start_storage_name = storage_name.substring_view(0, min(early_storage_name.length(), storage_name.length()));
-
-            if (early_storage_name.starts_with(start_storage_name)) {
-                StringView partition_sign = storage_name.substring_view(start_storage_name.length());
-                auto possible_partition_number = partition_sign.to_uint<size_t>();
-                if (!possible_partition_number.has_value())
-                    break;
-                if (possible_partition_number.value() == 0)
-                    break;
-                if (storage_device.partitions().size() < possible_partition_number.value())
-                    break;
-                m_boot_block_device = storage_device.partitions()[possible_partition_number.value() - 1];
-                break;
-            }
-        }
+    if (m_boot_argument.starts_with(block_device_prefix)) {
+        determine_block_boot_device();
+        return;
     }
 
-    if (m_boot_block_device.is_null()) {
-        dump_storage_devices_and_partitions();
-        PANIC("StorageManagement: boot device {} not found", m_boot_argument);
+    if (m_boot_argument.starts_with(partition_uuid_prefix)) {
+        determine_boot_device_with_partition_uuid();
+        return;
     }
+
+    if (m_boot_argument.starts_with(logical_unit_number_device_prefix)) {
+        determine_boot_device_with_logical_unit_number();
+        return;
+    }
+
+    if (m_boot_argument.starts_with(ata_device_prefix)) {
+        determine_ata_boot_device();
+        return;
+    }
+
+    if (m_boot_argument.starts_with(nvme_device_prefix)) {
+        determine_nvme_boot_device();
+        return;
+    }
+    PANIC("StorageManagement: Invalid root boot parameter.");
 }
 
 UNMAP_AFTER_INIT void StorageManagement::determine_boot_device_with_partition_uuid()
@@ -228,7 +378,7 @@ UNMAP_AFTER_INIT void StorageManagement::determine_boot_device_with_partition_uu
     }
 }
 
-RefPtr<BlockDevice> StorageManagement::boot_block_device() const
+LockRefPtr<BlockDevice> StorageManagement::boot_block_device() const
 {
     return m_boot_block_device.strong_ref();
 }
@@ -239,12 +389,20 @@ MajorNumber StorageManagement::storage_type_major_number()
 }
 MinorNumber StorageManagement::generate_storage_minor_number()
 {
-    auto minor_number = s_device_minor_number.load();
-    s_device_minor_number++;
-    return minor_number;
+    return s_storage_device_minor_number.fetch_add(1);
 }
 
-NonnullRefPtr<FileSystem> StorageManagement::root_filesystem() const
+MinorNumber StorageManagement::generate_partition_minor_number()
+{
+    return s_partition_device_minor_number.fetch_add(1);
+}
+
+u32 StorageManagement::generate_controller_id()
+{
+    return s_controller_id.fetch_add(1);
+}
+
+NonnullLockRefPtr<FileSystem> StorageManagement::root_filesystem() const
 {
     auto boot_device_description = boot_block_device();
     if (!boot_device_description) {
@@ -265,25 +423,25 @@ NonnullRefPtr<FileSystem> StorageManagement::root_filesystem() const
 
 UNMAP_AFTER_INIT void StorageManagement::initialize(StringView root_device, bool force_pio, bool poll)
 {
-    VERIFY(s_device_minor_number == 0);
+    VERIFY(s_storage_device_minor_number == 0);
     m_boot_argument = root_device;
     if (PCI::Access::is_disabled()) {
+#if ARCH(I386) || ARCH(X86_64)
         // Note: If PCI is disabled, we assume that at least we have an ISA IDE controller
         // to probe and use
         m_controllers.append(ISAIDEController::initialize());
+#endif
     } else {
         enumerate_pci_controllers(force_pio, poll);
     }
-    // Note: Whether PCI bus is present on the system or not, always try to attach
-    // a given ramdisk.
-    m_controllers.append(RamdiskController::initialize());
     enumerate_storage_devices();
     enumerate_disk_partitions();
-    if (!boot_argument_contains_partition_uuid()) {
-        determine_boot_device();
-        return;
+
+    determine_boot_device();
+    if (m_boot_block_device.is_null()) {
+        dump_storage_devices_and_partitions();
+        PANIC("StorageManagement: boot device {} not found", m_boot_argument);
     }
-    determine_boot_device_with_partition_uuid();
 }
 
 StorageManagement& StorageManagement::the()

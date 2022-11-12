@@ -18,12 +18,10 @@ namespace Web::HTML {
 class HTMLImageElement final
     : public HTMLElement
     , public FormAssociatedElement {
+    WEB_PLATFORM_OBJECT(HTMLImageElement, HTMLElement);
     FORM_ASSOCIATED_ELEMENT(HTMLElement, HTMLImageElement)
 
 public:
-    using WrapperType = Bindings::HTMLImageElementWrapper;
-
-    HTMLImageElement(DOM::Document&, DOM::QualifiedName);
     virtual ~HTMLImageElement() override;
 
     virtual void parse_attribute(FlyString const& name, String const& value) override;
@@ -42,12 +40,17 @@ public:
     unsigned natural_width() const;
     unsigned natural_height() const;
 
+    // https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-complete
+    bool complete() const;
+
 private:
+    HTMLImageElement(DOM::Document&, DOM::QualifiedName);
+
     virtual void apply_presentational_hints(CSS::StyleProperties&) const override;
 
     void animate();
 
-    virtual RefPtr<Layout::Node> create_layout_node(NonnullRefPtr<CSS::StyleProperties>) override;
+    virtual JS::GCPtr<Layout::Node> create_layout_node(NonnullRefPtr<CSS::StyleProperties>) override;
 
     ImageLoader m_image_loader;
 };

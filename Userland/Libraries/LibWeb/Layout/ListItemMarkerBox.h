@@ -12,11 +12,12 @@
 namespace Web::Layout {
 
 class ListItemMarkerBox final : public Box {
+    JS_CELL(ListItemMarkerBox, Box);
+
 public:
     explicit ListItemMarkerBox(DOM::Document&, CSS::ListStyleType, size_t index, NonnullRefPtr<CSS::StyleProperties>);
     virtual ~ListItemMarkerBox() override;
 
-    Gfx::Bitmap const* list_style_image_bitmap() const;
     String const& text() const { return m_text; }
 
     virtual RefPtr<Painting::Paintable> create_paintable() const override;

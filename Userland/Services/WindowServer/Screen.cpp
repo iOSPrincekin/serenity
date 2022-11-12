@@ -14,7 +14,7 @@
 #include "WindowManager.h"
 #include <AK/Debug.h>
 #include <AK/Format.h>
-#include <Kernel/API/FB.h>
+#include <Kernel/API/Graphics.h>
 #include <Kernel/API/MousePacket.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -370,12 +370,15 @@ bool Screen::set_resolution(bool initial)
         if (!return_value.is_error())
             return true;
     }
-    if (return_value.is_error()) {
+    if (return_value.is_error() && return_value.error() != Error::from_errno(EOVERFLOW)) {
         dbgln("Screen #{}: Failed to set resolution {}: {}", index(), info.resolution, return_value.error());
         MUST(on_change_resolution());
         return false;
     }
-    VERIFY_NOT_REACHED();
+    dbgln("Screen #{}: Failed to set resolution {}: {}, falling back to safe resolution", index(), info.resolution, return_value.error());
+    MUST(m_backend->set_safe_head_mode_setting());
+    MUST(on_change_resolution());
+    return false;
 }
 
 void Screen::set_buffer(int index)
@@ -466,7 +469,7 @@ void Screen::constrain_pending_flush_rects()
     if (flush_rects.pending_flush_rects.is_empty())
         return;
     Gfx::IntRect screen_rect({}, rect().size());
-    Gfx::DisjointRectSet rects;
+    Gfx::DisjointIntRectSet rects;
     for (auto& fb_rect : flush_rects.pending_flush_rects) {
         Gfx::IntRect rect { (int)fb_rect.x, (int)fb_rect.y, (int)fb_rect.width, (int)fb_rect.height };
         auto intersected_rect = rect.intersected(screen_rect);
@@ -556,11 +559,6 @@ void Screen::flush_display(int buffer_index)
 
     flush_rects.too_many_pending_flush_rects = false;
     flush_rects.pending_flush_rects.clear_with_capacity();
-}
-
-void Screen::write_all_display_contents()
-{
-    MUST(m_backend->write_all_contents(m_physical_rect));
 }
 
 void Screen::flush_display_entire_framebuffer()

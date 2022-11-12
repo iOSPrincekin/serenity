@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2020-2021, Andreas Kling <kling@serenityos.org>
+ * Copyright (c) 2021-2022, Linus Groh <linusg@serenityos.org>
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
@@ -13,7 +14,9 @@
 #include <LibWeb/HTML/BrowsingContext.h>
 #include <LibWeb/Layout/InitialContainingBlock.h>
 #include <LibWeb/Painting/PaintableBox.h>
+#include <LibWeb/Platform/Timer.h>
 #include <WebContent/WebContentClientEndpoint.h>
+#include <WebContent/WebDriverConnection.h>
 
 namespace WebContent {
 
@@ -22,11 +25,13 @@ PageHost::PageHost(ConnectionFromClient& client)
     , m_page(make<Web::Page>(*this))
 {
     setup_palette();
-    m_invalidation_coalescing_timer = Core::Timer::create_single_shot(0, [this] {
+    m_invalidation_coalescing_timer = Web::Platform::Timer::create_single_shot(0, [this] {
         m_client.async_did_invalidate_content_rect(m_invalidation_rect);
         m_invalidation_rect = {};
     });
 }
+
+PageHost::~PageHost() = default;
 
 void PageHost::set_has_focus(bool has_focus)
 {
@@ -53,6 +58,8 @@ Gfx::Palette PageHost::palette() const
 void PageHost::set_palette_impl(Gfx::PaletteImpl const& impl)
 {
     m_palette_impl = impl;
+    if (auto* document = page().top_level_browsing_context().active_document())
+        document->invalidate_style();
 }
 
 void PageHost::set_preferred_color_scheme(Web::CSS::PreferredColorScheme color_scheme)
@@ -65,6 +72,28 @@ void PageHost::set_preferred_color_scheme(Web::CSS::PreferredColorScheme color_s
 void PageHost::set_is_scripting_enabled(bool is_scripting_enabled)
 {
     page().set_is_scripting_enabled(is_scripting_enabled);
+}
+
+void PageHost::set_is_webdriver_active(bool is_webdriver_active)
+{
+    page().set_is_webdriver_active(is_webdriver_active);
+}
+
+void PageHost::set_window_position(Gfx::IntPoint const& position)
+{
+    page().set_window_position(position);
+}
+
+void PageHost::set_window_size(Gfx::IntSize const& size)
+{
+    page().set_window_size(size);
+}
+
+ErrorOr<void> PageHost::connect_to_webdriver(String const& webdriver_ipc_path)
+{
+    VERIFY(!m_webdriver);
+    m_webdriver = TRY(WebDriverConnection::connect(m_client, *this, webdriver_ipc_path));
+    return {};
 }
 
 Web::Layout::InitialContainingBlock* PageHost::layout_root()
@@ -122,12 +151,11 @@ void PageHost::page_did_layout()
 {
     auto* layout_root = this->layout_root();
     VERIFY(layout_root);
-    Gfx::IntSize content_size;
     if (layout_root->paint_box()->has_overflow())
-        content_size = enclosing_int_rect(layout_root->paint_box()->scrollable_overflow_rect().value()).size();
+        m_content_size = enclosing_int_rect(layout_root->paint_box()->scrollable_overflow_rect().value()).size();
     else
-        content_size = enclosing_int_rect(layout_root->paint_box()->absolute_rect()).size();
-    m_client.async_did_layout(content_size);
+        m_content_size = enclosing_int_rect(layout_root->paint_box()->absolute_rect()).size();
+    m_client.async_did_layout(m_content_size);
 }
 
 void PageHost::page_did_change_title(String const& title)
@@ -185,11 +213,13 @@ void PageHost::page_did_start_loading(const URL& url)
     m_client.async_did_start_loading(url);
 }
 
+void PageHost::page_did_create_main_document()
+{
+    m_client.initialize_js_console({});
+}
+
 void PageHost::page_did_finish_loading(const URL& url)
 {
-    // FIXME: This is called after the page has finished loading, which means any log messages
-    //        that happen *while* it is loading (such as inline <script>s) will be lost.
-    m_client.initialize_js_console({});
     m_client.async_did_finish_loading(url);
 }
 
@@ -261,6 +291,11 @@ void PageHost::page_did_set_cookie(const URL& url, Web::Cookie::ParsedCookie con
 void PageHost::page_did_update_resource_count(i32 count_waiting)
 {
     m_client.async_did_update_resource_count(count_waiting);
+}
+
+void PageHost::request_file(NonnullRefPtr<Web::FileRequest>& file_request)
+{
+    m_client.request_file(file_request);
 }
 
 }

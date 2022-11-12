@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2020-2021, Andreas Kling <kling@serenityos.org>
  * Copyright (c) 2022, Tobias Christiansen <tobyase@serenityos.org>
+ * Copyright (c) 2022, Timothy Slater <tslater2006@gmail.com>
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
@@ -20,7 +21,7 @@ ErrorOr<NonnullRefPtr<Layer>> Layer::try_create_with_size(Image& image, Gfx::Int
     VERIFY(!size.is_empty());
 
     if (size.width() > 16384 || size.height() > 16384)
-        return Error::from_string_literal("Layer size too large"sv);
+        return Error::from_string_literal("Layer size too large");
 
     auto bitmap = TRY(Gfx::Bitmap::try_create(Gfx::BitmapFormat::BGRA8888, size));
     return adopt_nonnull_ref_or_enomem(new (nothrow) Layer(image, move(bitmap), move(name)));
@@ -31,7 +32,7 @@ ErrorOr<NonnullRefPtr<Layer>> Layer::try_create_with_bitmap(Image& image, Nonnul
     VERIFY(!bitmap->size().is_empty());
 
     if (bitmap->size().width() > 16384 || bitmap->size().height() > 16384)
-        return Error::from_string_literal("Layer size too large"sv);
+        return Error::from_string_literal("Layer size too large");
 
     return adopt_nonnull_ref_or_enomem(new (nothrow) Layer(image, bitmap, move(name)));
 }
@@ -65,6 +66,21 @@ Layer::Layer(Image& image, NonnullRefPtr<Gfx::Bitmap> bitmap, String name)
 
 void Layer::did_modify_bitmap(Gfx::IntRect const& rect)
 {
+    if (!m_scratch_edited_bitmap.is_null()) {
+        for (int y = 0; y < rect.height(); ++y) {
+            for (int x = 0; x < rect.width(); ++x) {
+                Gfx::IntPoint next_point = { rect.left() + x, rect.top() + y };
+                if (!m_scratch_edited_bitmap->rect().contains(next_point))
+                    continue;
+
+                if (this->image().selection().is_selected(next_point.translated(this->location())))
+                    currently_edited_bitmap().set_pixel(next_point, m_scratch_edited_bitmap->get_pixel(next_point));
+                else
+                    m_scratch_edited_bitmap->set_pixel(next_point, currently_edited_bitmap().get_pixel(next_point));
+            }
+        }
+    }
+
     m_image.layer_did_modify_bitmap({}, *this, rect);
     update_cached_bitmap();
 }
@@ -91,6 +107,21 @@ void Layer::set_name(String name)
         return;
     m_name = move(name);
     m_image.layer_did_modify_properties({}, *this);
+}
+
+Gfx::Bitmap& Layer::get_scratch_edited_bitmap()
+{
+    if (this->image().selection().is_empty()) {
+        m_scratch_edited_bitmap = nullptr;
+        return currently_edited_bitmap();
+    }
+
+    if (!m_scratch_edited_bitmap.is_null())
+        return *m_scratch_edited_bitmap;
+
+    m_scratch_edited_bitmap = MUST(currently_edited_bitmap().clone());
+
+    return *m_scratch_edited_bitmap;
 }
 
 RefPtr<Gfx::Bitmap> Layer::try_copy_bitmap(Selection const& selection) const
@@ -135,20 +166,30 @@ RefPtr<Gfx::Bitmap> Layer::try_copy_bitmap(Selection const& selection) const
 
 void Layer::erase_selection(Selection const& selection)
 {
-    Gfx::Painter painter { content_bitmap() };
     auto const image_and_selection_intersection = m_image.rect().intersected(selection.bounding_rect());
     auto const translated_to_layer_space = image_and_selection_intersection.translated(-location());
-    painter.clear_rect(translated_to_layer_space, Color::Transparent);
+
+    for (int y = translated_to_layer_space.top(); y < translated_to_layer_space.top() + translated_to_layer_space.height(); ++y) {
+        for (int x = translated_to_layer_space.left(); x < translated_to_layer_space.left() + translated_to_layer_space.width(); ++x) {
+
+            // Selection is still in pre-translated coordinates, account for this by adding the layer's relative location
+            if (content_bitmap().rect().contains(x, y) && selection.is_selected(x + location().x(), y + location().y())) {
+                content_bitmap().set_pixel(x, y, Color::Transparent);
+            }
+        }
+    }
+
     did_modify_bitmap(translated_to_layer_space);
 }
 
 ErrorOr<void> Layer::try_set_bitmaps(NonnullRefPtr<Gfx::Bitmap> content, RefPtr<Gfx::Bitmap> mask)
 {
     if (mask && content->size() != mask->size())
-        return Error::from_string_literal("Layer content and mask must be same size"sv);
+        return Error::from_string_literal("Layer content and mask must be same size");
 
     m_content_bitmap = move(content);
     m_mask_bitmap = move(mask);
+    m_scratch_edited_bitmap = nullptr;
     update_cached_bitmap();
     return {};
 }
@@ -178,6 +219,51 @@ void Layer::crop(Gfx::IntRect const& rect)
         m_mask_bitmap = *m_mask_bitmap->cropped(rect).release_value_but_fixme_should_propagate_errors();
 
     did_modify_bitmap();
+}
+
+void Layer::resize(Gfx::IntSize const& new_size, Gfx::IntPoint const& new_location, Gfx::Painter::ScalingMode scaling_mode)
+{
+    auto src_rect = Gfx::IntRect(Gfx::IntPoint(0, 0), size());
+    auto dst_rect = Gfx::IntRect(Gfx::IntPoint(0, 0), new_size);
+
+    {
+        auto dst = Gfx::Bitmap::try_create(Gfx::BitmapFormat::BGRA8888, new_size).release_value_but_fixme_should_propagate_errors();
+        Gfx::Painter painter(dst);
+
+        if (scaling_mode == Gfx::Painter::ScalingMode::None) {
+            painter.blit(src_rect.top_left(), *m_content_bitmap, src_rect, 1.0f);
+        } else {
+            painter.draw_scaled_bitmap(dst_rect, *m_content_bitmap, src_rect, 1.0f, scaling_mode);
+        }
+
+        m_content_bitmap = move(dst);
+    }
+
+    if (m_mask_bitmap) {
+        auto dst = Gfx::Bitmap::try_create(Gfx::BitmapFormat::BGRA8888, new_size).release_value_but_fixme_should_propagate_errors();
+        Gfx::Painter painter(dst);
+
+        if (scaling_mode == Gfx::Painter::ScalingMode::None) {
+            painter.blit(src_rect.top_left(), *m_content_bitmap, src_rect, 1.0f);
+        } else {
+            painter.draw_scaled_bitmap(dst_rect, *m_mask_bitmap, src_rect, 1.0f, scaling_mode);
+        }
+
+        m_mask_bitmap = move(dst);
+    }
+
+    set_location(new_location);
+    did_modify_bitmap();
+}
+
+void Layer::resize(Gfx::IntRect const& new_rect, Gfx::Painter::ScalingMode scaling_mode)
+{
+    resize(new_rect.size(), new_rect.location(), scaling_mode);
+}
+
+void Layer::resize(Gfx::IntSize const& new_size, Gfx::Painter::ScalingMode scaling_mode)
+{
+    resize(new_size, location(), scaling_mode);
 }
 
 void Layer::update_cached_bitmap()
@@ -229,8 +315,38 @@ void Layer::set_edit_mode(Layer::EditMode mode)
 {
     if (m_edit_mode == mode)
         return;
-
+    m_scratch_edited_bitmap = nullptr;
     m_edit_mode = mode;
+}
+
+Optional<Gfx::IntRect> Layer::nonempty_content_bounding_rect() const
+{
+    Optional<int> min_content_y;
+    Optional<int> min_content_x;
+    Optional<int> max_content_y;
+    Optional<int> max_content_x;
+
+    for (int y = 0; y < m_content_bitmap->height(); ++y) {
+        for (int x = 0; x < m_content_bitmap->width(); ++x) {
+            auto color = m_content_bitmap->get_pixel(x, y);
+            if (color.alpha() == 0)
+                continue;
+            min_content_x = min(min_content_x.value_or(x), x);
+            min_content_y = min(min_content_y.value_or(y), y);
+            max_content_x = max(max_content_x.value_or(x), x);
+            max_content_y = max(max_content_y.value_or(y), y);
+        }
+    }
+
+    if (!min_content_x.has_value())
+        return {};
+
+    return Gfx::IntRect {
+        *min_content_x,
+        *min_content_y,
+        *max_content_x - *min_content_x + 1,
+        *max_content_y - *min_content_y + 1
+    };
 }
 
 }

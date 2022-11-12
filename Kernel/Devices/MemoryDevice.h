@@ -16,10 +16,10 @@ class MemoryDevice final : public CharacterDevice {
     friend class DeviceManagement;
 
 public:
-    static NonnullRefPtr<MemoryDevice> must_create();
+    static NonnullLockRefPtr<MemoryDevice> must_create();
     ~MemoryDevice();
 
-    virtual ErrorOr<Memory::Region*> mmap(Process&, OpenFileDescription&, Memory::VirtualRange const&, u64 offset, int prot, bool shared) override;
+    virtual ErrorOr<NonnullLockRefPtr<Memory::VMObject>> vmobject_for_mmap(Process&, Memory::VirtualRange const&, u64& offset, bool shared) override;
 
 private:
     MemoryDevice();

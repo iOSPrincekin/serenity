@@ -147,7 +147,7 @@ private:
 
     u8 const* read(size_t sz)
     {
-        auto buffer_ptr = m_buffer.offset_pointer((int)m_current_offset);
+        auto buffer_ptr = m_buffer.offset_pointer(m_current_offset);
         if constexpr (SQL_DEBUG)
             dump(buffer_ptr, sz, "<= (in)");
         m_current_offset += sz;
@@ -163,7 +163,7 @@ private:
             bytes.append(String::formatted("{0:02x}", *(ptr + ix)));
         }
         StringBuilder bytes_builder;
-        bytes_builder.join(" ", bytes);
+        bytes_builder.join(' ', bytes);
         builder.append(bytes_builder.to_string());
         dbgln(builder.to_string());
     }

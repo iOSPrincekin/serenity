@@ -18,6 +18,9 @@ describe("normal behavior", () => {
             ["GMT", "UTC"],
             ["Etc/UTC", "UTC"],
             ["Etc/GMT", "UTC"],
+            ["Etc/GMT0", "UTC"], // IANA legacy name
+            ["Etc/GMT+0", "UTC"], // IANA legacy name
+            ["Etc/GMT-0", "UTC"], // IANA legacy name
             ["Etc/GMT+6", "Etc/GMT+6"],
             ["Etc/GMT-6", "Etc/GMT-6"],
             ["Etc/GMT+12", "Etc/GMT+12"],
@@ -25,21 +28,39 @@ describe("normal behavior", () => {
             ["Europe/London", "Europe/London"],
             ["Europe/Isle_of_Man", "Europe/London"],
             ["1970-01-01+01", "+01:00"],
-            ["1970-01-01+01[-12:34]", "+01:00"],
+            ["1970-01-01+01[-12:34]", "-12:34"],
             ["1970-01-01T00:00:00+01", "+01:00"],
             ["1970-01-01T00:00:00.000000000+01", "+01:00"],
             ["1970-01-01T00:00:00.000000000+01:00:00", "+01:00"],
             ["1970-01-01+12:34", "+12:34"],
             ["1970-01-01+12:34:56", "+12:34:56"],
             ["1970-01-01+12:34:56.789", "+12:34:56.789"],
-            ["1970-01-01+12:34:56.789[-01:00]", "+12:34:56.789"],
+            ["1970-01-01+12:34:56.789[-01:00]", "-01:00"],
             ["1970-01-01-12:34", "-12:34"],
             ["1970-01-01-12:34:56", "-12:34:56"],
             ["1970-01-01-12:34:56.789", "-12:34:56.789"],
-            ["1970-01-01-12:34:56.789[+01:00]", "-12:34:56.789"],
+            ["1970-01-01-12:34:56.789[+01:00]", "+01:00"],
         ];
         for (const [arg, expected] of values) {
             expect(Temporal.TimeZone.from(arg).id).toBe(expected);
         }
+    });
+
+    test("ToTemporalTimeZone fast path returns if it is passed a Temporal.TimeZone instance", () => {
+        // This is obseravble via there being no property lookups (avoiding a "timeZone" property lookup in this case)
+        let madeObservableHasPropertyLookup = false;
+        class TimeZone extends Temporal.TimeZone {
+            constructor() {
+                super("UTC");
+            }
+
+            get timeZone() {
+                madeObservableHasPropertyLookup = true;
+                return this;
+            }
+        }
+        const timeZone = new TimeZone();
+        Temporal.TimeZone.from(timeZone);
+        expect(madeObservableHasPropertyLookup).toBeFalse();
     });
 });

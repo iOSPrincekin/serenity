@@ -34,20 +34,11 @@ DownPointer::DownPointer(TreeNode* owner, DownPointer& down)
 {
 }
 
-DownPointer::DownPointer(DownPointer const& other)
+DownPointer::DownPointer(DownPointer&& other)
     : m_owner(other.m_owner)
     , m_pointer(other.pointer())
+    , m_node(other.m_node ? move(other.m_node) : nullptr)
 {
-    if (other.m_node)
-        // FIXME This is gross. We modify the other object which we promised
-        // to be const. However, this particular constructor is needed
-        // when we take DownPointers from the Vector they live in when
-        // we split a node. The original object is going to go away, so
-        // there is no harm done. However, it's yucky. If anybody has
-        // a better idea...
-        m_node = move(const_cast<DownPointer&>(other).m_node);
-    else
-        m_node = nullptr;
 }
 
 TreeNode* DownPointer::node()
@@ -336,7 +327,7 @@ void TreeNode::split()
             down.m_node->m_up = new_node;
         }
         new_node->m_entries.append(entry);
-        new_node->m_down.append(down);
+        new_node->m_down.append(move(down));
     }
 
     // Move the median key in the node one level up. Its right node will
@@ -359,11 +350,11 @@ void TreeNode::dump_if(int flag, String&& msg)
     builder.appendff("[#{}] ", pointer());
     if (!msg.is_empty())
         builder.appendff("{}", msg);
-    builder.append(": ");
+    builder.append(": "sv);
     if (m_up)
         builder.appendff("[^{}] -> ", m_up->pointer());
     else
-        builder.append("* -> ");
+        builder.append("* -> "sv);
     for (size_t ix = 0; ix < m_entries.size(); ix++) {
         if (!is_leaf())
             builder.appendff("[v{}] ", m_down[ix].pointer());
@@ -378,9 +369,9 @@ void TreeNode::dump_if(int flag, String&& msg)
     }
     builder.appendff(" (size {}", (int)size());
     if (is_leaf()) {
-        builder.append(", leaf");
+        builder.append(", leaf"sv);
     }
-    builder.append(")");
+    builder.append(')');
     dbgln(builder.build());
 }
 

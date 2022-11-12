@@ -11,19 +11,22 @@
 #include <Kernel/Bus/USB/USBDescriptors.h>
 #include <Kernel/Bus/USB/USBDevice.h>
 #include <Kernel/Bus/USB/USBRequest.h>
+#include <Kernel/FileSystem/SysFS/Subsystems/Bus/USB/DeviceInformation.h>
 #include <Kernel/StdLib.h>
 
 namespace Kernel::USB {
 
-ErrorOr<NonnullRefPtr<Device>> Device::try_create(USBController const& controller, u8 port, DeviceSpeed speed)
+ErrorOr<NonnullLockRefPtr<Device>> Device::try_create(USBController const& controller, u8 port, DeviceSpeed speed)
 {
-    auto pipe = TRY(Pipe::try_create_pipe(controller, Pipe::Type::Control, Pipe::Direction::Bidirectional, 0, 8, 0));
-    auto device = TRY(adopt_nonnull_ref_or_enomem(new (nothrow) Device(controller, port, speed, move(pipe))));
+    auto pipe = TRY(ControlPipe::create(controller, 0, 8, 0));
+    auto device = TRY(adopt_nonnull_lock_ref_or_enomem(new (nothrow) Device(controller, port, speed, move(pipe))));
+    auto sysfs_node = TRY(SysFSUSBDeviceInformation::create(*device));
+    device->m_sysfs_device_info_node = move(sysfs_node);
     TRY(device->enumerate_device());
     return device;
 }
 
-Device::Device(USBController const& controller, u8 port, DeviceSpeed speed, NonnullOwnPtr<Pipe> default_pipe)
+Device::Device(USBController const& controller, u8 port, DeviceSpeed speed, NonnullOwnPtr<ControlPipe> default_pipe)
     : m_device_port(port)
     , m_device_speed(speed)
     , m_address(0)
@@ -32,7 +35,7 @@ Device::Device(USBController const& controller, u8 port, DeviceSpeed speed, Nonn
 {
 }
 
-Device::Device(NonnullRefPtr<USBController> controller, u8 address, u8 port, DeviceSpeed speed, NonnullOwnPtr<Pipe> default_pipe)
+Device::Device(NonnullLockRefPtr<USBController> controller, u8 address, u8 port, DeviceSpeed speed, NonnullOwnPtr<ControlPipe> default_pipe)
     : m_device_port(port)
     , m_device_speed(speed)
     , m_address(address)
@@ -41,7 +44,7 @@ Device::Device(NonnullRefPtr<USBController> controller, u8 address, u8 port, Dev
 {
 }
 
-Device::Device(Device const& device, NonnullOwnPtr<Pipe> default_pipe)
+Device::Device(Device const& device, NonnullOwnPtr<ControlPipe> default_pipe)
     : m_device_port(device.port())
     , m_device_speed(device.speed())
     , m_address(device.address())
@@ -132,7 +135,7 @@ ErrorOr<void> Device::enumerate_device()
         }
 
         USBConfiguration device_configuration(*this, configuration_descriptor);
-        TRY(device_configuration.get_interfaces());
+        TRY(device_configuration.enumerate_interfaces());
         m_configurations.append(device_configuration);
     }
 

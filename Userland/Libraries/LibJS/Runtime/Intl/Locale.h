@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Tim Flynn <trflynn89@serenityos.org>
+ * Copyright (c) 2021-2022, Tim Flynn <trflynn89@serenityos.org>
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
@@ -10,9 +10,10 @@
 #include <AK/Optional.h>
 #include <AK/String.h>
 #include <AK/Vector.h>
+#include <LibJS/Runtime/Completion.h>
 #include <LibJS/Runtime/Object.h>
 #include <LibJS/Runtime/Value.h>
-#include <LibUnicode/Forward.h>
+#include <LibLocale/Forward.h>
 
 namespace JS::Intl {
 
@@ -20,7 +21,7 @@ class Locale final : public Object {
     JS_OBJECT(Locale, Object);
 
 public:
-    static Locale* create(GlobalObject&, Unicode::LocaleID const&);
+    static Locale* create(Realm&, ::Locale::LocaleID const&);
 
     static constexpr auto relevant_extension_keys()
     {
@@ -33,8 +34,6 @@ public:
         return AK::Array { "ca"sv, "co"sv, "hc"sv, "kf"sv, "kn"sv, "nu"sv };
     }
 
-    Locale(Object& prototype);
-    Locale(Unicode::LocaleID const&, Object& prototype);
     virtual ~Locale() override = default;
 
     String const& locale() const { return m_locale; }
@@ -64,6 +63,9 @@ public:
     void set_numeric(bool numeric) { m_numeric = numeric; }
 
 private:
+    explicit Locale(Object& prototype);
+    Locale(::Locale::LocaleID const&, Object& prototype);
+
     String m_locale;                     // [[Locale]]
     Optional<String> m_calendar;         // [[Calendar]]
     Optional<String> m_case_first;       // [[CaseFirst]]
@@ -72,5 +74,20 @@ private:
     Optional<String> m_numbering_system; // [[NumberingSystem]]
     bool m_numeric { false };            // [[Numeric]]
 };
+
+// Table 1: WeekInfo Record Fields, https://tc39.es/proposal-intl-locale-info/#table-locale-weekinfo-record
+struct WeekInfo {
+    u8 minimal_days { 0 }; // [[MinimalDays]]
+    u8 first_day { 0 };    // [[FirstDay]]
+    Vector<u8> weekend;    // [[Weekend]]
+};
+
+Array* calendars_of_locale(VM&, Locale const&);
+Array* collations_of_locale(VM&, Locale const& locale);
+Array* hour_cycles_of_locale(VM&, Locale const& locale);
+Array* numbering_systems_of_locale(VM&, Locale const&);
+Array* time_zones_of_locale(VM&, StringView region);
+StringView character_direction_of_locale(Locale const&);
+WeekInfo week_info_of_locale(Locale const&);
 
 }

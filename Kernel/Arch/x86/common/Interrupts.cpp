@@ -5,10 +5,12 @@
  */
 
 #include <AK/Format.h>
+#include <AK/RefPtr.h>
 #include <AK/Types.h>
 
+#include <Kernel/Arch/Interrupts.h>
+#include <Kernel/Arch/x86/common/Interrupts/PIC.h>
 #include <Kernel/Interrupts/GenericInterruptHandler.h>
-#include <Kernel/Interrupts/PIC.h>
 #include <Kernel/Interrupts/SharedIRQHandler.h>
 #include <Kernel/Interrupts/SpuriousInterruptHandler.h>
 #include <Kernel/Interrupts/UnhandledInterruptHandler.h>
@@ -28,8 +30,8 @@
 #include <Kernel/Arch/Processor.h>
 #include <Kernel/Arch/RegisterState.h>
 #include <Kernel/Arch/SafeMem.h>
+#include <Kernel/Arch/TrapFrame.h>
 #include <Kernel/Arch/x86/ISRStubs.h>
-#include <Kernel/Arch/x86/TrapFrame.h>
 
 extern FlatPtr start_of_unmap_after_init;
 extern FlatPtr end_of_unmap_after_init;
@@ -253,8 +255,12 @@ void page_fault_handler(TrapFrame* trap)
 {
     clac();
 
-    auto& regs = *trap->regs;
+    // NOTE: Once we've extracted the faulting address from CR2,
+    //       we can re-enable interrupts.
     auto fault_address = read_cr2();
+    sti();
+
+    auto& regs = *trap->regs;
 
     if constexpr (PAGE_FAULT_DEBUG) {
         u32 fault_page_directory = read_cr3();
@@ -297,19 +303,30 @@ void page_fault_handler(TrapFrame* trap)
     };
 
     VirtualAddress userspace_sp = VirtualAddress { regs.userspace_sp() };
-    if (!faulted_in_kernel && !MM.validate_user_stack(current_thread->process().address_space(), userspace_sp)) {
-        dbgln("Invalid stack pointer: {}", userspace_sp);
-        return handle_crash(regs, "Bad stack on page fault", SIGSEGV);
+
+    if (!faulted_in_kernel) {
+        bool has_valid_stack_pointer = current_thread->process().address_space().with([&](auto& space) {
+            return MM.validate_user_stack(*space, userspace_sp);
+        });
+        if (!has_valid_stack_pointer) {
+            dbgln("Invalid stack pointer: {}", userspace_sp);
+            return handle_crash(regs, "Bad stack on page fault", SIGSEGV);
+        }
     }
 
     PageFault fault { regs.exception_code, VirtualAddress { fault_address } };
     auto response = MM.handle_page_fault(fault);
 
-    if (response == PageFaultResponse::ShouldCrash || response == PageFaultResponse::OutOfMemory) {
+    if (response == PageFaultResponse::ShouldCrash || response == PageFaultResponse::OutOfMemory || response == PageFaultResponse::BusError) {
         if (faulted_in_kernel && handle_safe_access_fault(regs, fault_address)) {
             // If this would be a ring0 (kernel) fault and the fault was triggered by
             // safe_memcpy, safe_strnlen, or safe_memset then we resume execution at
             // the appropriate _fault label rather than crashing
+            return;
+        }
+
+        if (response == PageFaultResponse::BusError && current_thread->has_signal_handler(SIGBUS)) {
+            current_thread->send_urgent_signal_to_self(SIGBUS);
             return;
         }
 
@@ -329,7 +346,9 @@ void page_fault_handler(TrapFrame* trap)
         constexpr FlatPtr free_scrub_pattern = explode_byte(FREE_SCRUB_BYTE);
         constexpr FlatPtr kmalloc_scrub_pattern = explode_byte(KMALLOC_SCRUB_BYTE);
         constexpr FlatPtr kfree_scrub_pattern = explode_byte(KFREE_SCRUB_BYTE);
-        if ((fault_address & 0xffff0000) == (malloc_scrub_pattern & 0xffff0000)) {
+        if (response == PageFaultResponse::BusError) {
+            dbgln("Note: Address {} is an access to an undefined memory range of an Inode-backed VMObject", VirtualAddress(fault_address));
+        } else if ((fault_address & 0xffff0000) == (malloc_scrub_pattern & 0xffff0000)) {
             dbgln("Note: Address {} looks like it may be uninitialized malloc() memory", VirtualAddress(fault_address));
         } else if ((fault_address & 0xffff0000) == (free_scrub_pattern & 0xffff0000)) {
             dbgln("Note: Address {} looks like it may be recently free()'d memory", VirtualAddress(fault_address));
@@ -344,21 +363,21 @@ void page_fault_handler(TrapFrame* trap)
             constexpr FlatPtr nonnullrefptr_scrub_pattern = explode_byte(NONNULLREFPTR_SCRUB_BYTE);
             constexpr FlatPtr ownptr_scrub_pattern = explode_byte(OWNPTR_SCRUB_BYTE);
             constexpr FlatPtr nonnullownptr_scrub_pattern = explode_byte(NONNULLOWNPTR_SCRUB_BYTE);
-            constexpr FlatPtr threadsaferefptr_scrub_pattern = explode_byte(THREADSAFEREFPTR_SCRUB_BYTE);
-            constexpr FlatPtr threadsafenonnullrefptr_scrub_pattern = explode_byte(THREADSAFENONNULLREFPTR_SCRUB_BYTE);
+            constexpr FlatPtr lockrefptr_scrub_pattern = explode_byte(LOCKREFPTR_SCRUB_BYTE);
+            constexpr FlatPtr nonnulllockrefptr_scrub_pattern = explode_byte(NONNULLLOCKREFPTR_SCRUB_BYTE);
 
             if ((fault_address & 0xffff0000) == (refptr_scrub_pattern & 0xffff0000)) {
-                dbgln("Note: Address {} looks like it may be a recently destroyed RefPtr", VirtualAddress(fault_address));
+                dbgln("Note: Address {} looks like it may be a recently destroyed LockRefPtr", VirtualAddress(fault_address));
             } else if ((fault_address & 0xffff0000) == (nonnullrefptr_scrub_pattern & 0xffff0000)) {
-                dbgln("Note: Address {} looks like it may be a recently destroyed NonnullRefPtr", VirtualAddress(fault_address));
+                dbgln("Note: Address {} looks like it may be a recently destroyed NonnullLockRefPtr", VirtualAddress(fault_address));
             } else if ((fault_address & 0xffff0000) == (ownptr_scrub_pattern & 0xffff0000)) {
                 dbgln("Note: Address {} looks like it may be a recently destroyed OwnPtr", VirtualAddress(fault_address));
             } else if ((fault_address & 0xffff0000) == (nonnullownptr_scrub_pattern & 0xffff0000)) {
                 dbgln("Note: Address {} looks like it may be a recently destroyed NonnullOwnPtr", VirtualAddress(fault_address));
-            } else if ((fault_address & 0xffff0000) == (threadsaferefptr_scrub_pattern & 0xffff0000)) {
-                dbgln("Note: Address {} looks like it may be a recently destroyed ThreadSafeRefPtr", VirtualAddress(fault_address));
-            } else if ((fault_address & 0xffff0000) == (threadsafenonnullrefptr_scrub_pattern & 0xffff0000)) {
-                dbgln("Note: Address {} looks like it may be a recently destroyed ThreadSafeNonnullRefPtr", VirtualAddress(fault_address));
+            } else if ((fault_address & 0xffff0000) == (lockrefptr_scrub_pattern & 0xffff0000)) {
+                dbgln("Note: Address {} looks like it may be a recently destroyed LockRefPtr", VirtualAddress(fault_address));
+            } else if ((fault_address & 0xffff0000) == (nonnulllockrefptr_scrub_pattern & 0xffff0000)) {
+                dbgln("Note: Address {} looks like it may be a recently destroyed NonnullLockRefPtr", VirtualAddress(fault_address));
             }
         }
 
@@ -378,6 +397,8 @@ void page_fault_handler(TrapFrame* trap)
             }
         }
 
+        if (response == PageFaultResponse::BusError)
+            return handle_crash(regs, "Page Fault (Bus Error)", SIGBUS, false);
         return handle_crash(regs, "Page Fault", SIGSEGV, response == PageFaultResponse::OutOfMemory);
     } else if (response == PageFaultResponse::Continue) {
         dbgln_if(PAGE_FAULT_DEBUG, "Continuing after resolved page fault");
@@ -455,8 +476,7 @@ extern "C" UNMAP_AFTER_INIT void pre_init_finished(void)
     // to this point
 
     // The target flags will get restored upon leaving the trap
-    u32 prev_flags = cpu_flags();
-    Scheduler::leave_on_first_switch(prev_flags);
+    Scheduler::leave_on_first_switch(processor_interrupts_state());
 }
 
 extern "C" UNMAP_AFTER_INIT void post_init_finished(void)
@@ -614,7 +634,7 @@ UNMAP_AFTER_INIT void flush_idt()
     asm("lidt %0" ::"m"(s_idtr));
 }
 
-UNMAP_AFTER_INIT void idt_init()
+UNMAP_AFTER_INIT void initialize_interrupts()
 {
     s_idtr.address = s_idt;
     s_idtr.limit = 256 * sizeof(IDTEntry) - 1;

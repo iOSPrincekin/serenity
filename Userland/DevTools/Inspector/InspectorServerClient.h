@@ -15,7 +15,7 @@ namespace Inspector {
 class InspectorServerClient final
     : public IPC::ConnectionToServer<InspectorClientEndpoint, InspectorServerEndpoint>
     , public InspectorClientEndpoint {
-    IPC_CLIENT_CONNECTION(InspectorServerClient, "/tmp/portal/inspector")
+    IPC_CLIENT_CONNECTION(InspectorServerClient, "/tmp/session/%sid/portal/inspector"sv)
 
 public:
     virtual ~InspectorServerClient() override = default;

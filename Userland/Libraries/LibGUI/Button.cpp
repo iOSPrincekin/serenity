@@ -16,14 +16,15 @@
 #include <LibGfx/StylePainter.h>
 
 REGISTER_WIDGET(GUI, Button)
+REGISTER_WIDGET(GUI, DialogButton)
 
 namespace GUI {
 
 Button::Button(String text)
     : AbstractButton(move(text))
 {
-    set_min_width(32);
-    set_fixed_height(22);
+    set_min_size({ 40, 22 });
+    set_preferred_size({ SpecialDimension::OpportunisticGrow, 22 });
     set_focus_policy(GUI::FocusPolicy::StrongFocus);
 
     on_focus_change = [this](bool has_focus, auto) {
@@ -42,6 +43,7 @@ Button::Button(String text)
         { Gfx::ButtonStyle::Coolbar, "Coolbar" });
 
     REGISTER_STRING_PROPERTY("icon", icon, set_icon_from_path);
+    REGISTER_BOOL_PROPERTY("default", is_default, set_default);
 }
 
 Button::~Button()
@@ -78,6 +80,17 @@ void Button::paint_event(PaintEvent& event)
     }
 
     if (m_icon) {
+        auto solid_color = m_icon->solid_color(60);
+        bool should_invert_icon = false;
+        if (solid_color.has_value()) {
+            auto contrast_ratio = palette().button().contrast_ratio(*solid_color);
+            // Note: 4.5 is the minimum recommended contrast ratio for text on the web:
+            // (https://developer.mozilla.org/en-US/docs/Web/Accessibility/Understanding_WCAG/Perceivable/Color_contrast)
+            // Reusing that threshold here as it seems to work reasonably well.
+            should_invert_icon = contrast_ratio < 4.5f && contrast_ratio < palette().button().contrast_ratio(solid_color->inverted());
+        }
+        if (should_invert_icon)
+            m_icon->invert();
         if (is_enabled()) {
             if (is_hovered())
                 painter.blit_brightened(icon_location, *m_icon, m_icon->rect());
@@ -86,6 +99,8 @@ void Button::paint_event(PaintEvent& event)
         } else {
             painter.blit_disabled(icon_location, *m_icon, m_icon->rect(), palette());
         }
+        if (should_invert_icon)
+            m_icon->invert();
     }
     auto& font = is_checked() ? this->font().bold_variant() : this->font();
     if (m_icon && !text().is_empty()) {
@@ -127,6 +142,17 @@ void Button::click(unsigned modifiers)
         m_action->activate(this);
 }
 
+void Button::middle_mouse_click(unsigned int modifiers)
+{
+    if (!is_enabled())
+        return;
+
+    NonnullRefPtr protector = *this;
+
+    if (on_middle_mouse_click)
+        on_middle_mouse_click(modifiers);
+}
+
 void Button::context_menu_event(ContextMenuEvent& context_menu_event)
 {
     if (!is_enabled())
@@ -143,6 +169,25 @@ void Button::set_action(Action& action)
     set_checkable(action.is_checkable());
     if (action.is_checkable())
         set_checked(action.is_checked());
+    set_text_from_action();
+}
+
+static String create_tooltip_for_action(Action const& action)
+{
+    StringBuilder builder;
+    builder.append(action.text());
+    if (action.shortcut().is_valid()) {
+        builder.append(" ("sv);
+        builder.append(action.shortcut().to_string());
+        builder.append(')');
+    }
+    return builder.to_string();
+}
+
+void Button::set_text_from_action()
+{
+    set_text(action()->text());
+    set_tooltip(create_tooltip_for_action(*action()));
 }
 
 void Button::set_icon(RefPtr<Gfx::Bitmap> icon)
@@ -189,10 +234,7 @@ void Button::set_menu(RefPtr<GUI::Menu> menu)
 void Button::mousedown_event(MouseEvent& event)
 {
     if (m_menu) {
-        if (button_style() == Gfx::ButtonStyle::Tray)
-            m_menu->popup(screen_relative_rect().top_right());
-        else
-            m_menu->popup(screen_relative_rect().top_left());
+        m_menu->popup(screen_relative_rect().bottom_left(), {}, rect());
         update();
         return;
     }
@@ -241,6 +283,28 @@ void Button::timer_event(Core::TimerEvent&)
 
         update();
     }
+}
+
+Optional<UISize> Button::calculated_min_size() const
+{
+    int horizontal = 0, vertical = 0;
+
+    if (!text().is_empty()) {
+        auto& font = this->font();
+        horizontal = font.width(text()) + 2;
+        vertical = font.glyph_height() + 4; // FIXME: Use actual maximum total height
+    }
+
+    if (m_icon) {
+        vertical = max(vertical, m_icon->height());
+
+        horizontal += m_icon->width() + icon_spacing();
+    }
+
+    horizontal += 8;
+    vertical += 4;
+
+    return UISize(horizontal, vertical);
 }
 
 }

@@ -4,15 +4,16 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#pragma once
+
 #include <AK/Array.h>
 #include <AK/IntrusiveList.h>
 #include <AK/Types.h>
 #include <LibC/bits/FILE.h>
 #include <LibC/bits/pthread_integration.h>
 #include <LibC/bits/wchar.h>
+#include <pthread.h>
 #include <sys/types.h>
-
-#pragma once
 
 struct FILE {
 public:
@@ -21,7 +22,7 @@ public:
         , m_mode(mode)
     {
         pthread_mutexattr_t attr = { __PTHREAD_MUTEX_RECURSIVE };
-        __pthread_mutex_init(&m_mutex, &attr);
+        pthread_mutex_init(&m_mutex, &attr);
     }
     ~FILE();
 

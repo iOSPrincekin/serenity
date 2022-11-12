@@ -16,7 +16,7 @@ namespace GUI {
 class ConnectionToWindowServer final
     : public IPC::ConnectionToServer<WindowClientEndpoint, WindowServerEndpoint>
     , public WindowClientEndpoint {
-    IPC_CLIENT_CONNECTION(ConnectionToWindowServer, "/tmp/portal/window")
+    IPC_CLIENT_CONNECTION(ConnectionToWindowServer, "/tmp/portal/window"sv)
 public:
     static ConnectionToWindowServer& the();
     i32 expose_client_id() { return m_client_id; }
@@ -24,7 +24,7 @@ public:
 private:
     ConnectionToWindowServer(NonnullOwnPtr<Core::Stream::LocalSocket>);
 
-    virtual void fast_greet(Vector<Gfx::IntRect> const&, u32, u32, u32, Core::AnonymousBuffer const&, String const&, String const&, i32) override;
+    virtual void fast_greet(Vector<Gfx::IntRect> const&, u32, u32, u32, Core::AnonymousBuffer const&, String const&, String const&, String const&, Vector<bool> const&, i32) override;
     virtual void paint(i32, Gfx::IntSize const&, Vector<Gfx::IntRect> const&) override;
     virtual void mouse_move(i32, Gfx::IntPoint const&, u32, u32, u32, i32, i32, i32, i32, bool, Vector<String> const&) override;
     virtual void mouse_down(i32, Gfx::IntPoint const&, u32, u32, u32, i32, i32, i32, i32) override;
@@ -41,19 +41,21 @@ private:
     virtual void window_input_left(i32) override;
     virtual void window_close_request(i32) override;
     virtual void window_resized(i32, Gfx::IntRect const&) override;
+    virtual void window_moved(i32, Gfx::IntRect const&) override;
     virtual void menu_item_activated(i32, u32) override;
     virtual void menu_item_entered(i32, u32) override;
     virtual void menu_item_left(i32, u32) override;
     virtual void menu_visibility_did_change(i32, bool) override;
     virtual void screen_rects_changed(Vector<Gfx::IntRect> const&, u32, u32, u32) override;
     virtual void applet_area_rect_changed(Gfx::IntRect const&) override;
-    virtual void set_wallpaper_finished(bool) override;
     virtual void drag_dropped(i32, Gfx::IntPoint const&, String const&, HashMap<String, ByteBuffer> const&) override;
     virtual void drag_accepted() override;
     virtual void drag_cancelled() override;
     virtual void update_system_theme(Core::AnonymousBuffer const&) override;
-    virtual void update_system_fonts(String const&, String const&) override;
+    virtual void update_system_fonts(String const&, String const&, String const&) override;
+    virtual void update_system_effects(Vector<bool> const&) override;
     virtual void window_state_changed(i32, bool, bool, bool) override;
+    virtual void window_input_preempted(i32, i32) override;
     virtual void display_link_notification() override;
     virtual void track_mouse_move(Gfx::IntPoint const&) override;
     virtual void ping() override;

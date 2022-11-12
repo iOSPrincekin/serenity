@@ -26,12 +26,20 @@ static Gfx::WindowTheme::WindowType to_theme_window_type(WindowType type)
     switch (type) {
     case WindowType::Normal:
         return Gfx::WindowTheme::WindowType::Normal;
-    case WindowType::ToolWindow:
-        return Gfx::WindowTheme::WindowType::ToolWindow;
     case WindowType::Notification:
         return Gfx::WindowTheme::WindowType::Notification;
     default:
         return Gfx::WindowTheme::WindowType::Other;
+    }
+}
+
+static Gfx::WindowTheme::WindowMode to_theme_window_mode(WindowMode mode)
+{
+    switch (mode) {
+    case WindowMode::RenderAbove:
+        return Gfx::WindowTheme::WindowMode::RenderAbove;
+    default:
+        return Gfx::WindowTheme::WindowMode::Other;
     }
 }
 
@@ -57,7 +65,7 @@ static Gfx::IntRect frame_rect_for_window(Window& window, Gfx::IntRect const& re
     if (window.is_frameless())
         return rect;
     int menu_row_count = (window.menubar().has_menus() && window.should_show_menubar()) ? 1 : 0;
-    return Gfx::WindowTheme::current().frame_rect_for_window(to_theme_window_type(window.type()), rect, WindowManager::the().palette(), menu_row_count);
+    return Gfx::WindowTheme::current().frame_rect_for_window(to_theme_window_type(window.type()), to_theme_window_mode(window.mode()), rect, WindowManager::the().palette(), menu_row_count);
 }
 
 WindowFrame::WindowFrame(Window& window)
@@ -99,7 +107,7 @@ void WindowFrame::window_was_constructed(Badge<Window>)
         m_buttons.append(move(button));
     }
 
-    if (m_window.is_minimizable()) {
+    if (m_window.is_minimizable() && !m_window.is_modal()) {
         auto button = make<Button>(*this, [this](auto&) {
             m_window.handle_window_menu_action(WindowMenuAction::MinimizeOrUnminimize);
         });
@@ -128,7 +136,7 @@ void WindowFrame::set_button_icons()
         m_close_button->set_icon(m_window.is_modified() ? s_close_modified_icon : s_close_icon);
         m_close_button->set_style(button_style);
     }
-    if (m_window.is_minimizable()) {
+    if (m_window.is_minimizable() && !m_window.is_modal()) {
         m_minimize_button->set_icon(s_minimize_icon);
         m_minimize_button->set_style(button_style);
     }
@@ -142,7 +150,7 @@ void WindowFrame::reload_config()
 {
     String icons_path = WindowManager::the().palette().title_button_icons_path();
 
-    auto reload_bitmap = [&](RefPtr<MultiScaleBitmaps>& multiscale_bitmap, StringView path, StringView default_path = "") {
+    auto reload_bitmap = [&](RefPtr<MultiScaleBitmaps>& multiscale_bitmap, StringView path, StringView default_path = ""sv) {
         StringBuilder full_path;
         full_path.append(icons_path);
         full_path.append(path);
@@ -155,19 +163,19 @@ void WindowFrame::reload_config()
     auto reload_icon = [&](Button::Icon& icon, StringView name, StringView default_path) {
         StringBuilder full_name;
         full_name.append(name);
-        full_name.append(".png");
+        full_name.append(".png"sv);
         reload_bitmap(icon.bitmap, full_name.string_view(), default_path);
         // Note: No default for hover bitmaps
         full_name.clear();
         full_name.append(name);
-        full_name.append("-hover.png");
+        full_name.append("-hover.png"sv);
         reload_bitmap(icon.hover_bitmap, full_name.string_view());
     };
-    reload_icon(s_minimize_icon, "window-minimize", "/res/icons/16x16/downward-triangle.png");
-    reload_icon(s_maximize_icon, "window-maximize", "/res/icons/16x16/upward-triangle.png");
-    reload_icon(s_restore_icon, "window-restore", "/res/icons/16x16/window-restore.png");
-    reload_icon(s_close_icon, "window-close", "/res/icons/16x16/window-close.png");
-    reload_icon(s_close_modified_icon, "window-close-modified", "/res/icons/16x16/window-close-modified.png");
+    reload_icon(s_minimize_icon, "window-minimize"sv, "/res/icons/16x16/downward-triangle.png"sv);
+    reload_icon(s_maximize_icon, "window-maximize"sv, "/res/icons/16x16/upward-triangle.png"sv);
+    reload_icon(s_restore_icon, "window-restore"sv, "/res/icons/16x16/window-restore.png"sv);
+    reload_icon(s_close_icon, "window-close"sv, "/res/icons/16x16/window-close.png"sv);
+    reload_icon(s_close_modified_icon, "window-close-modified"sv, "/res/icons/16x16/window-close-modified.png"sv);
 
     auto load_shadow = [](String const& path, String& last_path, RefPtr<MultiScaleBitmaps>& shadow_bitmap) {
         if (path.is_empty()) {
@@ -199,8 +207,12 @@ MultiScaleBitmaps const* WindowFrame::shadow_bitmap() const
     case WindowType::Desktop:
         return nullptr;
     case WindowType::Menu:
+        if (!WindowManager::the().system_effects().menu_shadow())
+            return nullptr;
         return s_menu_shadow;
     case WindowType::Tooltip:
+        if (!WindowManager::the().system_effects().tooltip_shadow())
+            return nullptr;
         return s_tooltip_shadow;
     case WindowType::Taskbar:
         return s_taskbar_shadow;
@@ -209,6 +221,8 @@ MultiScaleBitmaps const* WindowFrame::shadow_bitmap() const
     case WindowType::WindowSwitcher:
         return nullptr;
     default:
+        if (!WindowManager::the().system_effects().window_shadow())
+            return nullptr;
         // FIXME: Support shadow for themes with border radius
         if (WindowManager::the().palette().window_border_radius() > 0)
             return nullptr;
@@ -228,6 +242,7 @@ bool WindowFrame::has_shadow() const
 void WindowFrame::did_set_maximized(Badge<Window>, bool maximized)
 {
     VERIFY(m_maximize_button);
+    set_dirty();
     m_maximize_button->set_icon(maximized ? s_restore_icon : s_maximize_icon);
 }
 
@@ -235,22 +250,22 @@ Gfx::IntRect WindowFrame::menubar_rect() const
 {
     if (!m_window.menubar().has_menus() || !m_window.should_show_menubar())
         return {};
-    return Gfx::WindowTheme::current().menubar_rect(to_theme_window_type(m_window.type()), m_window.rect(), WindowManager::the().palette(), menu_row_count());
+    return Gfx::WindowTheme::current().menubar_rect(to_theme_window_type(m_window.type()), to_theme_window_mode(m_window.mode()), m_window.rect(), WindowManager::the().palette(), menu_row_count());
 }
 
 Gfx::IntRect WindowFrame::titlebar_rect() const
 {
-    return Gfx::WindowTheme::current().titlebar_rect(to_theme_window_type(m_window.type()), m_window.rect(), WindowManager::the().palette());
+    return Gfx::WindowTheme::current().titlebar_rect(to_theme_window_type(m_window.type()), to_theme_window_mode(m_window.mode()), m_window.rect(), WindowManager::the().palette());
 }
 
 Gfx::IntRect WindowFrame::titlebar_icon_rect() const
 {
-    return Gfx::WindowTheme::current().titlebar_icon_rect(to_theme_window_type(m_window.type()), m_window.rect(), WindowManager::the().palette());
+    return Gfx::WindowTheme::current().titlebar_icon_rect(to_theme_window_type(m_window.type()), to_theme_window_mode(m_window.mode()), m_window.rect(), WindowManager::the().palette());
 }
 
 Gfx::IntRect WindowFrame::titlebar_text_rect() const
 {
-    return Gfx::WindowTheme::current().titlebar_text_rect(to_theme_window_type(m_window.type()), m_window.rect(), WindowManager::the().palette());
+    return Gfx::WindowTheme::current().titlebar_text_rect(to_theme_window_type(m_window.type()), to_theme_window_mode(m_window.mode()), m_window.rect(), WindowManager::the().palette());
 }
 
 Gfx::WindowTheme::WindowState WindowFrame::window_state_for_theme() const
@@ -264,7 +279,7 @@ Gfx::WindowTheme::WindowState WindowFrame::window_state_for_theme() const
         return Gfx::WindowTheme::WindowState::Highlighted;
     if (&m_window == wm.m_move_window)
         return Gfx::WindowTheme::WindowState::Moving;
-    if (wm.is_active_window_or_accessory(m_window))
+    if (wm.is_active_window_or_capturing_modal(m_window))
         return Gfx::WindowTheme::WindowState::Active;
     return Gfx::WindowTheme::WindowState::Inactive;
 }
@@ -272,13 +287,7 @@ Gfx::WindowTheme::WindowState WindowFrame::window_state_for_theme() const
 void WindowFrame::paint_notification_frame(Gfx::Painter& painter)
 {
     auto palette = WindowManager::the().palette();
-    Gfx::WindowTheme::current().paint_notification_frame(painter, m_window.rect(), palette, m_buttons.last().relative_rect());
-}
-
-void WindowFrame::paint_tool_window_frame(Gfx::Painter& painter)
-{
-    auto palette = WindowManager::the().palette();
-    Gfx::WindowTheme::current().paint_tool_window_frame(painter, window_state_for_theme(), m_window.rect(), m_window.computed_title(), palette, leftmost_titlebar_button_rect());
+    Gfx::WindowTheme::current().paint_notification_frame(painter, to_theme_window_mode(m_window.mode()), m_window.rect(), palette, m_buttons.last().relative_rect());
 }
 
 void WindowFrame::paint_menubar(Gfx::Painter& painter)
@@ -320,7 +329,7 @@ void WindowFrame::paint_menubar(Gfx::Painter& painter)
 void WindowFrame::paint_normal_frame(Gfx::Painter& painter)
 {
     auto palette = WindowManager::the().palette();
-    Gfx::WindowTheme::current().paint_normal_frame(painter, window_state_for_theme(), m_window.rect(), m_window.computed_title(), m_window.icon(), palette, leftmost_titlebar_button_rect(), menu_row_count(), m_window.is_modified());
+    Gfx::WindowTheme::current().paint_normal_frame(painter, window_state_for_theme(), to_theme_window_mode(m_window.mode()), m_window.rect(), m_window.computed_title(), m_window.icon(), palette, leftmost_titlebar_button_rect(), menu_row_count(), m_window.is_modified());
 
     if (m_window.menubar().has_menus() && m_window.should_show_menubar())
         paint_menubar(painter);
@@ -340,7 +349,7 @@ void WindowFrame::PerScaleRenderedCache::paint(WindowFrame& frame, Gfx::Painter&
         auto top_bottom_height = frame_rect.height() - window_rect.height();
         if (m_bottom_y > 0) {
             // We have a top piece
-            auto src_rect = rect.intersected({ frame_rect.location(), { frame_rect.width(), m_bottom_y } });
+            auto src_rect = rect.intersected(Gfx::Rect { frame_rect.location(), { frame_rect.width(), m_bottom_y } });
             if (!src_rect.is_empty())
                 painter.blit(src_rect.location(), *m_top_bottom, src_rect.translated(-frame_rect.location()), frame.opacity());
         }
@@ -381,8 +390,6 @@ void WindowFrame::render(Screen& screen, Gfx::Painter& painter)
         paint_notification_frame(painter);
     else if (m_window.type() == WindowType::Normal)
         paint_normal_frame(painter);
-    else if (m_window.type() == WindowType::ToolWindow)
-        paint_tool_window_frame(painter);
     else
         return;
 
@@ -588,7 +595,7 @@ Gfx::IntRect WindowFrame::unconstrained_render_rect() const
     return inflated_for_shadow(rect());
 }
 
-Gfx::DisjointRectSet WindowFrame::opaque_render_rects() const
+Gfx::DisjointIntRectSet WindowFrame::opaque_render_rects() const
 {
     auto border_radius = WindowManager::the().palette().window_border_radius();
     if (has_alpha_channel() || border_radius > 0) {
@@ -598,17 +605,17 @@ Gfx::DisjointRectSet WindowFrame::opaque_render_rects() const
     }
     if (m_window.is_opaque())
         return constrained_render_rect_to_screen(rect());
-    Gfx::DisjointRectSet opaque_rects;
+    Gfx::DisjointIntRectSet opaque_rects;
     opaque_rects.add_many(constrained_render_rect_to_screen(rect()).shatter(m_window.rect()));
     return opaque_rects;
 }
 
-Gfx::DisjointRectSet WindowFrame::transparent_render_rects() const
+Gfx::DisjointIntRectSet WindowFrame::transparent_render_rects() const
 {
     auto border_radius = WindowManager::the().palette().window_border_radius();
     if (has_alpha_channel() || border_radius > 0) {
         if (m_window.is_opaque()) {
-            Gfx::DisjointRectSet transparent_rects;
+            Gfx::DisjointIntRectSet transparent_rects;
             transparent_rects.add_many(render_rect().shatter(m_window.rect()));
             return transparent_rects;
         }
@@ -616,7 +623,7 @@ Gfx::DisjointRectSet WindowFrame::transparent_render_rects() const
     }
 
     auto total_render_rect = render_rect();
-    Gfx::DisjointRectSet transparent_rects;
+    Gfx::DisjointIntRectSet transparent_rects;
     if (has_shadow())
         transparent_rects.add_many(total_render_rect.shatter(rect()));
     if (!m_window.is_opaque())
@@ -661,7 +668,7 @@ void WindowFrame::window_rect_changed(Gfx::IntRect const& old_rect, Gfx::IntRect
 
 void WindowFrame::layout_buttons()
 {
-    auto button_rects = Gfx::WindowTheme::current().layout_buttons(to_theme_window_type(m_window.type()), m_window.rect(), WindowManager::the().palette(), m_buttons.size());
+    auto button_rects = Gfx::WindowTheme::current().layout_buttons(to_theme_window_type(m_window.type()), to_theme_window_mode(m_window.mode()), m_window.rect(), WindowManager::the().palette(), m_buttons.size());
     for (size_t i = 0; i < m_buttons.size(); i++)
         m_buttons[i].set_relative_rect(button_rects[i]);
 }
@@ -786,7 +793,7 @@ void WindowFrame::handle_titlebar_mouse_event(MouseEvent const& event)
     }
 
     if (event.type() == Event::MouseDown) {
-        if ((m_window.type() == WindowType::Normal || m_window.type() == WindowType::ToolWindow) && event.button() == MouseButton::Secondary) {
+        if (m_window.type() == WindowType::Normal && event.button() == MouseButton::Secondary) {
             auto default_action = m_window.is_maximized() ? WindowMenuDefaultAction::Restore : WindowMenuDefaultAction::Maximize;
             m_window.popup_window_menu(event.position().translated(rect().location()), default_action);
             return;
@@ -800,11 +807,11 @@ void WindowFrame::handle_mouse_event(MouseEvent const& event)
 {
     VERIFY(!m_window.is_fullscreen());
 
-    if (m_window.type() != WindowType::Normal && m_window.type() != WindowType::ToolWindow && m_window.type() != WindowType::Notification)
+    if (m_window.type() != WindowType::Normal && m_window.type() != WindowType::Notification)
         return;
 
     auto& wm = WindowManager::the();
-    if (m_window.type() == WindowType::Normal || m_window.type() == WindowType::ToolWindow) {
+    if (m_window.type() == WindowType::Normal) {
         if (event.type() == Event::MouseDown)
             wm.move_to_front_and_make_active(m_window);
     }
@@ -838,25 +845,30 @@ void WindowFrame::handle_border_mouse_event(MouseEvent const& event)
 
     auto& wm = WindowManager::the();
 
+    constexpr ResizeDirection direction_for_hot_area[3][3] = {
+        { ResizeDirection::UpLeft, ResizeDirection::Up, ResizeDirection::UpRight },
+        { ResizeDirection::Left, ResizeDirection::None, ResizeDirection::Right },
+        { ResizeDirection::DownLeft, ResizeDirection::Down, ResizeDirection::DownRight },
+    };
+    Gfx::IntRect outer_rect = { {}, rect().size() };
+    VERIFY(outer_rect.contains(event.position()));
+    int window_relative_x = event.x() - outer_rect.x();
+    int window_relative_y = event.y() - outer_rect.y();
+    int corner_size = titlebar_rect().height();
+    int hot_area_row = (window_relative_y < corner_size) ? 0 : (window_relative_y > outer_rect.height() - corner_size) ? 2
+                                                                                                                       : 1;
+    int hot_area_column = (window_relative_x < corner_size) ? 0 : (window_relative_x > outer_rect.width() - corner_size) ? 2
+                                                                                                                         : 1;
+    ResizeDirection resize_direction = direction_for_hot_area[hot_area_row][hot_area_column];
+
     if (event.type() == Event::MouseMove && event.buttons() == 0) {
-        constexpr ResizeDirection direction_for_hot_area[3][3] = {
-            { ResizeDirection::UpLeft, ResizeDirection::Up, ResizeDirection::UpRight },
-            { ResizeDirection::Left, ResizeDirection::None, ResizeDirection::Right },
-            { ResizeDirection::DownLeft, ResizeDirection::Down, ResizeDirection::DownRight },
-        };
-        Gfx::IntRect outer_rect = { {}, rect().size() };
-        VERIFY(outer_rect.contains(event.position()));
-        int window_relative_x = event.x() - outer_rect.x();
-        int window_relative_y = event.y() - outer_rect.y();
-        int hot_area_row = min(2, window_relative_y / (outer_rect.height() / 3));
-        int hot_area_column = min(2, window_relative_x / (outer_rect.width() / 3));
-        wm.set_resize_candidate(m_window, direction_for_hot_area[hot_area_row][hot_area_column]);
+        wm.set_resize_candidate(m_window, resize_direction);
         Compositor::the().invalidate_cursor();
         return;
     }
 
     if (event.type() == Event::MouseDown && event.button() == MouseButton::Primary)
-        wm.start_window_resize(m_window, event.translated(rect().location()));
+        wm.start_window_resize(m_window, event.translated(rect().location()), resize_direction);
 }
 
 void WindowFrame::handle_menubar_mouse_event(MouseEvent const& event)
@@ -884,7 +896,24 @@ void WindowFrame::open_menubar_menu(Menu& menu)
 {
     auto menubar_rect = this->menubar_rect();
     MenuManager::the().close_everyone();
-    menu.ensure_menu_window(menu.rect_in_window_menubar().bottom_left().translated(rect().location()).translated(menubar_rect.location()));
+    auto position = menu.rect_in_window_menubar().bottom_left().translated(rect().location()).translated(menubar_rect.location());
+    menu.set_unadjusted_position(position);
+    auto& window = menu.ensure_menu_window(position);
+    auto window_rect = window.rect();
+    auto& screen = Screen::closest_to_rect(window_rect);
+    auto window_border_thickness = 1;
+
+    // If the menu is off the right edge of the screen align its right edge with the edge of the screen.
+    if (window_rect.right() > screen.width()) {
+        position = position.translated(((window_rect.right() - screen.width()) * -1) - window_border_thickness, 0);
+    }
+    // If the menu is below the bottom of the screen move it to appear above the menubar.
+    if (window_rect.bottom() > screen.height()) {
+        position = position.translated(0, (window_rect.height() * -1) - menubar_rect.height());
+    }
+
+    window.set_rect(position.x(), position.y(), window_rect.width(), window_rect.height());
+
     MenuManager::the().open_menu(menu);
     WindowManager::the().set_window_with_active_menu(&m_window);
     invalidate(menubar_rect);

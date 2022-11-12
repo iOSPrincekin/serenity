@@ -22,14 +22,14 @@ class Point {
 public:
     Point() = default;
 
-    Point(T x, T y)
+    constexpr Point(T x, T y)
         : m_x(x)
         , m_y(y)
     {
     }
 
     template<typename U>
-    Point(U x, U y)
+    constexpr Point(U x, U y)
         : m_x(x)
         , m_y(y)
     {
@@ -130,12 +130,6 @@ public:
     [[nodiscard]] bool operator==(Point<U> const& other) const
     {
         return x() == other.x() && y() == other.y();
-    }
-
-    template<class U>
-    [[nodiscard]] bool operator!=(Point<U> const& other) const
-    {
-        return !(*this == other);
     }
 
     [[nodiscard]] Point<T> operator+(Point<T> const& other) const { return { m_x + other.m_x, m_y + other.m_y }; }
@@ -246,13 +240,19 @@ public:
         return Point<U>(roundf(x()), roundf(y()));
     }
 
+    template<typename U>
+    requires FloatingPoint<T>
+    [[nodiscard]] Point<U> to_ceiled() const
+    {
+        return Point<U>(ceil(x()), ceil(y()));
+    }
+
     [[nodiscard]] String to_string() const;
 
 private:
     T m_x { 0 };
     T m_y { 0 };
 };
-
 using IntPoint = Point<int>;
 using FloatPoint = Point<float>;
 
@@ -279,10 +279,10 @@ inline Point<T> cubic_interpolate(Point<T> const& p1, Point<T> const& p2, Point<
 namespace AK {
 
 template<typename T>
-struct Formatter<Gfx::Point<T>> : Formatter<StringView> {
+struct Formatter<Gfx::Point<T>> : Formatter<FormatString> {
     ErrorOr<void> format(FormatBuilder& builder, Gfx::Point<T> const& value)
     {
-        return Formatter<StringView>::format(builder, value.to_string());
+        return Formatter<FormatString>::format(builder, "[{},{}]"sv, value.x(), value.y());
     }
 };
 

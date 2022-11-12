@@ -22,7 +22,7 @@ MulticastDNS::MulticastDNS(Object* parent)
     : Core::UDPServer(parent)
     , m_hostname("courage.local")
 {
-    char buffer[HOST_NAME_MAX];
+    char buffer[_POSIX_HOST_NAME_MAX];
     if (gethostname(buffer, sizeof(buffer)) < 0) {
         perror("gethostname");
     } else {
@@ -114,9 +114,9 @@ ErrorOr<size_t> MulticastDNS::emit_packet(Packet const& packet, sockaddr_in cons
 
 Vector<IPv4Address> MulticastDNS::local_addresses() const
 {
-    auto file = Core::File::construct("/proc/net/adapters");
+    auto file = Core::File::construct("/sys/kernel/net/adapters");
     if (!file->open(Core::OpenMode::ReadOnly)) {
-        dbgln("Failed to open /proc/net/adapters: {}", file->error_string());
+        dbgln("Failed to open /sys/kernel/net/adapters: {}", file->error_string());
         return {};
     }
 
@@ -127,7 +127,7 @@ Vector<IPv4Address> MulticastDNS::local_addresses() const
 
     json.as_array().for_each([&addresses](auto& value) {
         auto if_object = value.as_object();
-        auto address = if_object.get("ipv4_address").to_string();
+        auto address = if_object.get("ipv4_address"sv).to_string();
         auto ipv4_address = IPv4Address::from_string(address);
         // Skip unconfigured interfaces.
         if (!ipv4_address.has_value())

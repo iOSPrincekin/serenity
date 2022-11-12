@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <AK/StdLibExtras.h>
 #include <LibCrypto/BigInt/SignedBigInteger.h>
 #include <LibJS/Bytecode/IdentifierTable.h>
 #include <LibJS/Bytecode/Instruction.h>
@@ -254,6 +255,24 @@ private:
     Register m_elements[];
 };
 
+class Append final : public Instruction {
+public:
+    Append(Register lhs, bool is_spread)
+        : Instruction(Type::Append)
+        , m_lhs(lhs)
+        , m_is_spread(is_spread)
+    {
+    }
+
+    ThrowCompletionOr<void> execute_impl(Bytecode::Interpreter&) const;
+    String to_string_impl(Bytecode::Executable const&) const;
+    void replace_references_impl(BasicBlock const&, BasicBlock const&) { }
+
+private:
+    Register m_lhs;
+    bool m_is_spread = false;
+};
+
 class IteratorToArray final : public Instruction {
 public:
     IteratorToArray()
@@ -317,11 +336,12 @@ public:
 
 class CreateVariable final : public Instruction {
 public:
-    explicit CreateVariable(IdentifierTableIndex identifier, EnvironmentMode mode, bool is_immutable)
+    explicit CreateVariable(IdentifierTableIndex identifier, EnvironmentMode mode, bool is_immutable, bool is_global = false)
         : Instruction(Type::CreateVariable)
         , m_identifier(identifier)
         , m_mode(mode)
         , m_is_immutable(is_immutable)
+        , m_is_global(is_global)
     {
     }
 
@@ -332,7 +352,8 @@ public:
 private:
     IdentifierTableIndex m_identifier;
     EnvironmentMode m_mode;
-    bool m_is_immutable { false };
+    bool m_is_immutable : 4 { false };
+    bool m_is_global : 4 { false };
 };
 
 class SetVariable final : public Instruction {
@@ -583,32 +604,43 @@ public:
         Construct,
     };
 
-    Call(CallType type, Register callee, Register this_value, Vector<Register> const& arguments)
+    Call(CallType type, Register callee, Register this_value, Optional<StringTableIndex> expression_string = {})
         : Instruction(Type::Call)
         , m_callee(callee)
         , m_this_value(this_value)
         , m_type(type)
-        , m_argument_count(arguments.size())
+        , m_expression_string(expression_string)
     {
-        for (size_t i = 0; i < m_argument_count; ++i)
-            m_arguments[i] = arguments[i];
     }
 
     ThrowCompletionOr<void> execute_impl(Bytecode::Interpreter&) const;
     String to_string_impl(Bytecode::Executable const&) const;
     void replace_references_impl(BasicBlock const&, BasicBlock const&) { }
 
-    size_t length_impl() const
-    {
-        return sizeof(*this) + sizeof(Register) * m_argument_count;
-    }
+    Completion throw_type_error_for_callee(Bytecode::Interpreter&, StringView callee_type) const;
 
 private:
     Register m_callee;
     Register m_this_value;
     CallType m_type;
-    size_t m_argument_count { 0 };
-    Register m_arguments[];
+    Optional<StringTableIndex> m_expression_string;
+};
+
+// NOTE: This instruction is variable-width depending on the number of arguments!
+class SuperCall : public Instruction {
+public:
+    explicit SuperCall(bool is_synthetic)
+        : Instruction(Type::SuperCall)
+        , m_is_synthetic(is_synthetic)
+    {
+    }
+
+    ThrowCompletionOr<void> execute_impl(Bytecode::Interpreter&) const;
+    String to_string_impl(Bytecode::Executable const&) const;
+    void replace_references_impl(BasicBlock const&, BasicBlock const&) { }
+
+private:
+    bool m_is_synthetic;
 };
 
 class NewClass final : public Instruction {
@@ -910,6 +942,22 @@ public:
     void replace_references_impl(BasicBlock const&, BasicBlock const&) { }
 };
 
+class TypeofVariable final : public Instruction {
+public:
+    explicit TypeofVariable(IdentifierTableIndex identifier)
+        : Instruction(Type::TypeofVariable)
+        , m_identifier(identifier)
+    {
+    }
+
+    ThrowCompletionOr<void> execute_impl(Bytecode::Interpreter&) const;
+    String to_string_impl(Bytecode::Executable const&) const;
+    void replace_references_impl(BasicBlock const&, BasicBlock const&) { }
+
+private:
+    IdentifierTableIndex m_identifier;
+};
+
 }
 
 namespace JS::Bytecode {
@@ -946,12 +994,10 @@ ALWAYS_INLINE void Instruction::replace_references(BasicBlock const& from, Basic
 
 ALWAYS_INLINE size_t Instruction::length() const
 {
-    if (type() == Type::Call)
-        return static_cast<Op::Call const&>(*this).length_impl();
-    else if (type() == Type::NewArray)
-        return static_cast<Op::NewArray const&>(*this).length_impl();
-    else if (type() == Type::CopyObjectExcludingProperties)
-        return static_cast<Op::CopyObjectExcludingProperties const&>(*this).length_impl();
+    if (type() == Type::NewArray)
+        return round_up_to_power_of_two(static_cast<Op::NewArray const&>(*this).length_impl(), alignof(void*));
+    if (type() == Type::CopyObjectExcludingProperties)
+        return round_up_to_power_of_two(static_cast<Op::CopyObjectExcludingProperties const&>(*this).length_impl(), alignof(void*));
 
 #define __BYTECODE_OP(op) \
     case Type::op:        \

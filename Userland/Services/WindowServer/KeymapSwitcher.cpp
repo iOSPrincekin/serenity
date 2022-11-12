@@ -7,6 +7,7 @@
 #include <AK/JsonObject.h>
 #include <LibCore/ConfigFile.h>
 #include <LibCore/File.h>
+#include <LibCore/Process.h>
 #include <WindowServer/KeymapSwitcher.h>
 #include <spawn.h>
 #include <unistd.h>
@@ -52,7 +53,7 @@ void KeymapSwitcher::refresh()
         on_keymap_change(current_keymap);
 
     if (m_keymaps.find(current_keymap).is_end()) {
-        setkeymap(m_keymaps.first());
+        set_keymap(m_keymaps.first());
     }
 }
 
@@ -74,7 +75,7 @@ void KeymapSwitcher::next_keymap()
     if (it.is_end()) {
         auto first_keymap = m_keymaps.first();
         dbgln("Cannot find current keymap in the keymap list - setting first available ({})", first_keymap);
-        setkeymap(first_keymap);
+        set_keymap(first_keymap);
     } else {
         it++;
 
@@ -83,30 +84,27 @@ void KeymapSwitcher::next_keymap()
         }
 
         dbgln("Setting system keymap to: {}", *it);
-        setkeymap(*it);
+        set_keymap(*it);
     }
 }
 
 String KeymapSwitcher::get_current_keymap() const
 {
-    auto proc_keymap = Core::File::construct("/proc/keymap");
+    auto proc_keymap = Core::File::construct("/sys/kernel/keymap");
     if (!proc_keymap->open(Core::OpenMode::ReadOnly))
         VERIFY_NOT_REACHED();
 
     auto json = JsonValue::from_string(proc_keymap->read_all()).release_value_but_fixme_should_propagate_errors();
     auto const& keymap_object = json.as_object();
-    VERIFY(keymap_object.has("keymap"));
-    return keymap_object.get("keymap").to_string();
+    VERIFY(keymap_object.has("keymap"sv));
+    return keymap_object.get("keymap"sv).to_string();
 }
 
-void KeymapSwitcher::setkeymap(const AK::String& keymap)
+void KeymapSwitcher::set_keymap(const AK::String& keymap)
 {
-    pid_t child_pid;
-    char const* argv[] = { "/bin/keymap", "-m", keymap.characters(), nullptr };
-    if ((errno = posix_spawn(&child_pid, "/bin/keymap", nullptr, nullptr, const_cast<char**>(argv), environ))) {
-        perror("posix_spawn");
+    if (Core::Process::spawn("/bin/keymap"sv, Array { "-m", keymap.characters() }).is_error())
         dbgln("Failed to call /bin/keymap, error: {} ({})", errno, strerror(errno));
-    }
+
     if (on_keymap_change)
         on_keymap_change(keymap);
 }

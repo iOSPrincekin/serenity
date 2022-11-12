@@ -5,11 +5,14 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/CharacterTypes.h>
 #include <AK/Debug.h>
-#include <AK/JsonArray.h>
+#include <AK/JsonObject.h>
+#include <LibCompress/Brotli.h>
 #include <LibCompress/Gzip.h>
 #include <LibCompress/Zlib.h>
 #include <LibCore/Event.h>
+#include <LibCore/MemoryStream.h>
 #include <LibHTTP/HttpResponse.h>
 #include <LibHTTP/Job.h>
 #include <stdio.h>
@@ -20,6 +23,11 @@ namespace HTTP {
 static Optional<ByteBuffer> handle_content_encoding(ByteBuffer const& buf, String const& content_encoding)
 {
     dbgln_if(JOB_DEBUG, "Job::handle_content_encoding: buf has content_encoding={}", content_encoding);
+
+    // FIXME: Actually do the decompression of the data using streams, instead of all at once when everything has been
+    //        received. This will require that some of the decompression algorithms are implemented in a streaming way.
+    //        Gzip and Deflate are implemented using AK::Stream, while Brotli uses the newer Core::Stream. The Gzip and
+    //        Deflate implementations will likely need to be changed to LibCore::Stream for this to work easily.
 
     if (content_encoding == "gzip") {
         if (!Compress::GzipDecompressor::is_likely_compressed(buf)) {
@@ -67,6 +75,31 @@ static Optional<ByteBuffer> handle_content_encoding(ByteBuffer const& buf, Strin
         }
 
         return uncompressed.release_value();
+    } else if (content_encoding == "br") {
+        dbgln_if(JOB_DEBUG, "Job::handle_content_encoding: buf is brotli compressed!");
+
+        // FIXME: MemoryStream is both read and write, however we only need the read part here
+        auto bufstream_result = Core::Stream::MemoryStream::construct({ const_cast<u8*>(buf.data()), buf.size() });
+        if (bufstream_result.is_error()) {
+            dbgln("Job::handle_content_encoding: MemoryStream::construct() failed.");
+            return {};
+        }
+        auto bufstream = bufstream_result.release_value();
+        auto brotli_stream = Compress::BrotliDecompressionStream { *bufstream };
+
+        auto uncompressed = brotli_stream.read_all();
+        if (uncompressed.is_error()) {
+            dbgln("Job::handle_content_encoding: Brotli::decompress() failed: {}.", uncompressed.error());
+            return {};
+        }
+
+        if constexpr (JOB_DEBUG) {
+            dbgln("Job::handle_content_encoding: Brotli::decompress() successful.");
+            dbgln("  Input size: {}", buf.size());
+            dbgln("  Output size: {}", uncompressed.value().size());
+        }
+
+        return uncompressed.release_value();
     }
 
     return buf;
@@ -95,6 +128,7 @@ void Job::shutdown(ShutdownMode mode)
         return;
     if (mode == ShutdownMode::CloseSocket) {
         m_socket->close();
+        m_socket->on_ready_to_read = nullptr;
     } else {
         m_socket->on_ready_to_read = nullptr;
         m_socket = nullptr;
@@ -244,6 +278,15 @@ void Job::on_socket_connected()
                 dbgln("Job: Expected 2-part or 3-part HTTP status line, got '{}'", line);
                 return deferred_invoke([this] { did_fail(Core::NetworkJob::Error::ProtocolFailed); });
             }
+
+            if (!parts[0].matches("HTTP/?.?"sv, CaseSensitivity::CaseSensitive) || !is_ascii_digit(parts[0][5]) || !is_ascii_digit(parts[0][7])) {
+                dbgln("Job: Expected HTTP-Version to be of the form 'HTTP/X.Y', got '{}'", parts[0]);
+                return deferred_invoke([this] { did_fail(Core::NetworkJob::Error::ProtocolFailed); });
+            }
+            auto http_major_version = parse_ascii_digit(parts[0][5]);
+            auto http_minor_version = parse_ascii_digit(parts[0][7]);
+            m_legacy_connection = http_major_version < 1 || (http_major_version == 1 && http_minor_version == 0);
+
             auto code = parts[1].to_uint();
             if (!code.has_value()) {
                 dbgln("Job: Expected numeric HTTP status");
@@ -338,7 +381,7 @@ void Job::on_socket_connected()
                 return deferred_invoke([this] { did_fail(Core::NetworkJob::Error::ProtocolFailed); });
             }
             auto value = line.substring(name.length() + 2, line.length() - name.length() - 2);
-            if (name.equals_ignoring_case("Set-Cookie")) {
+            if (name.equals_ignoring_case("Set-Cookie"sv)) {
                 dbgln_if(JOB_DEBUG, "Job: Received Set-Cookie header: '{}'", value);
                 m_set_cookie_headers.append(move(value));
 
@@ -356,11 +399,11 @@ void Job::on_socket_connected()
             } else {
                 m_headers.set(name, value);
             }
-            if (name.equals_ignoring_case("Content-Encoding")) {
+            if (name.equals_ignoring_case("Content-Encoding"sv)) {
                 // Assume that any content-encoding means that we can't decode it as a stream :(
                 dbgln_if(JOB_DEBUG, "Content-Encoding {} detected, cannot stream output :(", value);
                 m_can_stream_response = false;
-            } else if (name.equals_ignoring_case("Content-Length")) {
+            } else if (name.equals_ignoring_case("Content-Length"sv)) {
                 auto length = value.to_uint();
                 if (length.has_value())
                     m_content_length = length.value();
@@ -410,7 +453,7 @@ void Job::on_socket_connected()
                         finish_up();
                         break;
                     } else {
-                        auto chunk = size_lines[0].split_view(';', true);
+                        auto chunk = size_lines[0].split_view(';', SplitBehavior::KeepEmpty);
                         String size_string = chunk[0];
                         char* endptr;
                         auto size = strtoul(size_string.characters(), &endptr, 16);
@@ -453,7 +496,7 @@ void Job::on_socket_connected()
                     auto encoding = transfer_encoding.value().trim_whitespace();
 
                     dbgln_if(JOB_DEBUG, "Job: This content has transfer encoding '{}'", encoding);
-                    if (encoding.equals_ignoring_case("chunked")) {
+                    if (encoding.equals_ignoring_case("chunked"sv)) {
                         m_current_chunk_remaining_size = -1;
                         goto read_chunk_size;
                     } else {
@@ -608,8 +651,9 @@ void Job::finish_up()
     auto response = HttpResponse::create(m_code, move(m_headers), m_received_size);
     deferred_invoke([this, response = move(response)] {
         // If the server responded with "Connection: close", close the connection
-        // as the server may or may not want to close the socket.
-        if (auto result = response->headers().get("Connection"sv); result.has_value() && result.value().equals_ignoring_case("close"sv))
+        // as the server may or may not want to close the socket. Also, if this is
+        // a legacy HTTP server (1.0 or older), assume close is the default value.
+        if (auto result = response->headers().get("Connection"sv); result.has_value() ? result->equals_ignoring_case("close"sv) : m_legacy_connection)
             shutdown(ShutdownMode::CloseSocket);
         did_finish(response);
     });

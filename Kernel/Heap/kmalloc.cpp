@@ -20,8 +20,10 @@
 
 #if ARCH(I386)
 static constexpr size_t CHUNK_SIZE = 32;
-#else
+#elif ARCH(X86_64) || ARCH(AARCH64)
 static constexpr size_t CHUNK_SIZE = 64;
+#else
+#    error Unknown architecture
 #endif
 static_assert(is_power_of_two(CHUNK_SIZE));
 
@@ -34,7 +36,8 @@ namespace std {
 const nothrow_t nothrow;
 }
 
-static RecursiveSpinlock s_lock; // needs to be recursive because of dump_backtrace()
+// FIXME: Figure out whether this can be MemoryManager.
+static RecursiveSpinlock s_lock { LockRank::None }; // needs to be recursive because of dump_backtrace()
 
 struct KmallocSubheap {
     KmallocSubheap(u8* base, size_t size)
@@ -319,7 +322,7 @@ struct KmallocGlobalData {
             PANIC("Out of address space when expanding kmalloc heap.");
         }
 
-        auto physical_pages_or_error = MM.commit_user_physical_pages(new_subheap_size / PAGE_SIZE);
+        auto physical_pages_or_error = MM.commit_physical_pages(new_subheap_size / PAGE_SIZE);
         if (physical_pages_or_error.is_error()) {
             // FIXME: Dare to return false!
             PANIC("Out of physical pages when expanding kmalloc heap.");
@@ -330,7 +333,6 @@ struct KmallocGlobalData {
 
         auto cpu_supports_nx = Processor::current().has_nx();
 
-        SpinlockLocker mm_locker(Memory::s_mm_lock);
         SpinlockLocker pd_locker(MM.kernel_page_directory().get_lock());
 
         for (auto vaddr = new_subheap_base; !physical_pages.is_empty(); vaddr = vaddr.offset(PAGE_SIZE)) {
@@ -363,7 +365,6 @@ struct KmallocGlobalData {
 
         // Make sure the entire kmalloc VM range is backed by page tables.
         // This avoids having to deal with lazy page table allocation during heap expansion.
-        SpinlockLocker mm_locker(Memory::s_mm_lock);
         SpinlockLocker pd_locker(MM.kernel_page_directory().get_lock());
         for (auto vaddr = reserved_region->range().base(); vaddr < reserved_region->range().end(); vaddr = vaddr.offset(PAGE_SIZE)) {
             MM.ensure_pte(MM.kernel_page_directory(), vaddr);
@@ -409,14 +410,6 @@ void kmalloc_enable_expand()
     g_kmalloc_global->enable_expansion();
 }
 
-static inline void kmalloc_verify_nospinlock_held()
-{
-    // Catch bad callers allocating under spinlock.
-    if constexpr (KMALLOC_VERIFY_NO_SPINLOCK_HELD) {
-        VERIFY(!Processor::in_critical());
-    }
-}
-
 UNMAP_AFTER_INIT void kmalloc_init()
 {
     // Zero out heap since it's placed after end_of_kernel_bss.
@@ -428,7 +421,11 @@ UNMAP_AFTER_INIT void kmalloc_init()
 
 void* kmalloc(size_t size)
 {
-    kmalloc_verify_nospinlock_held();
+    // Catch bad callers allocating under spinlock.
+    if constexpr (KMALLOC_VERIFY_NO_SPINLOCK_HELD) {
+        Processor::verify_no_spinlocks_held();
+    }
+
     SpinlockLocker lock(s_lock);
     ++g_kmalloc_call_count;
 
@@ -471,7 +468,11 @@ void kfree_sized(void* ptr, size_t size)
 
     VERIFY(size > 0);
 
-    kmalloc_verify_nospinlock_held();
+    // Catch bad callers allocating under spinlock.
+    if constexpr (KMALLOC_VERIFY_NO_SPINLOCK_HELD) {
+        Processor::verify_no_spinlocks_held();
+    }
+
     SpinlockLocker lock(s_lock);
     ++g_kfree_call_count;
     ++g_nested_kfree_calls;

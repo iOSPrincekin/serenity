@@ -49,14 +49,19 @@ Widget::Widget()
     REGISTER_BOOL_PROPERTY("enabled", is_enabled, set_enabled);
     REGISTER_STRING_PROPERTY("tooltip", tooltip, set_tooltip);
 
-    REGISTER_SIZE_PROPERTY("min_size", min_size, set_min_size);
-    REGISTER_SIZE_PROPERTY("max_size", max_size, set_max_size);
+    REGISTER_UI_SIZE_PROPERTY("min_size", min_size, set_min_size);
+    REGISTER_READONLY_UI_SIZE_PROPERTY("effective_min_size", effective_min_size);
+    REGISTER_UI_SIZE_PROPERTY("max_size", max_size, set_max_size);
+    REGISTER_UI_SIZE_PROPERTY("preferred_size", preferred_size, set_preferred_size);
+    REGISTER_READONLY_UI_SIZE_PROPERTY("effective_preferred_size", effective_preferred_size);
     REGISTER_INT_PROPERTY("width", width, set_width);
-    REGISTER_INT_PROPERTY("min_width", min_width, set_min_width);
-    REGISTER_INT_PROPERTY("max_width", max_width, set_max_width);
-    REGISTER_INT_PROPERTY("min_height", min_height, set_min_height);
+    REGISTER_UI_DIMENSION_PROPERTY("min_width", min_width, set_min_width);
+    REGISTER_UI_DIMENSION_PROPERTY("max_width", max_width, set_max_width);
+    REGISTER_UI_DIMENSION_PROPERTY("preferred_width", preferred_width, set_preferred_width);
     REGISTER_INT_PROPERTY("height", height, set_height);
-    REGISTER_INT_PROPERTY("max_height", max_height, set_max_height);
+    REGISTER_UI_DIMENSION_PROPERTY("min_height", min_height, set_min_height);
+    REGISTER_UI_DIMENSION_PROPERTY("max_height", max_height, set_max_height);
+    REGISTER_UI_DIMENSION_PROPERTY("preferred_height", preferred_height, set_preferred_height);
 
     REGISTER_INT_PROPERTY("fixed_width", dummy_fixed_width, set_fixed_width);
     REGISTER_INT_PROPERTY("fixed_height", dummy_fixed_height, set_fixed_height);
@@ -194,6 +199,14 @@ Widget::Widget()
 
 Widget::~Widget() = default;
 
+void Widget::layout_relevant_change_occured()
+{
+    if (auto* parent = parent_widget())
+        parent->layout_relevant_change_occured();
+    else if (window())
+        window()->schedule_relayout();
+}
+
 void Widget::child_event(Core::ChildEvent& event)
 {
     if (event.type() == Event::ChildAdded) {
@@ -202,19 +215,28 @@ void Widget::child_event(Core::ChildEvent& event)
                 layout()->insert_widget_before(verify_cast<Widget>(*event.child()), verify_cast<Widget>(*event.insertion_before_child()));
             else
                 layout()->add_widget(verify_cast<Widget>(*event.child()));
+            layout_relevant_change_occured();
         }
         if (window() && event.child() && is<Widget>(*event.child()))
             window()->did_add_widget({}, verify_cast<Widget>(*event.child()));
+
+        if (event.child() && is<Widget>(*event.child()) && static_cast<Widget const&>(*event.child()).is_visible()) {
+            ShowEvent show_event;
+            event.child()->dispatch_event(show_event);
+        }
     }
     if (event.type() == Event::ChildRemoved) {
         if (layout()) {
             if (event.child() && is<Widget>(*event.child()))
                 layout()->remove_widget(verify_cast<Widget>(*event.child()));
-            else
-                invalidate_layout();
+            layout_relevant_change_occured();
         }
         if (window() && event.child() && is<Widget>(*event.child()))
             window()->did_remove_widget({}, verify_cast<Widget>(*event.child()));
+        if (event.child() && is<Widget>(*event.child())) {
+            HideEvent hide_event;
+            event.child()->dispatch_event(hide_event);
+        }
         update();
     }
     return Core::Object::child_event(event);
@@ -392,6 +414,7 @@ void Widget::set_layout(NonnullRefPtr<Layout> layout)
     } else {
         update();
     }
+    layout_relevant_change_occured();
 }
 
 void Widget::do_layout()
@@ -452,7 +475,8 @@ void Widget::handle_leave_event(Core::Event& event)
 {
     if (auto* window = this->window())
         window->update_cursor({});
-    Application::the()->hide_tooltip();
+    if (Application::the()->tooltip_source_widget() == this)
+        Application::the()->hide_tooltip();
     leave_event(event);
 }
 
@@ -716,7 +740,7 @@ bool Widget::is_focused() const
     auto* win = window();
     if (!win)
         return false;
-    // Accessory windows are not active despite being the active
+    // Capturing modals are not active despite being the active
     // input window. So we can have focus if either we're the active
     // input window or we're the active window
     if (win->is_active_input() || win->is_active())
@@ -780,20 +804,48 @@ void Widget::set_font_fixed_width(bool fixed_width)
         set_font(Gfx::FontDatabase::the().get(Gfx::FontDatabase::the().default_font().family(), m_font->presentation_size(), m_font->weight(), m_font->slope()));
 }
 
-void Widget::set_min_size(Gfx::IntSize const& size)
+void Widget::set_min_size(UISize const& size)
 {
+    VERIFY(size.width().is_one_of(SpecialDimension::Regular, SpecialDimension::Shrink));
     if (m_min_size == size)
         return;
     m_min_size = size;
-    invalidate_layout();
+    layout_relevant_change_occured();
 }
 
-void Widget::set_max_size(Gfx::IntSize const& size)
+void Widget::set_max_size(UISize const& size)
 {
+    VERIFY(size.width().is_one_of(SpecialDimension::Regular, SpecialDimension::Grow));
     if (m_max_size == size)
         return;
     m_max_size = size;
-    invalidate_layout();
+    layout_relevant_change_occured();
+}
+
+void Widget::set_preferred_size(UISize const& size)
+{
+    if (m_preferred_size == size)
+        return;
+    m_preferred_size = size;
+    layout_relevant_change_occured();
+}
+
+Optional<UISize> Widget::calculated_preferred_size() const
+{
+    if (layout())
+        return { layout()->preferred_size() };
+    return {};
+}
+
+Optional<UISize> Widget::calculated_min_size() const
+{
+    if (layout())
+        return { layout()->min_size() };
+    // Fall back to at least displaying the margins, so the Widget is not 0 size.
+    auto m = content_margins();
+    if (!m.is_null())
+        return UISize { m.left() + m.right(), m.top() + m.bottom() };
+    return {};
 }
 
 void Widget::invalidate_layout()
@@ -807,8 +859,7 @@ void Widget::set_visible(bool visible)
     if (visible == m_visible)
         return;
     m_visible = visible;
-    if (auto* parent = parent_widget())
-        parent->invalidate_layout();
+    layout_relevant_change_occured();
     if (m_visible)
         update();
     if (!m_visible && is_focused())
@@ -904,14 +955,8 @@ bool Widget::is_backmost() const
     return &parent->children().first() == this;
 }
 
-Action* Widget::action_for_key_event(KeyEvent const& event)
+Action* Widget::action_for_shortcut(Shortcut const& shortcut)
 {
-    Shortcut shortcut(event.modifiers(), (KeyCode)event.key());
-
-    if (!shortcut.is_valid()) {
-        return nullptr;
-    }
-
     Action* found_action = nullptr;
     for_each_child_of_type<Action>([&](auto& action) {
         if (action.shortcut() == shortcut || action.alternate_shortcut() == shortcut) {
@@ -982,6 +1027,7 @@ void Widget::set_palette(Palette const& palette)
 void Widget::set_title(String title)
 {
     m_title = move(title);
+    layout_relevant_change_occured();
     // For tab widget children, our change in title also affects the parent.
     if (parent_widget())
         parent_widget()->update();
@@ -1024,7 +1070,7 @@ void Widget::set_grabbable_margins(Margins const& margins)
     if (m_grabbable_margins == margins)
         return;
     m_grabbable_margins = margins;
-    invalidate_layout();
+    layout_relevant_change_occured();
 }
 
 Gfx::IntRect Widget::relative_non_grabbable_rect() const
@@ -1114,7 +1160,7 @@ bool Widget::load_from_gml_ast(NonnullRefPtr<GUI::GML::Node> ast, RefPtr<Core::O
             return false;
         }
 
-        auto& layout_class = *Core::ObjectClassRegistration::find("GUI::Layout");
+        auto& layout_class = *Core::ObjectClassRegistration::find("GUI::Layout"sv);
         if (auto* registration = Core::ObjectClassRegistration::find(class_name)) {
             auto layout = registration->construct();
             if (!layout || !registration->is_derived_from(layout_class)) {
@@ -1132,32 +1178,41 @@ bool Widget::load_from_gml_ast(NonnullRefPtr<GUI::GML::Node> ast, RefPtr<Core::O
         });
     }
 
-    auto& widget_class = *Core::ObjectClassRegistration::find("GUI::Widget");
+    auto& widget_class = *Core::ObjectClassRegistration::find("GUI::Widget"sv);
     bool is_tab_widget = is<TabWidget>(*this);
     object->for_each_child_object_interruptible([&](auto child_data) {
         auto class_name = child_data->name();
 
-        RefPtr<Core::Object> child;
-        if (auto* registration = Core::ObjectClassRegistration::find(class_name)) {
-            child = registration->construct();
-            if (!child || !registration->is_derived_from(widget_class)) {
-                dbgln("Invalid widget class: '{}'", class_name);
+        // It is very questionable if this pseudo object should exist, but it works fine like this for now.
+        if (class_name == "GUI::Layout::Spacer") {
+            if (!this->layout()) {
+                dbgln("Specified GUI::Layout::Spacer in GML, but the parent has no Layout.");
                 return IterationDecision::Break;
             }
+            this->layout()->add_spacer();
         } else {
-            child = unregistered_child_handler(class_name);
-        }
-        if (!child)
-            return IterationDecision::Break;
+            RefPtr<Core::Object> child;
+            if (auto* registration = Core::ObjectClassRegistration::find(class_name)) {
+                child = registration->construct();
+                if (!child || !registration->is_derived_from(widget_class)) {
+                    dbgln("Invalid widget class: '{}'", class_name);
+                    return IterationDecision::Break;
+                }
+            } else {
+                child = unregistered_child_handler(class_name);
+            }
+            if (!child)
+                return IterationDecision::Break;
+            add_child(*child);
 
-        add_child(*child);
-        // This is possible as we ensure that Widget is a base class above.
-        static_ptr_cast<Widget>(child)->load_from_gml_ast(child_data, unregistered_child_handler);
+            // This is possible as we ensure that Widget is a base class above.
+            static_ptr_cast<Widget>(child)->load_from_gml_ast(child_data, unregistered_child_handler);
 
-        if (is_tab_widget) {
-            // FIXME: We need to have the child added before loading it so that it can access us. But the TabWidget logic requires the child to not be present yet.
-            remove_child(*child);
-            reinterpret_cast<TabWidget*>(this)->add_widget(*static_ptr_cast<Widget>(child));
+            if (is_tab_widget) {
+                // FIXME: We need to have the child added before loading it so that it can access us. But the TabWidget logic requires the child to not be present yet.
+                remove_child(*child);
+                reinterpret_cast<TabWidget*>(this)->add_widget(*static_ptr_cast<Widget>(child));
+            }
         }
 
         return IterationDecision::Continue;
@@ -1177,12 +1232,11 @@ bool Widget::has_focus_within() const
     return window->focused_widget() == &effective_focus_widget || is_ancestor_of(*window->focused_widget());
 }
 
-void Widget::set_shrink_to_fit(bool b)
+void Widget::set_shrink_to_fit(bool shrink_to_fit)
 {
-    if (m_shrink_to_fit == b)
-        return;
-    m_shrink_to_fit = b;
-    invalidate_layout();
+    // This function is deprecated, and soon to be removed, it is only still here to ease the transition to UIDimensions
+    if (shrink_to_fit)
+        set_preferred_size(SpecialDimension::Fit);
 }
 
 bool Widget::has_pending_drop() const

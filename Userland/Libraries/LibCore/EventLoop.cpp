@@ -22,6 +22,7 @@
 #include <LibCore/LocalServer.h>
 #include <LibCore/Notifier.h>
 #include <LibCore/Object.h>
+#include <LibCore/SessionManagement.h>
 #include <LibThreading/Mutex.h>
 #include <LibThreading/MutexProtected.h>
 #include <errno.h>
@@ -35,7 +36,9 @@
 #include <time.h>
 #include <unistd.h>
 
-#ifdef __serenity__
+#ifdef AK_OS_SERENITY
+#    include <LibCore/Account.h>
+
 extern bool s_global_initializers_ran;
 #endif
 
@@ -157,7 +160,7 @@ private:
             return allocator->allocate();
         }))
     {
-#ifdef __serenity__
+#ifdef AK_OS_SERENITY
         m_socket->on_ready_to_read = [this] {
             u32 length;
             auto maybe_bytes_read = m_socket->read({ (u8*)&length, sizeof(length) });
@@ -209,15 +212,20 @@ public:
     void send_response(JsonObject const& response)
     {
         auto serialized = response.to_string();
-        u32 length = serialized.length();
+        auto bytes_to_send = serialized.bytes();
+        u32 length = bytes_to_send.size();
         // FIXME: Propagate errors
-        MUST(m_socket->write({ (u8 const*)&length, sizeof(length) }));
-        MUST(m_socket->write(serialized.bytes()));
+        auto sent = MUST(m_socket->write({ (u8 const*)&length, sizeof(length) }));
+        VERIFY(sent == sizeof(length));
+        while (!bytes_to_send.is_empty()) {
+            size_t bytes_sent = MUST(m_socket->write(bytes_to_send));
+            bytes_to_send = bytes_to_send.slice(bytes_sent);
+        }
     }
 
     void handle_request(JsonObject const& request)
     {
-        auto type = request.get("type").as_string_or({});
+        auto type = request.get("type"sv).as_string_or({});
 
         if (type.is_null()) {
             dbgln("RPC client sent request without type field");
@@ -228,7 +236,7 @@ public:
             JsonObject response;
             response.set("type", type);
             response.set("pid", getpid());
-#ifdef __serenity__
+#ifdef AK_OS_SERENITY
             char buffer[1024];
             if (get_process_name(buffer, sizeof(buffer)) >= 0) {
                 response.set("process_name", buffer);
@@ -255,7 +263,7 @@ public:
         }
 
         if (type == "SetInspectedObject") {
-            auto address = request.get("address").to_number<FlatPtr>();
+            auto address = request.get("address"sv).to_number<FlatPtr>();
             for (auto& object : Object::all_objects()) {
                 if ((FlatPtr)&object == address) {
                     if (auto inspected_object = m_inspected_object.strong_ref())
@@ -269,10 +277,10 @@ public:
         }
 
         if (type == "SetProperty") {
-            auto address = request.get("address").to_number<FlatPtr>();
+            auto address = request.get("address"sv).to_number<FlatPtr>();
             for (auto& object : Object::all_objects()) {
                 if ((FlatPtr)&object == address) {
-                    bool success = object.set_property(request.get("name").to_string(), request.get("value"));
+                    bool success = object.set_property(request.get("name"sv).to_string(), request.get("value"sv));
                     JsonObject response;
                     response.set("type", "SetProperty");
                     response.set("success", success);
@@ -304,7 +312,7 @@ EventLoop::EventLoop([[maybe_unused]] MakeInspectable make_inspectable)
     : m_wake_pipe_fds(&s_wake_pipe_fds)
     , m_private(make<Private>())
 {
-#ifdef __serenity__
+#ifdef AK_OS_SERENITY
     if (!s_global_initializers_ran) {
         // NOTE: Trying to have an event loop as a global variable will lead to initialization-order fiascos,
         //       as the event loop constructor accesses and/or sets other global variables.
@@ -326,7 +334,7 @@ EventLoop::EventLoop([[maybe_unused]] MakeInspectable make_inspectable)
         s_pid = getpid();
         s_event_loop_stack->append(*this);
 
-#ifdef __serenity__
+#ifdef AK_OS_SERENITY
         if (getuid() != 0) {
             if (getenv("MAKE_INSPECTABLE") == "1"sv)
                 make_inspectable = Core::EventLoop::MakeInspectable::Yes;
@@ -353,8 +361,14 @@ EventLoop::~EventLoop()
 
 bool connect_to_inspector_server()
 {
-#ifdef __serenity__
-    auto maybe_socket = Core::Stream::LocalSocket::connect("/tmp/portal/inspectables");
+#ifdef AK_OS_SERENITY
+    auto maybe_path = SessionManagement::parse_path_with_sid("/tmp/session/%sid/portal/inspectables"sv);
+    if (maybe_path.is_error()) {
+        dbgln("connect_to_inspector_server: {}", maybe_path.error());
+        return false;
+    }
+    auto inspector_server_path = maybe_path.value();
+    auto maybe_socket = Stream::LocalSocket::connect(inspector_server_path);
     if (maybe_socket.is_error()) {
         dbgln("connect_to_inspector_server: Failed to connect: {}", maybe_socket.error());
         return false;
@@ -494,6 +508,23 @@ void EventLoop::post_event(Object& receiver, NonnullOwnPtr<Event>&& event, Shoul
     m_queued_events.empend(receiver, move(event));
     if (should_wake == ShouldWake::Yes)
         wake();
+}
+
+void EventLoop::wake_once(Object& receiver, int custom_event_type)
+{
+    Threading::MutexLocker lock(m_private->lock);
+    dbgln_if(EVENTLOOP_DEBUG, "Core::EventLoop::wake_once: event type {}", custom_event_type);
+    auto identical_events = m_queued_events.find_if([&](auto& queued_event) {
+        if (queued_event.receiver.is_null())
+            return false;
+        auto const& event = queued_event.event;
+        auto is_receiver_identical = queued_event.receiver.ptr() == &receiver;
+        auto event_id_matches = event->type() == Event::Type::Custom && static_cast<CustomEvent const*>(event.ptr())->custom_type() == custom_event_type;
+        return is_receiver_identical && event_id_matches;
+    });
+    // Event is not in the queue yet, so we want to wake.
+    if (identical_events.is_end())
+        post_event(receiver, make<CustomEvent>(custom_event_type), ShouldWake::Yes);
 }
 
 SignalHandlers::SignalHandlers(int signo, void (*handle_signal)(int))

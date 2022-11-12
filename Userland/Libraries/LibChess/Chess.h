@@ -57,7 +57,14 @@ constexpr Piece EmptyPiece = { Color::None, Type::None };
 struct Square {
     i8 rank; // zero indexed;
     i8 file;
+
     Square(StringView name);
+
+    Square(char const name[3])
+        : Square({ name, 2 })
+    {
+    }
+
     Square(int const& rank, int const& file)
         : rank(rank)
         , file(file)
@@ -110,6 +117,7 @@ struct Move {
 class Board {
 public:
     Board();
+    Board clone_without_history() const;
 
     Piece get_piece(Square const&) const;
     Piece set_piece(Square const&, Piece const&);

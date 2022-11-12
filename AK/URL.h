@@ -11,10 +11,15 @@
 #include <AK/StringView.h>
 #include <AK/Vector.h>
 
+// On Linux distros that use mlibc `basename` is defined as a macro that expands to `__mlibc_gnu_basename` or `__mlibc_gnu_basename_c`, so we undefine it.
+#if defined(AK_OS_LINUX) && defined(basename)
+#    undef basename
+#endif
+
 namespace AK {
 
 // NOTE: The member variables cannot contain any percent encoded sequences.
-//       The URL parser automatically decodes those sequences and the the serialize() method will re-encode them as necessary.
+//       The URL parser automatically decodes those sequences and the serialize() method will re-encode them as necessary.
 class URL {
     friend class URLParser;
 
@@ -38,10 +43,6 @@ public:
 
     URL() = default;
     URL(StringView);
-    URL(char const* string)
-        : URL(StringView(string))
-    {
-    }
     URL(String const& string)
         : URL(string.view())
     {
@@ -50,7 +51,6 @@ public:
     bool is_valid() const { return m_valid; }
 
     String const& scheme() const { return m_scheme; }
-    String const& protocol() const { return m_scheme; }
     String const& username() const { return m_username; }
     String const& password() const { return m_password; }
     String const& host() const { return m_host; }
@@ -66,7 +66,6 @@ public:
     bool is_special() const { return is_special_scheme(m_scheme); }
 
     void set_scheme(String);
-    void set_protocol(String protocol) { set_scheme(move(protocol)); }
     void set_username(String);
     void set_password(String);
     void set_host(String);
@@ -97,7 +96,6 @@ public:
 
     static URL create_with_url_or_path(String const&);
     static URL create_with_file_scheme(String const& path, String const& fragment = {}, String const& hostname = {});
-    static URL create_with_file_protocol(String const& path, String const& fragment = {}) { return create_with_file_scheme(path, fragment); }
     static URL create_with_help_scheme(String const& path, String const& fragment = {}, String const& hostname = {});
     static URL create_with_data(String mime_type, String payload, bool is_base64 = false) { return URL(move(mime_type), move(payload), is_base64); };
 

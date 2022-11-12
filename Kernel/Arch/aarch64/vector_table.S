@@ -26,6 +26,7 @@
 .endm
 
 .extern exception_common
+.extern handle_interrupt
 
 //
 // Save all register states to the current stack
@@ -62,12 +63,21 @@
     mrs x0, sp_el0
     str x0, [sp, #SP_EL0_SLOT]
 
+    // Set up TrapFrame struct on the stack
+    sub sp, sp, #16
+    mov x0, sp
+    str x0, [sp, #(1 * 8)]
+    str xzr, [sp, #(0 * 0)]
+
     // Move stack pointer into first argument register
     // and jump to the C++ exception handler
     mov x0, sp
 .endm
 
 .macro restore_previous_context
+    // Remove TrapFrame from the stack
+    add sp, sp, #16
+
     // Restore special registers first
     ldr x0, [sp, #SPSR_EL1_SLOT]
     msr spsr_el1, x0
@@ -106,10 +116,10 @@
 .align 11
 vector_table_el1:
     // Exceptions taken from Current EL, with SP_EL0
-    unimplemented_entry
-    unimplemented_entry
-    unimplemented_entry
-    unimplemented_entry
+    table_entry synchronous_current_elsp_el0
+    table_entry irq_current_elsp_el0
+    table_entry fiq_current_elsp_el0
+    table_entry system_error_current_elsp_el0
 
     // Exceptions taken from Current EL, with SP_ELx, x>0
     table_entry synchronous_current_elsp_elx
@@ -148,6 +158,30 @@ fiq_current_elsp_elx:
     eret
 
 system_error_current_elsp_elx:
+    save_current_context
+    bl exception_common
+    restore_previous_context
+    eret
+
+synchronous_current_elsp_el0:
+    save_current_context
+    bl exception_common
+    restore_previous_context
+    eret
+
+irq_current_elsp_el0:
+    save_current_context
+    bl handle_interrupt
+    restore_previous_context
+    eret
+
+fiq_current_elsp_el0:
+    save_current_context
+    bl exception_common
+    restore_previous_context
+    eret
+
+system_error_current_elsp_el0:
     save_current_context
     bl exception_common
     restore_previous_context

@@ -25,10 +25,7 @@ namespace regex {
 
 class RegexStringView {
 public:
-    RegexStringView(char const* chars)
-        : m_view(StringView { chars })
-    {
-    }
+    RegexStringView() = default;
 
     RegexStringView(String const& string)
         : m_view(string.view())
@@ -273,9 +270,11 @@ public:
         return m_view.visit(
             [&](StringView view) -> u32 {
                 auto ch = view[index];
-                if (ch < 0)
-                    return 256u + ch;
-                return ch;
+                if constexpr (IsSigned<char>) {
+                    if (ch < 0)
+                        return 256u + ch;
+                    return ch;
+                }
             },
             [&](Utf32View const& view) -> u32 { return view[index]; },
             [&](Utf16View const& view) -> u32 { return view.code_point_at(index); },
@@ -311,11 +310,6 @@ public:
             [&](StringView view) { return view == cstring; });
     }
 
-    bool operator!=(char const* cstring) const
-    {
-        return !(*this == cstring);
-    }
-
     bool operator==(String const& string) const
     {
         return m_view.visit(
@@ -334,11 +328,6 @@ public:
             [&](StringView view) { return view == string; });
     }
 
-    bool operator!=(StringView other) const
-    {
-        return !(*this == other);
-    }
-
     bool operator==(Utf32View const& other) const
     {
         return m_view.visit(
@@ -350,11 +339,6 @@ public:
             [&](StringView view) { return view == RegexStringView { other }.to_string(); });
     }
 
-    bool operator!=(Utf32View const& other) const
-    {
-        return !(*this == other);
-    }
-
     bool operator==(Utf16View const& other) const
     {
         return m_view.visit(
@@ -364,11 +348,6 @@ public:
             [&](StringView view) { return view == RegexStringView { other }.to_string(); });
     }
 
-    bool operator!=(Utf16View const& other) const
-    {
-        return !(*this == other);
-    }
-
     bool operator==(Utf8View const& other) const
     {
         return m_view.visit(
@@ -376,11 +355,6 @@ public:
             [&](Utf16View) { return to_string() == other.as_string(); },
             [&](Utf8View const& view) { return view.as_string() == other.as_string(); },
             [&](StringView view) { return other.as_string() == view; });
-    }
-
-    bool operator!=(Utf8View const& other) const
-    {
-        return !(*this == other);
     }
 
     bool equals(RegexStringView other) const
@@ -448,7 +422,7 @@ public:
     }
 
 private:
-    Variant<StringView, Utf8View, Utf16View, Utf32View> m_view;
+    Variant<StringView, Utf8View, Utf16View, Utf32View> m_view { StringView {} };
     bool m_unicode { false };
 };
 
@@ -498,7 +472,7 @@ public:
         left_column = 0;
     }
 
-    RegexStringView view { nullptr };
+    RegexStringView view {};
     Optional<FlyString> capture_group_name {};
     size_t line { 0 };
     size_t column { 0 };
@@ -510,7 +484,7 @@ public:
 };
 
 struct MatchInput {
-    RegexStringView view { nullptr };
+    RegexStringView view {};
     AllOptions regex_options {};
     size_t start_offset { 0 }; // For Stateful matches, saved and restored from Regex::start_offset.
 

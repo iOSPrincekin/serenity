@@ -20,6 +20,9 @@
 #include <LibCore/ArgsParser.h>
 #include <LibCore/Stream.h>
 
+using StringIndexType = u16;
+constexpr auto s_string_index_type = "u16"sv;
+
 // Some code points are excluded from UnicodeData.txt, and instead are part of a "range" of code
 // points, as indicated by the "name" field. For example:
 //     3400;<CJK Ideograph Extension A, First>;Lo;0;L;;;;;N;;;;;
@@ -39,6 +42,14 @@ struct SpecialCasing {
     Vector<u32> titlecase_mapping;
     String locale;
     String condition;
+};
+
+// Field descriptions: https://www.unicode.org/reports/tr44/#Character_Decomposition_Mappings
+struct CodePointDecomposition {
+    // `tag` is a string since it's used for codegen as an enum value.
+    String tag { "Canonical"sv };
+    size_t decomposition_index { 0 };
+    size_t decomposition_size { 0 };
 };
 
 // PropList source: https://www.unicode.org/Public/13.0.0/ucd/PropList.txt
@@ -63,7 +74,7 @@ using NormalizationProps = HashMap<String, Vector<Normalization>>;
 
 struct CodePointName {
     CodePointRange code_point_range;
-    StringView name;
+    StringIndexType name { 0 };
 };
 
 // UnicodeData source: https://www.unicode.org/Public/13.0.0/ucd/UnicodeData.txt
@@ -72,10 +83,10 @@ struct CodePointName {
 struct CodePointData {
     u32 code_point { 0 };
     String name;
-    Optional<StringView> abbreviation;
+    Optional<StringIndexType> abbreviation;
     u8 canonical_combining_class { 0 };
     String bidi_class;
-    String decomposition_type;
+    Optional<CodePointDecomposition> decomposition_mapping;
     Optional<i8> numeric_value_decimal;
     Optional<i8> numeric_value_digit;
     Optional<i8> numeric_value_numeric;
@@ -90,11 +101,17 @@ struct CodePointData {
 
 struct BlockName {
     CodePointRange code_point_range;
-    String name;
+    StringIndexType name { 0 };
 };
 
 struct UnicodeData {
+    UniqueStringStorage<StringIndexType> unique_strings;
+
     u32 code_points_with_non_zero_combining_class { 0 };
+
+    u32 code_points_with_decomposition_mapping { 0 };
+    Vector<u32> decomposition_mappings;
+    Vector<String> compatibility_tags;
 
     u32 simple_uppercase_mapping_size { 0 };
     u32 simple_lowercase_mapping_size { 0 };
@@ -104,11 +121,12 @@ struct UnicodeData {
     u32 largest_casing_transform_size { 0 };
     u32 largest_special_casing_size { 0 };
     Vector<String> conditions;
+    Vector<String> locales;
 
     Vector<CodePointData> code_point_data;
 
-    HashMap<u32, String> code_point_abbreviations;
-    HashMap<u32, String> code_point_display_name_aliases;
+    HashMap<u32, StringIndexType> code_point_abbreviations;
+    HashMap<u32, StringIndexType> code_point_display_name_aliases;
     Vector<CodePointName> code_point_display_names;
 
     PropList general_categories;
@@ -146,8 +164,8 @@ struct UnicodeData {
 
 static String sanitize_entry(String const& entry)
 {
-    auto sanitized = entry.replace("-", "_", true);
-    sanitized = sanitized.replace(" ", "_", true);
+    auto sanitized = entry.replace("-"sv, "_"sv, ReplaceMode::All);
+    sanitized = sanitized.replace(" "sv, "_"sv, ReplaceMode::All);
 
     StringBuilder builder;
     bool next_is_upper = true;
@@ -205,7 +223,7 @@ static ErrorOr<void> parse_special_casing(Core::Stream::BufferedFile& file, Unic
         if (auto index = line.find('#'); index.has_value())
             line = line.substring_view(0, *index);
 
-        auto segments = line.split_view(';', true);
+        auto segments = line.split_view(';', SplitBehavior::KeepEmpty);
         VERIFY(segments.size() == 5 || segments.size() == 6);
 
         SpecialCasing casing {};
@@ -215,7 +233,7 @@ static ErrorOr<void> parse_special_casing(Core::Stream::BufferedFile& file, Unic
         casing.uppercase_mapping = parse_code_point_list(segments[3]);
 
         if (auto condition = segments[4].trim_whitespace(); !condition.is_empty()) {
-            auto conditions = condition.split_view(' ', true);
+            auto conditions = condition.split_view(' ', SplitBehavior::KeepEmpty);
             VERIFY(conditions.size() == 1 || conditions.size() == 2);
 
             if (conditions.size() == 2) {
@@ -227,9 +245,14 @@ static ErrorOr<void> parse_special_casing(Core::Stream::BufferedFile& file, Unic
                 casing.condition = conditions[0];
             }
 
-            if (!casing.locale.is_empty())
+            if (!casing.locale.is_empty()) {
                 casing.locale = String::formatted("{:c}{}", to_ascii_uppercase(casing.locale[0]), casing.locale.substring_view(1));
-            casing.condition = casing.condition.replace("_", "", true);
+
+                if (!unicode_data.locales.contains_slow(casing.locale))
+                    unicode_data.locales.append(casing.locale);
+            }
+
+            casing.condition = casing.condition.replace("_"sv, ""sv, ReplaceMode::All);
 
             if (!casing.condition.is_empty() && !unicode_data.conditions.contains_slow(casing.condition))
                 unicode_data.conditions.append(casing.condition);
@@ -271,7 +294,7 @@ static ErrorOr<void> parse_prop_list(Core::Stream::BufferedFile& file, PropList&
         if (auto index = line.find('#'); index.has_value())
             line = line.substring_view(0, *index);
 
-        auto segments = line.split_view(';', true);
+        auto segments = line.split_view(';', SplitBehavior::KeepEmpty);
         VERIFY(segments.size() == 2);
 
         auto code_point_range = parse_code_point_range(segments[0].trim_whitespace());
@@ -321,7 +344,7 @@ static ErrorOr<void> parse_alias_list(Core::Stream::BufferedFile& file, PropList
         if (current_property != "Binary Properties"sv)
             continue;
 
-        auto segments = line.split_view(';', true);
+        auto segments = line.split_view(';', SplitBehavior::KeepEmpty);
         VERIFY((segments.size() == 2) || (segments.size() == 3));
 
         auto alias = segments[0].trim_whitespace();
@@ -347,7 +370,7 @@ static ErrorOr<void> parse_name_aliases(Core::Stream::BufferedFile& file, Unicod
         if (line.is_empty() || line.starts_with('#'))
             continue;
 
-        auto segments = line.split_view(';', true);
+        auto segments = line.split_view(';', SplitBehavior::KeepEmpty);
         VERIFY(segments.size() == 3);
 
         auto code_point = AK::StringUtils::convert_to_uint_from_hex<u32>(segments[0].trim_whitespace());
@@ -355,10 +378,13 @@ static ErrorOr<void> parse_name_aliases(Core::Stream::BufferedFile& file, Unicod
         auto reason = segments[2].trim_whitespace();
 
         if (reason == "abbreviation"sv) {
-            unicode_data.code_point_abbreviations.set(*code_point, alias);
+            auto index = unicode_data.unique_strings.ensure(alias);
+            unicode_data.code_point_abbreviations.set(*code_point, index);
         } else if (reason.is_one_of("correction"sv, "control"sv)) {
-            if (!unicode_data.code_point_display_name_aliases.contains(*code_point))
-                unicode_data.code_point_display_name_aliases.set(*code_point, alias);
+            if (!unicode_data.code_point_display_name_aliases.contains(*code_point)) {
+                auto index = unicode_data.unique_strings.ensure(alias);
+                unicode_data.code_point_display_name_aliases.set(*code_point, index);
+            }
         }
     }
 
@@ -391,7 +417,7 @@ static ErrorOr<void> parse_value_alias_list(Core::Stream::BufferedFile& file, St
         if (auto index = line.find('#'); index.has_value())
             line = line.substring_view(0, *index);
 
-        auto segments = line.split_view(';', true);
+        auto segments = line.split_view(';', SplitBehavior::KeepEmpty);
         auto category = segments[0].trim_whitespace();
 
         if (category != desired_category)
@@ -424,7 +450,7 @@ static ErrorOr<void> parse_normalization_props(Core::Stream::BufferedFile& file,
         if (auto index = line.find('#'); index.has_value())
             line = line.substring_view(0, *index);
 
-        auto segments = line.split_view(';', true);
+        auto segments = line.split_view(';', SplitBehavior::KeepEmpty);
         VERIFY((segments.size() == 2) || (segments.size() == 3));
 
         auto code_point_range = parse_code_point_range(segments[0].trim_whitespace());
@@ -456,26 +482,32 @@ static ErrorOr<void> parse_normalization_props(Core::Stream::BufferedFile& file,
 
 static void add_canonical_code_point_name(CodePointRange range, StringView name, UnicodeData& unicode_data)
 {
-    // https://www.unicode.org/versions/Unicode14.0.0/ch04.pdf#G142981
+    // https://www.unicode.org/versions/Unicode15.0.0/ch04.pdf#G142981
     // FIXME: Implement the NR1 rules for Hangul syllables.
 
+    struct CodePointNameFormat {
+        CodePointRange code_point_range;
+        StringView name;
+    };
+
     // These code point ranges are the NR2 set of name replacements defined by Table 4-8.
-    constexpr Array<CodePointName, 15> s_ideographic_replacements { {
+    constexpr Array<CodePointNameFormat, 16> s_ideographic_replacements { {
         { { 0x3400, 0x4DBF }, "CJK UNIFIED IDEOGRAPH-{:X}"sv },
-        { { 0x4E00, 0x9FFC }, "CJK UNIFIED IDEOGRAPH-{:X}"sv },
+        { { 0x4E00, 0x9FFF }, "CJK UNIFIED IDEOGRAPH-{:X}"sv },
         { { 0xF900, 0xFA6D }, "CJK COMPATIBILITY IDEOGRAPH-{:X}"sv },
         { { 0xFA70, 0xFAD9 }, "CJK COMPATIBILITY IDEOGRAPH-{:X}"sv },
         { { 0x17000, 0x187F7 }, "TANGUT IDEOGRAPH-{:X}"sv },
         { { 0x18B00, 0x18CD5 }, "KHITAN SMALL SCRIPT CHARACTER-{:X}"sv },
         { { 0x18D00, 0x18D08 }, "TANGUT IDEOGRAPH-{:X}"sv },
         { { 0x1B170, 0x1B2FB }, "NUSHU CHARACTER-{:X}"sv },
-        { { 0x20000, 0x2A6DD }, "CJK UNIFIED IDEOGRAPH-{:X}"sv },
-        { { 0x2A700, 0x2B734 }, "CJK UNIFIED IDEOGRAPH-{:X}"sv },
+        { { 0x20000, 0x2A6DF }, "CJK UNIFIED IDEOGRAPH-{:X}"sv },
+        { { 0x2A700, 0x2B739 }, "CJK UNIFIED IDEOGRAPH-{:X}"sv },
         { { 0x2B740, 0x2B81D }, "CJK UNIFIED IDEOGRAPH-{:X}"sv },
         { { 0x2B820, 0x2CEA1 }, "CJK UNIFIED IDEOGRAPH-{:X}"sv },
         { { 0x2CEB0, 0x2EBE0 }, "CJK UNIFIED IDEOGRAPH-{:X}"sv },
         { { 0x2F800, 0x2FA1D }, "CJK COMPATIBILITY IDEOGRAPH-{:X}"sv },
         { { 0x30000, 0x3134A }, "CJK UNIFIED IDEOGRAPH-{:X}"sv },
+        { { 0x31350, 0x323AF }, "CJK UNIFIED IDEOGRAPH-{:X}"sv },
     } };
 
     auto it = find_if(s_ideographic_replacements.begin(), s_ideographic_replacements.end(),
@@ -484,7 +516,8 @@ static void add_canonical_code_point_name(CodePointRange range, StringView name,
         });
 
     if (it != s_ideographic_replacements.end()) {
-        unicode_data.code_point_display_names.append(*it);
+        auto index = unicode_data.unique_strings.ensure(it->name);
+        unicode_data.code_point_display_names.append({ it->code_point_range, index });
         return;
     }
 
@@ -505,7 +538,37 @@ static void add_canonical_code_point_name(CodePointRange range, StringView name,
         return;
     }
 
-    unicode_data.code_point_display_names.append({ range, name });
+    auto index = unicode_data.unique_strings.ensure(name);
+    unicode_data.code_point_display_names.append({ range, index });
+}
+
+static Optional<CodePointDecomposition> parse_decomposition_mapping(StringView string, UnicodeData& unicode_data)
+{
+    if (string.is_empty())
+        return {};
+
+    CodePointDecomposition mapping;
+
+    auto parts = string.split_view(' ');
+
+    VERIFY(parts.size() > 0);
+
+    if (parts.first().starts_with('<')) {
+        auto const tag = parts.take_first().trim("<>"sv);
+
+        mapping.tag = String::formatted("{:c}{}", to_ascii_uppercase(tag[0]), tag.substring_view(1));
+
+        if (!unicode_data.compatibility_tags.contains_slow(mapping.tag))
+            unicode_data.compatibility_tags.append(mapping.tag);
+    }
+
+    mapping.decomposition_index = unicode_data.decomposition_mappings.size();
+    mapping.decomposition_size = parts.size();
+    for (auto part : parts) {
+        unicode_data.decomposition_mappings.append(AK::StringUtils::convert_to_uint_from_hex<u32>(part).value());
+    }
+
+    return mapping;
 }
 
 static ErrorOr<void> parse_block_display_names(Core::Stream::BufferedFile& file, UnicodeData& unicode_data)
@@ -516,12 +579,14 @@ static ErrorOr<void> parse_block_display_names(Core::Stream::BufferedFile& file,
         if (line.is_empty() || line.starts_with('#'))
             continue;
 
-        auto segments = line.split_view(';', true);
+        auto segments = line.split_view(';', SplitBehavior::KeepEmpty);
         VERIFY(segments.size() == 2);
 
         auto code_point_range = parse_code_point_range(segments[0].trim_whitespace());
         auto display_name = segments[1].trim_whitespace();
-        unicode_data.block_display_names.append({ code_point_range, display_name });
+
+        auto index = unicode_data.unique_strings.ensure(display_name);
+        unicode_data.block_display_names.append({ code_point_range, index });
     }
 
     TRY(file.seek(0, Core::Stream::SeekMode::SetPosition));
@@ -545,7 +610,7 @@ static ErrorOr<void> parse_unicode_data(Core::Stream::BufferedFile& file, Unicod
         if (line.is_empty())
             continue;
 
-        auto segments = line.split_view(';', true);
+        auto segments = line.split_view(';', SplitBehavior::KeepEmpty);
         VERIFY(segments.size() == 15);
 
         CodePointData data {};
@@ -553,7 +618,7 @@ static ErrorOr<void> parse_unicode_data(Core::Stream::BufferedFile& file, Unicod
         data.name = segments[1];
         data.canonical_combining_class = AK::StringUtils::convert_to_uint<u8>(segments[3]).value();
         data.bidi_class = segments[4];
-        data.decomposition_type = segments[5];
+        data.decomposition_mapping = parse_decomposition_mapping(segments[5], unicode_data);
         data.numeric_value_decimal = AK::StringUtils::convert_to_int<i8>(segments[6]);
         data.numeric_value_digit = AK::StringUtils::convert_to_int<i8>(segments[7]);
         data.numeric_value_numeric = AK::StringUtils::convert_to_int<i8>(segments[8]);
@@ -570,7 +635,7 @@ static ErrorOr<void> parse_unicode_data(Core::Stream::BufferedFile& file, Unicod
         if (!assigned_code_point_range_start.has_value())
             assigned_code_point_range_start = data.code_point;
 
-        if (data.name.starts_with("<"sv) && data.name.ends_with(", First>")) {
+        if (data.name.starts_with("<"sv) && data.name.ends_with(", First>"sv)) {
             VERIFY(!code_point_range_start.has_value() && assigned_code_point_range_start.has_value());
             code_point_range_start = data.code_point;
 
@@ -578,7 +643,7 @@ static ErrorOr<void> parse_unicode_data(Core::Stream::BufferedFile& file, Unicod
 
             assigned_code_points.append({ *assigned_code_point_range_start, previous_code_point });
             assigned_code_point_range_start.clear();
-        } else if (data.name.starts_with("<"sv) && data.name.ends_with(", Last>")) {
+        } else if (data.name.starts_with("<"sv) && data.name.ends_with(", Last>"sv)) {
             VERIFY(code_point_range_start.has_value());
 
             CodePointRange code_point_range { *code_point_range_start, data.code_point };
@@ -611,6 +676,7 @@ static ErrorOr<void> parse_unicode_data(Core::Stream::BufferedFile& file, Unicod
         unicode_data.code_points_with_non_zero_combining_class += data.canonical_combining_class != 0;
         unicode_data.simple_uppercase_mapping_size += data.simple_uppercase_mapping.has_value();
         unicode_data.simple_lowercase_mapping_size += data.simple_lowercase_mapping.has_value();
+        unicode_data.code_points_with_decomposition_mapping += data.decomposition_mapping.has_value();
 
         unicode_data.code_points_with_special_casing += has_special_casing;
         unicode_data.largest_special_casing_size = max(unicode_data.largest_special_casing_size, data.special_casing_indices.size());
@@ -670,11 +736,11 @@ enum class @name@ : @underlying@ {)~~~");
 
 #include <AK/Types.h>
 #include <LibUnicode/Forward.h>
-#include <LibUnicode/UnicodeLocale.h>
 
 namespace Unicode {
 )~~~");
 
+    generate_enum("Locale"sv, "None"sv, unicode_data.locales);
     generate_enum("Condition"sv, "None"sv, move(unicode_data.conditions));
     generate_enum("GeneralCategory"sv, {}, unicode_data.general_categories.keys(), unicode_data.general_category_aliases);
     generate_enum("Property"sv, {}, unicode_data.prop_list.keys(), unicode_data.prop_aliases);
@@ -683,6 +749,7 @@ namespace Unicode {
     generate_enum("GraphemeBreakProperty"sv, {}, unicode_data.grapheme_break_props.keys());
     generate_enum("WordBreakProperty"sv, {}, unicode_data.word_break_props.keys());
     generate_enum("SentenceBreakProperty"sv, {}, unicode_data.sentence_break_props.keys());
+    generate_enum("CompatibilityFormattingTag"sv, "Canonical"sv, unicode_data.compatibility_tags);
 
     generator.append(R"~~~(
 struct SpecialCasing {
@@ -701,6 +768,21 @@ struct SpecialCasing {
     Condition condition { Condition::None };
 };
 
+struct CodePointDecompositionRaw {
+    u32 code_point { 0 };
+    CompatibilityFormattingTag tag { CompatibilityFormattingTag::Canonical };
+    size_t decomposition_index { 0 };
+    size_t decomposition_count { 0 };
+};
+
+struct CodePointDecomposition {
+    u32 code_point { 0 };
+    CompatibilityFormattingTag tag { CompatibilityFormattingTag::Canonical };
+    Span<u32 const> decomposition;
+};
+
+Optional<Locale> locale_from_string(StringView locale);
+
 }
 )~~~");
 
@@ -713,6 +795,7 @@ static ErrorOr<void> generate_unicode_data_implementation(Core::Stream::Buffered
     StringBuilder builder;
     SourceGenerator generator { builder };
 
+    generator.set("string_index_type"sv, s_string_index_type);
     generator.set("largest_special_casing_size", String::number(unicode_data.largest_special_casing_size));
     generator.set("special_casing_size", String::number(unicode_data.special_casing.size()));
 
@@ -726,9 +809,12 @@ static ErrorOr<void> generate_unicode_data_implementation(Core::Stream::Buffered
 #include <AK/StringView.h>
 #include <LibUnicode/CharacterTypes.h>
 #include <LibUnicode/UnicodeData.h>
+#include <LibUnicode/Normalize.h>
 
 namespace Unicode {
 )~~~");
+
+    unicode_data.unique_strings.generate(generator);
 
     auto append_list_and_size = [&](auto const& list, StringView format) {
         if (list.is_empty()) {
@@ -739,7 +825,7 @@ namespace Unicode {
         bool first = true;
         generator.append(", {");
         for (auto const& item : list) {
-            generator.append(first ? " " : ", ");
+            generator.append(first ? " "sv : ", "sv);
             generator.append(String::formatted(format, item));
             first = false;
         }
@@ -784,7 +870,7 @@ struct SpecialCaseMapping {
 
 struct CodePointAbbreviation {
     u32 code_point { 0 };
-    StringView abbreviation {};
+    @string_index_type@ abbreviation { 0 };
 };
 
 template<typename MappingType>
@@ -794,7 +880,43 @@ struct CodePointComparator {
         return code_point - mapping.code_point;
     }
 };
+
+struct CodePointRangeComparator {
+    constexpr int operator()(u32 code_point, CodePointRange const& range)
+    {
+        return (code_point > range.last) - (code_point < range.first);
+    }
+};
+
+struct BlockNameData {
+    CodePointRange code_point_range {};
+    @string_index_type@ display_name { 0 };
+};
+
+struct BlockNameComparator : public CodePointRangeComparator {
+    constexpr int operator()(u32 code_point, BlockNameData const& name)
+    {
+        return CodePointRangeComparator::operator()(code_point, name.code_point_range);
+    }
+};
+
+struct CodePointName {
+    CodePointRange code_point_range {};
+    @string_index_type@ display_name { 0 };
+};
+
+struct CodePointNameComparator : public CodePointRangeComparator {
+    constexpr int operator()(u32 code_point, CodePointName const& name)
+    {
+        return CodePointRangeComparator::operator()(code_point, name.code_point_range);
+    }
+};
 )~~~");
+
+    generator.set("decomposition_mappings_size", String::number(unicode_data.decomposition_mappings.size()));
+    generator.append("\nstatic constexpr Array<u32, @decomposition_mappings_size@> s_decomposition_mappings_data { ");
+    generator.append(String::join(", "sv, unicode_data.decomposition_mappings, "{:#x}"sv));
+    generator.append(" };\n");
 
     auto append_code_point_mappings = [&](StringView name, StringView mapping_type, u32 size, auto mapping_getter) {
         generator.set("name", name);
@@ -825,12 +947,14 @@ static constexpr Array<@mapping_type@, @size@> s_@name@_mappings { {
             generator.set("code_point", String::formatted("{:#x}", data.code_point));
             generator.append("{ @code_point@");
 
-            if constexpr (IsSame<decltype(mapping), Optional<u32>>) {
+            if constexpr (IsSame<decltype(mapping), Optional<u32>> || IsSame<decltype(mapping), Optional<StringIndexType>>) {
                 generator.set("mapping", String::formatted("{:#x}", *mapping));
                 generator.append(", @mapping@ },");
-            } else if constexpr (IsSame<decltype(mapping), Optional<StringView>>) {
-                generator.set("mapping", String::formatted("{}", *mapping));
-                generator.append(", \"@mapping@\"sv },");
+            } else if constexpr (IsSame<decltype(mapping), Optional<CodePointDecomposition>>) {
+                generator.set("tag", mapping->tag);
+                generator.set("start", String::number(mapping->decomposition_index));
+                generator.set("size", String::number(mapping->decomposition_size));
+                generator.append(", CompatibilityFormattingTag::@tag@, @start@, @size@ },");
             } else {
                 append_list_and_size(data.special_casing_indices, "&s_special_casing[{}]"sv);
                 generator.append(" },");
@@ -857,15 +981,10 @@ static constexpr Array<@mapping_type@, @size@> s_@name@_mappings { {
     append_code_point_mappings("special_case"sv, "SpecialCaseMapping"sv, unicode_data.code_points_with_special_casing, [](auto const& data) { return data.special_casing_indices; });
     append_code_point_mappings("abbreviation"sv, "CodePointAbbreviation"sv, unicode_data.code_point_abbreviations.size(), [](auto const& data) { return data.abbreviation; });
 
-    generator.append(R"~~~(
-struct CodePointRangeComparator {
-    constexpr int operator()(u32 code_point, CodePointRange const& range)
-    {
-        return (code_point > range.last) - (code_point < range.first);
-    }
-};
-
-)~~~");
+    append_code_point_mappings("decomposition"sv, "CodePointDecompositionRaw"sv, unicode_data.code_points_with_decomposition_mapping,
+        [](auto const& data) {
+            return data.decomposition_mapping;
+        });
 
     auto append_code_point_range_list = [&](String name, Vector<CodePointRange> const& ranges) {
         generator.set("name", name);
@@ -930,80 +1049,73 @@ static constexpr Array<Span<CodePointRange const>, @size@> @name@ { {)~~~");
     append_prop_list("s_word_break_properties"sv, "s_word_break_property_{}"sv, unicode_data.word_break_props);
     append_prop_list("s_sentence_break_properties"sv, "s_sentence_break_property_{}"sv, unicode_data.sentence_break_props);
 
-    generator.append(R"~~~(
-struct BlockNameComparator : public CodePointRangeComparator {
-    constexpr int operator()(u32 code_point, BlockName const& name)
-    {
-        return CodePointRangeComparator::operator()(code_point, name.code_point_range);
-    }
-};
-)~~~");
+    auto append_code_point_display_names = [&](StringView type, StringView name, auto const& display_names) {
+        constexpr size_t max_values_per_row = 30;
+        size_t values_in_current_row = 0;
 
-    generator.set("block_display_names_size", String::number(unicode_data.block_display_names.size()));
-    generator.append(R"~~~(
-static constexpr Array<BlockName, @block_display_names_size@> s_block_display_names { {
+        generator.set("type", type);
+        generator.set("name", name);
+        generator.set("size", String::number(display_names.size()));
+
+        generator.append(R"~~~(
+static constexpr Array<@type@, @size@> @name@ { {
+    )~~~");
+        for (auto const& display_name : display_names) {
+            if (values_in_current_row++ > 0)
+                generator.append(", ");
+
+            generator.set("first", String::formatted("{:#x}", display_name.code_point_range.first));
+            generator.set("last", String::formatted("{:#x}", display_name.code_point_range.last));
+            generator.set("name", String::number(display_name.name));
+            generator.append("{ { @first@, @last@ }, @name@ }");
+
+            if (values_in_current_row == max_values_per_row) {
+                values_in_current_row = 0;
+                generator.append(",\n    ");
+            }
+        }
+        generator.append(R"~~~(
+} };
 )~~~");
-    for (auto const& block_name : unicode_data.block_display_names) {
-        generator.set("first", String::formatted("{:#x}", block_name.code_point_range.first));
-        generator.set("last", String::formatted("{:#x}", block_name.code_point_range.last));
-        generator.set("name", block_name.name);
-        generator.append(R"~~~(    { { @first@, @last@ }, "@name@"sv },
-)~~~");
-    }
-    generator.append(R"~~~(} };
-)~~~");
+    };
+
+    append_code_point_display_names("BlockNameData"sv, "s_block_display_names"sv, unicode_data.block_display_names);
+    append_code_point_display_names("CodePointName"sv, "s_code_point_display_names"sv, unicode_data.code_point_display_names);
 
     generator.append(R"~~~(
 Optional<StringView> code_point_block_display_name(u32 code_point)
 {
     if (auto const* entry = binary_search(s_block_display_names, code_point, nullptr, BlockNameComparator {}))
-        return entry->display_name;
+        return decode_string(entry->display_name);
 
     return {};
 }
 
 Span<BlockName const> block_display_names()
 {
-    return s_block_display_names;
+    static auto display_names = []() {
+        Array<BlockName, s_block_display_names.size()> display_names;
+
+        for (size_t i = 0; i < s_block_display_names.size(); ++i) {
+            auto const& display_name = s_block_display_names[i];
+            display_names[i] = { display_name.code_point_range, decode_string(display_name.display_name) };
+        }
+
+        return display_names;
+    }();
+
+    return display_names.span();
 }
-)~~~");
 
-    generator.append(R"~~~(
-struct CodePointName {
-    CodePointRange code_point_range {};
-    StringView display_name;
-};
-
-struct CodePointNameComparator : public CodePointRangeComparator {
-    constexpr int operator()(u32 code_point, CodePointName const& name)
-    {
-        return CodePointRangeComparator::operator()(code_point, name.code_point_range);
-    }
-};
-)~~~");
-
-    generator.set("code_point_display_names_size", String::number(unicode_data.code_point_display_names.size()));
-    generator.append(R"~~~(
-static constexpr Array<CodePointName, @code_point_display_names_size@> s_code_point_display_names { {
-)~~~");
-    for (auto const& code_point_name : unicode_data.code_point_display_names) {
-        generator.set("first", String::formatted("{:#x}", code_point_name.code_point_range.first));
-        generator.set("last", String::formatted("{:#x}", code_point_name.code_point_range.last));
-        generator.set("name", code_point_name.name);
-        generator.append(R"~~~(    { { @first@, @last@ }, "@name@"sv },
-)~~~");
-    }
-    generator.append(R"~~~(} };
-)~~~");
-
-    generator.append(R"~~~(
 Optional<String> code_point_display_name(u32 code_point)
 {
     if (auto const* entry = binary_search(s_code_point_display_names, code_point, nullptr, CodePointNameComparator {})) {
-        if (entry->display_name.ends_with("{:X}"sv))
-            return String::formatted(entry->display_name, code_point);
+        auto display_name = decode_string(entry->display_name);
 
-        return entry->display_name;
+        if (display_name.ends_with("{:X}"sv))
+            return String::formatted(display_name, code_point);
+
+        return display_name;
     }
 
     return {};
@@ -1042,8 +1154,26 @@ Optional<StringView> code_point_abbreviation(u32 code_point)
     auto const* mapping = binary_search(s_abbreviation_mappings, code_point, nullptr, CodePointComparator<CodePointAbbreviation> {});
     if (mapping == nullptr)
         return {};
+    if (mapping->abbreviation == 0)
+        return {};
 
-    return mapping->abbreviation;
+    return decode_string(mapping->abbreviation);
+}
+
+Optional<CodePointDecomposition const> code_point_decomposition(u32 code_point)
+{
+    auto const* mapping = binary_search(s_decomposition_mappings, code_point, nullptr, CodePointComparator<CodePointDecompositionRaw> {});
+    if (mapping == nullptr)
+        return {};
+    return CodePointDecomposition { mapping->code_point, mapping->tag, Span<u32 const> { s_decomposition_mappings_data.data() + mapping->decomposition_index, mapping->decomposition_count } };
+}
+
+Optional<CodePointDecomposition const> code_point_decomposition_by_index(size_t index)
+{
+    if (index >= s_decomposition_mappings.size())
+        return {};
+    auto const& mapping = s_decomposition_mappings[index];
+    return CodePointDecomposition { mapping.code_point, mapping.tag, Span<u32 const> { s_decomposition_mappings_data.data() + mapping.decomposition_index, mapping.decomposition_count } };
 }
 )~~~");
 
@@ -1063,17 +1193,28 @@ bool code_point_has_@enum_snake@(u32 code_point, @enum_title@ @enum_snake@)
 )~~~");
     };
 
-    auto append_from_string = [&](StringView enum_title, StringView enum_snake, PropList const& prop_list, Vector<Alias> const& aliases) {
+    auto append_from_string = [&](StringView enum_title, StringView enum_snake, auto const& prop_list, Vector<Alias> const& aliases) {
         HashValueMap<StringView> hashes;
         hashes.ensure_capacity(prop_list.size() + aliases.size());
 
-        for (auto const& prop : prop_list)
-            hashes.set(prop.key.hash(), prop.key);
+        ValueFromStringOptions options {};
+
+        for (auto const& prop : prop_list) {
+            if constexpr (IsSame<RemoveCVReference<decltype(prop)>, String>) {
+                hashes.set(CaseInsensitiveStringViewTraits::hash(prop), prop);
+                options.sensitivity = CaseSensitivity::CaseInsensitive;
+            } else {
+                hashes.set(prop.key.hash(), prop.key);
+            }
+        }
+
         for (auto const& alias : aliases)
             hashes.set(alias.alias.hash(), alias.alias);
 
-        generate_value_from_string(generator, "{}_from_string"sv, enum_title, enum_snake, move(hashes));
+        generate_value_from_string(generator, "{}_from_string"sv, enum_title, enum_snake, move(hashes), options);
     };
+
+    append_from_string("Locale"sv, "locale"sv, unicode_data.locales, {});
 
     append_prop_search("GeneralCategory"sv, "general_category"sv, "s_general_categories"sv);
     append_from_string("GeneralCategory"sv, "general_category"sv, unicode_data.general_categories, unicode_data.general_category_aliases);

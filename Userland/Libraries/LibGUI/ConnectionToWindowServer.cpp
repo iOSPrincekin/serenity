@@ -19,6 +19,7 @@
 #include <LibGUI/Event.h>
 #include <LibGUI/Menu.h>
 #include <LibGUI/MouseTracker.h>
+#include <LibGUI/Shortcut.h>
 #include <LibGUI/Window.h>
 #include <LibGfx/Bitmap.h>
 #include <LibGfx/Font/FontDatabase.h>
@@ -49,12 +50,14 @@ ConnectionToWindowServer::ConnectionToWindowServer(NonnullOwnPtr<Core::Stream::L
     auto message = wait_for_specific_message<Messages::WindowClient::FastGreet>();
     set_system_theme_from_anonymous_buffer(message->theme_buffer());
     Desktop::the().did_receive_screen_rects({}, message->screen_rects(), message->main_screen_index(), message->workspace_rows(), message->workspace_columns());
+    Desktop::the().set_system_effects(message->effects());
     Gfx::FontDatabase::set_default_font_query(message->default_font_query());
     Gfx::FontDatabase::set_fixed_width_font_query(message->fixed_width_font_query());
+    Gfx::FontDatabase::set_window_title_font_query(message->window_title_font_query());
     m_client_id = message->client_id();
 }
 
-void ConnectionToWindowServer::fast_greet(Vector<Gfx::IntRect> const&, u32, u32, u32, Core::AnonymousBuffer const&, String const&, String const&, i32)
+void ConnectionToWindowServer::fast_greet(Vector<Gfx::IntRect> const&, u32, u32, u32, Core::AnonymousBuffer const&, String const&, String const&, String const&, Vector<bool> const&, i32)
 {
     // NOTE: This message is handled in the constructor.
 }
@@ -66,16 +69,24 @@ void ConnectionToWindowServer::update_system_theme(Core::AnonymousBuffer const& 
     Window::for_each_window({}, [](auto& window) {
         Core::EventLoop::current().post_event(window, make<ThemeChangeEvent>());
     });
+
+    Application::the()->dispatch_event(*make<ThemeChangeEvent>());
 }
 
-void ConnectionToWindowServer::update_system_fonts(String const& default_font_query, String const& fixed_width_font_query)
+void ConnectionToWindowServer::update_system_fonts(String const& default_font_query, String const& fixed_width_font_query, String const& window_title_font_query)
 {
     Gfx::FontDatabase::set_default_font_query(default_font_query);
     Gfx::FontDatabase::set_fixed_width_font_query(fixed_width_font_query);
+    Gfx::FontDatabase::set_window_title_font_query(window_title_font_query);
     Window::update_all_windows({});
     Window::for_each_window({}, [](auto& window) {
         Core::EventLoop::current().post_event(window, make<FontsChangeEvent>());
     });
+}
+
+void ConnectionToWindowServer::update_system_effects(Vector<bool> const& effects)
+{
+    Desktop::the().set_system_effects(effects);
 }
 
 void ConnectionToWindowServer::paint(i32 window_id, Gfx::IntSize const& window_size, Vector<Gfx::IntRect> const& rects)
@@ -89,6 +100,12 @@ void ConnectionToWindowServer::window_resized(i32 window_id, Gfx::IntRect const&
     if (auto* window = Window::from_window_id(window_id)) {
         Core::EventLoop::current().post_event(*window, make<ResizeEvent>(new_rect.size()));
     }
+}
+
+void ConnectionToWindowServer::window_moved(i32 window_id, Gfx::IntRect const& new_rect)
+{
+    if (auto* window = Window::from_window_id(window_id))
+        Core::EventLoop::current().post_event(*window, make<MoveEvent>(new_rect.location()));
 }
 
 void ConnectionToWindowServer::window_activated(i32 window_id)
@@ -133,29 +150,29 @@ void ConnectionToWindowServer::window_left(i32 window_id)
         Core::EventLoop::current().post_event(*window, make<Event>(Event::WindowLeft));
 }
 
-static Action* action_for_key_event(Window& window, KeyEvent const& event)
+static Action* action_for_shortcut(Window& window, Shortcut const& shortcut)
 {
-    if (event.key() == KeyCode::Key_Invalid)
+    if (!shortcut.is_valid())
         return nullptr;
 
-    dbgln_if(KEYBOARD_SHORTCUTS_DEBUG, "Looking up action for {}", event.to_string());
+    dbgln_if(KEYBOARD_SHORTCUTS_DEBUG, "Looking up action for {}", shortcut.to_string());
 
     for (auto* widget = window.focused_widget(); widget; widget = widget->parent_widget()) {
-        if (auto* action = widget->action_for_key_event(event)) {
-            dbgln_if(KEYBOARD_SHORTCUTS_DEBUG, "  > Focused widget {} gave action: {}", *widget, action);
+        if (auto* action = widget->action_for_shortcut(shortcut)) {
+            dbgln_if(KEYBOARD_SHORTCUTS_DEBUG, "  > Focused widget {} gave action: {} {} (enabled: {}, shortcut: {}, alt-shortcut: {})", *widget, action, action->text(), action->is_enabled(), action->shortcut().to_string(), action->alternate_shortcut().to_string());
             return action;
         }
     }
 
-    if (auto* action = window.action_for_key_event(event)) {
-        dbgln_if(KEYBOARD_SHORTCUTS_DEBUG, "  > Asked window {}, got action: {}", window, action);
+    if (auto* action = window.action_for_shortcut(shortcut)) {
+        dbgln_if(KEYBOARD_SHORTCUTS_DEBUG, "  > Asked window {}, got action: {} {} (enabled: {}, shortcut: {}, alt-shortcut: {})", window, action, action->text(), action->is_enabled(), action->shortcut().to_string(), action->alternate_shortcut().to_string());
         return action;
     }
 
-    // NOTE: Application-global shortcuts are ignored while a modal window is up.
-    if (!window.is_modal()) {
-        if (auto* action = Application::the()->action_for_key_event(event)) {
-            dbgln_if(KEYBOARD_SHORTCUTS_DEBUG, "  > Asked application, got action: {}", action);
+    // NOTE: Application-global shortcuts are ignored while a blocking modal window is up.
+    if (!window.is_blocking() && !window.is_capturing_input()) {
+        if (auto* action = Application::the()->action_for_shortcut(shortcut)) {
+            dbgln_if(KEYBOARD_SHORTCUTS_DEBUG, "  > Asked application, got action: {} {} (enabled: {}, shortcut: {}, alt-shortcut: {})", action, action->text(), action->is_enabled(), action->shortcut().to_string(), action->alternate_shortcut().to_string());
             return action;
         }
     }
@@ -171,7 +188,7 @@ void ConnectionToWindowServer::key_down(i32 window_id, u32 code_point, u32 key, 
 
     auto key_event = make<KeyEvent>(Event::KeyDown, (KeyCode)key, modifiers, code_point, scancode);
 
-    if (auto* action = action_for_key_event(*window, *key_event)) {
+    if (auto* action = action_for_shortcut(*window, Shortcut(key_event->modifiers(), key_event->key()))) {
         if (action->is_enabled()) {
             action->flash_menubar_menu(*window);
             action->activate();
@@ -181,34 +198,13 @@ void ConnectionToWindowServer::key_down(i32 window_id, u32 code_point, u32 key, 
             return;
     }
 
-    bool focused_widget_accepts_emoji_input = window->focused_widget() && window->focused_widget()->accepts_emoji_input();
-    if (focused_widget_accepts_emoji_input && (modifiers == (Mod_Ctrl | Mod_Alt)) && key == Key_Space) {
+    bool focused_widget_accepts_emoji_input = window->focused_widget() && window->focused_widget()->on_emoji_input;
+    if (!window->blocks_emoji_input() && focused_widget_accepts_emoji_input && (modifiers == (Mod_Ctrl | Mod_Alt)) && key == Key_Space) {
         auto emoji_input_dialog = EmojiInputDialog::construct(window);
         if (emoji_input_dialog->exec() != EmojiInputDialog::ExecResult::OK)
             return;
-        key_event->m_key = Key_Invalid;
-        key_event->m_modifiers = 0;
 
-        Utf8View m_utf8_view(emoji_input_dialog->selected_emoji_text());
-        u32 emoji_code_point = *m_utf8_view.begin();
-
-        key_event->m_code_point = emoji_code_point;
-    }
-
-    bool accepts_command_palette = true;
-    if (window->focused_widget())
-        accepts_command_palette = window->focused_widget()->accepts_command_palette();
-
-    // FIXME: This shortcut should be configurable.
-    if (accepts_command_palette && !m_in_command_palette && modifiers == (Mod_Ctrl | Mod_Shift) && key == Key_A) {
-        auto command_palette = CommandPalette::construct(*window);
-        TemporaryChange change { m_in_command_palette, true };
-        if (command_palette->exec() != GUI::Dialog::ExecResult::OK)
-            return;
-        auto* action = command_palette->selected_action();
-        VERIFY(action);
-        action->flash_menubar_menu(*window);
-        action->activate();
+        window->focused_widget()->on_emoji_input(emoji_input_dialog->selected_emoji_text());
         return;
     }
 
@@ -248,8 +244,23 @@ static MouseButton to_mouse_button(u32 button)
 
 void ConnectionToWindowServer::mouse_down(i32 window_id, Gfx::IntPoint const& mouse_position, u32 button, u32 buttons, u32 modifiers, i32 wheel_delta_x, i32 wheel_delta_y, i32 wheel_raw_delta_x, i32 wheel_raw_delta_y)
 {
-    if (auto* window = Window::from_window_id(window_id))
-        Core::EventLoop::current().post_event(*window, make<MouseEvent>(Event::MouseDown, mouse_position, buttons, to_mouse_button(button), modifiers, wheel_delta_x, wheel_delta_y, wheel_raw_delta_x, wheel_raw_delta_y));
+    auto* window = Window::from_window_id(window_id);
+    if (!window)
+        return;
+
+    auto mouse_event = make<MouseEvent>(Event::MouseDown, mouse_position, buttons, to_mouse_button(button), modifiers, wheel_delta_x, wheel_delta_y, wheel_raw_delta_x, wheel_raw_delta_y);
+
+    if (auto* action = action_for_shortcut(*window, Shortcut(mouse_event->modifiers(), mouse_event->button()))) {
+        if (action->is_enabled()) {
+            action->flash_menubar_menu(*window);
+            action->activate();
+            return;
+        }
+        if (action->swallow_key_event_when_disabled())
+            return;
+    }
+
+    Core::EventLoop::current().post_event(*window, move(mouse_event));
 }
 
 void ConnectionToWindowServer::mouse_up(i32 window_id, Gfx::IntPoint const& mouse_position, u32 button, u32 buttons, u32 modifiers, i32 wheel_delta_x, i32 wheel_delta_y, i32 wheel_raw_delta_x, i32 wheel_raw_delta_y)
@@ -348,11 +359,6 @@ void ConnectionToWindowServer::applet_area_rect_changed(Gfx::IntRect const& rect
     });
 }
 
-void ConnectionToWindowServer::set_wallpaper_finished(bool)
-{
-    // This is handled manually by Desktop::set_wallpaper().
-}
-
 void ConnectionToWindowServer::drag_dropped(i32 window_id, Gfx::IntPoint const& mouse_position, String const& text, HashMap<String, ByteBuffer> const& mime_data)
 {
     if (auto* window = Window::from_window_id(window_id)) {
@@ -376,6 +382,12 @@ void ConnectionToWindowServer::window_state_changed(i32 window_id, bool minimize
 {
     if (auto* window = Window::from_window_id(window_id))
         window->notify_state_changed({}, minimized, maximized, occluded);
+}
+
+void ConnectionToWindowServer::window_input_preempted(i32 window_id, i32 preemptor)
+{
+    if (auto* window = Window::from_window_id(window_id))
+        window->notify_input_preempted({}, static_cast<InputPreemptor>(preemptor));
 }
 
 void ConnectionToWindowServer::display_link_notification()

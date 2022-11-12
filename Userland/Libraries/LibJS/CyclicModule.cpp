@@ -5,16 +5,25 @@
  */
 
 #include <LibJS/CyclicModule.h>
+#include <LibJS/Runtime/PromiseCapability.h>
 #include <LibJS/Runtime/PromiseConstructor.h>
-#include <LibJS/Runtime/PromiseReaction.h>
+#include <LibJS/Runtime/VM.h>
 
 namespace JS {
 
-CyclicModule::CyclicModule(Realm& realm, StringView filename, bool has_top_level_await, Vector<ModuleRequest> requested_modules)
-    : Module(realm, filename)
+CyclicModule::CyclicModule(Realm& realm, StringView filename, bool has_top_level_await, Vector<ModuleRequest> requested_modules, Script::HostDefined* host_defined)
+    : Module(realm, filename, host_defined)
     , m_requested_modules(move(requested_modules))
     , m_has_top_level_await(has_top_level_await)
 {
+}
+
+void CyclicModule::visit_edges(Cell::Visitor& visitor)
+{
+    Base::visit_edges(visitor);
+    visitor.visit(m_cycle_root);
+    for (auto* module : m_async_parent_modules)
+        visitor.visit(module);
 }
 
 // 16.2.1.5.1 Link ( ), https://tc39.es/ecma262/#sec-moduledeclarationlinking
@@ -66,7 +75,7 @@ ThrowCompletionOr<u32> CyclicModule::inner_module_linking(VM& vm, Vector<Module*
     //    b. Return index.
     // Note: Step 1, 1.a and 1.b are handled in Module.cpp
 
-    dbgln_if(JS_MODULE_DEBUG, "[JS MODULE] inner_module_linking[{}](vm, {}, {})", this, String::join(",", stack), index);
+    dbgln_if(JS_MODULE_DEBUG, "[JS MODULE] inner_module_linking[{}](vm, {}, {})", this, String::join(',', stack), index);
 
     // 2. If module.[[Status]] is linking, linked, evaluating-async, or evaluated, then
     if (m_status == ModuleStatus::Linking || m_status == ModuleStatus::Linked || m_status == ModuleStatus::EvaluatingAsync || m_status == ModuleStatus::Evaluated) {
@@ -96,7 +105,7 @@ ThrowCompletionOr<u32> CyclicModule::inner_module_linking(VM& vm, Vector<Module*
     StringBuilder request_module_names;
     for (auto& module_request : m_requested_modules) {
         request_module_names.append(module_request.module_specifier);
-        request_module_names.append(", ");
+        request_module_names.append(", "sv);
     }
     dbgln_if(JS_MODULE_DEBUG, "[JS MODULE] module: {} has requested modules: [{}]", filename(), request_module_names.string_view());
 #endif
@@ -106,7 +115,7 @@ ThrowCompletionOr<u32> CyclicModule::inner_module_linking(VM& vm, Vector<Module*
         ModuleRequest required { required_string };
 
         // a. Let requiredModule be ? HostResolveImportedModule(module, required).
-        auto required_module = TRY(vm.host_resolve_imported_module(this->make_weak_ptr(), required));
+        auto required_module = TRY(vm.host_resolve_imported_module(NonnullGCPtr<Module>(*this), required));
 
         // b. Set index to ? InnerModuleLinking(requiredModule, stack, index).
         index = TRY(required_module->inner_module_linking(vm, stack, index));
@@ -188,20 +197,19 @@ ThrowCompletionOr<Promise*> CyclicModule::evaluate(VM& vm)
     }
 
     // 4. If module.[[TopLevelCapability]] is not empty, then
-    if (m_top_level_capability.has_value()) {
+    if (m_top_level_capability != nullptr) {
         // a. Return module.[[TopLevelCapability]].[[Promise]].
-        VERIFY(is<Promise>(*m_top_level_capability->promise));
-        return static_cast<Promise*>(m_top_level_capability->promise);
+        return verify_cast<Promise>(m_top_level_capability->promise().ptr());
     }
 
     // 5. Let stack be a new empty List.
     Vector<Module*> stack;
 
-    auto& global_object = realm().global_object();
+    auto& realm = *vm.current_realm();
 
     // 6. Let capability be ! NewPromiseCapability(%Promise%).
     // 7. Set module.[[TopLevelCapability]] to capability.
-    m_top_level_capability = MUST(new_promise_capability(global_object, global_object.promise_constructor()));
+    m_top_level_capability = MUST(new_promise_capability(vm, realm.intrinsics().promise_constructor()));
 
     // 8. Let result be Completion(InnerModuleEvaluation(module, stack, 0)).
     auto result = inner_module_evaluation(vm, stack, 0);
@@ -234,7 +242,7 @@ ThrowCompletionOr<Promise*> CyclicModule::evaluate(VM& vm)
         VERIFY(m_evaluation_error.is_error() && same_value(*m_evaluation_error.throw_completion().value(), *result.throw_completion().value()));
 
         // d. Perform ! Call(capability.[[Reject]], undefined, « result.[[Value]] »).
-        MUST(call(global_object, m_top_level_capability->reject, js_undefined(), *result.throw_completion().value()));
+        MUST(call(vm, *m_top_level_capability->reject(), js_undefined(), *result.throw_completion().value()));
     }
     // 10. Else,
     else {
@@ -248,7 +256,7 @@ ThrowCompletionOr<Promise*> CyclicModule::evaluate(VM& vm)
             // i. Assert: module.[[Status]] is evaluated.
             VERIFY(m_status == ModuleStatus::Evaluated);
             // ii. Perform ! Call(capability.[[Resolve]], undefined, « undefined »).
-            MUST(call(global_object, m_top_level_capability->resolve, js_undefined(), js_undefined()));
+            MUST(call(vm, *m_top_level_capability->resolve(), js_undefined(), js_undefined()));
         }
 
         // d. Assert: stack is empty.
@@ -256,14 +264,13 @@ ThrowCompletionOr<Promise*> CyclicModule::evaluate(VM& vm)
     }
 
     // 11. Return capability.[[Promise]].
-    VERIFY(is<Promise>(*m_top_level_capability->promise));
-    return static_cast<Promise*>(m_top_level_capability->promise);
+    return verify_cast<Promise>(m_top_level_capability->promise().ptr());
 }
 
 // 16.2.1.5.2.1 InnerModuleEvaluation ( module, stack, index ), https://tc39.es/ecma262/#sec-innermoduleevaluation
 ThrowCompletionOr<u32> CyclicModule::inner_module_evaluation(VM& vm, Vector<Module*>& stack, u32 index)
 {
-    dbgln_if(JS_MODULE_DEBUG, "[JS MODULE] inner_module_evaluation[{}](vm, {}, {})", this, String::join(", ", stack), index);
+    dbgln_if(JS_MODULE_DEBUG, "[JS MODULE] inner_module_evaluation[{}](vm, {}, {})", this, String::join(", "sv, stack), index);
     // Note: Step 1 is performed in Module.cpp
 
     // 2. If module.[[Status]] is evaluating-async or evaluated, then
@@ -305,7 +312,7 @@ ThrowCompletionOr<u32> CyclicModule::inner_module_evaluation(VM& vm, Vector<Modu
     for (auto& required : m_requested_modules) {
 
         // a. Let requiredModule be ! HostResolveImportedModule(module, required).
-        auto* required_module = MUST(vm.host_resolve_imported_module(this->make_weak_ptr(), required)).ptr();
+        auto* required_module = MUST(vm.host_resolve_imported_module(NonnullGCPtr<Module>(*this), required)).ptr();
         // b. NOTE: Link must be completed successfully prior to invoking this method, so every requested module is guaranteed to resolve successfully.
 
         // c. Set index to ? InnerModuleEvaluation(requiredModule, stack, index).
@@ -423,7 +430,7 @@ ThrowCompletionOr<void> CyclicModule::initialize_environment(VM&)
     VERIFY_NOT_REACHED();
 }
 
-ThrowCompletionOr<void> CyclicModule::execute_module(VM&, Optional<PromiseCapability>)
+ThrowCompletionOr<void> CyclicModule::execute_module(VM&, GCPtr<PromiseCapability>)
 {
     // Note: In ecma262 this is never called on a cyclic module only on SourceTextModules.
     //       So this check is to make sure we don't accidentally call this.
@@ -433,19 +440,19 @@ ThrowCompletionOr<void> CyclicModule::execute_module(VM&, Optional<PromiseCapabi
 // 16.2.1.5.2.2 ExecuteAsyncModule ( module ), https://tc39.es/ecma262/#sec-execute-async-module
 void CyclicModule::execute_async_module(VM& vm)
 {
+    auto& realm = *vm.current_realm();
+
     dbgln_if(JS_MODULE_DEBUG, "[JS MODULE] executing async module {}", filename());
     // 1. Assert: module.[[Status]] is evaluating or evaluating-async.
     VERIFY(m_status == ModuleStatus::Evaluating || m_status == ModuleStatus::EvaluatingAsync);
     // 2. Assert: module.[[HasTLA]] is true.
     VERIFY(m_has_top_level_await);
 
-    auto& global_object = realm().global_object();
-
     // 3. Let capability be ! NewPromiseCapability(%Promise%).
-    auto capability = MUST(new_promise_capability(global_object, global_object.promise_constructor()));
+    auto capability = MUST(new_promise_capability(vm, realm.intrinsics().promise_constructor()));
 
     // 4. Let fulfilledClosure be a new Abstract Closure with no parameters that captures module and performs the following steps when called:
-    auto fulfilled_closure = [&](VM& vm, GlobalObject&) -> ThrowCompletionOr<Value> {
+    auto fulfilled_closure = [&](VM& vm) -> ThrowCompletionOr<Value> {
         // a. Perform AsyncModuleExecutionFulfilled(module).
         async_module_execution_fulfilled(vm);
 
@@ -454,10 +461,10 @@ void CyclicModule::execute_async_module(VM& vm)
     };
 
     // 5. Let onFulfilled be CreateBuiltinFunction(fulfilledClosure, 0, "", « »).
-    auto* on_fulfilled = NativeFunction::create(global_object, move(fulfilled_closure), 0, "");
+    auto* on_fulfilled = NativeFunction::create(realm, move(fulfilled_closure), 0, "");
 
     // 6. Let rejectedClosure be a new Abstract Closure with parameters (error) that captures module and performs the following steps when called:
-    auto rejected_closure = [&](VM& vm, GlobalObject&) -> ThrowCompletionOr<Value> {
+    auto rejected_closure = [&](VM& vm) -> ThrowCompletionOr<Value> {
         auto error = vm.argument(0);
 
         // a. Perform AsyncModuleExecutionRejected(module, error).
@@ -468,12 +475,10 @@ void CyclicModule::execute_async_module(VM& vm)
     };
 
     // 7. Let onRejected be CreateBuiltinFunction(rejectedClosure, 0, "", « »).
-    auto* on_rejected = NativeFunction::create(global_object, move(rejected_closure), 0, "");
-
-    VERIFY(is<Promise>(*capability.promise));
+    auto* on_rejected = NativeFunction::create(realm, move(rejected_closure), 0, "");
 
     // 8. Perform PerformPromiseThen(capability.[[Promise]], onFulfilled, onRejected).
-    static_cast<Promise*>(capability.promise)->perform_then(on_fulfilled, on_rejected, {});
+    verify_cast<Promise>(capability->promise().ptr())->perform_then(on_fulfilled, on_rejected, {});
 
     // 9. Perform ! module.ExecuteModule(capability).
     MUST(execute_module(vm, capability));
@@ -546,13 +551,12 @@ void CyclicModule::async_module_execution_fulfilled(VM& vm)
     m_status = ModuleStatus::Evaluated;
 
     // 7. If module.[[TopLevelCapability]] is not empty, then
-    if (m_top_level_capability.has_value()) {
+    if (m_top_level_capability != nullptr) {
         // a. Assert: module.[[CycleRoot]] is module.
         VERIFY(m_cycle_root == this);
 
-        VERIFY(vm.current_realm());
         // b. Perform ! Call(module.[[TopLevelCapability]].[[Resolve]], undefined, « undefined »).
-        MUST(call(vm.current_realm()->global_object(), m_top_level_capability->resolve, js_undefined(), js_undefined()));
+        MUST(call(vm, *m_top_level_capability->resolve(), js_undefined(), js_undefined()));
     }
 
     // 8. Let execList be a new empty List.
@@ -595,13 +599,12 @@ void CyclicModule::async_module_execution_fulfilled(VM& vm)
                 module->m_status = ModuleStatus::Evaluated;
 
                 // 2. If m.[[TopLevelCapability]] is not empty, then
-                if (module->m_top_level_capability.has_value()) {
+                if (module->m_top_level_capability != nullptr) {
                     // a. Assert: m.[[CycleRoot]] is m.
                     VERIFY(module->m_cycle_root == module);
 
-                    VERIFY(vm.current_realm());
                     // b. Perform ! Call(m.[[TopLevelCapability]].[[Resolve]], undefined, « undefined »).
-                    MUST(call(vm.current_realm()->global_object(), module->m_top_level_capability->resolve, js_undefined(), js_undefined()));
+                    MUST(call(vm, *module->m_top_level_capability->resolve(), js_undefined(), js_undefined()));
                 }
             }
         }
@@ -645,13 +648,12 @@ void CyclicModule::async_module_execution_rejected(VM& vm, Value error)
     }
 
     // 8. If module.[[TopLevelCapability]] is not empty, then
-    if (m_top_level_capability.has_value()) {
+    if (m_top_level_capability != nullptr) {
         // a. Assert: module.[[CycleRoot]] is module.
         VERIFY(m_cycle_root == this);
 
-        VERIFY(vm.current_realm());
         // b. Perform ! Call(module.[[TopLevelCapability]].[[Reject]], undefined, « error »).
-        MUST(call(vm.current_realm()->global_object(), m_top_level_capability->reject, js_undefined(), error));
+        MUST(call(vm, *m_top_level_capability->reject(), js_undefined(), error));
     }
 
     // 9. Return unused.

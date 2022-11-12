@@ -63,7 +63,6 @@ void WMConnectionFromClient::set_active_window(i32 client_id, i32 window_id)
         return;
     }
     auto& window = *(*it).value;
-    WindowManager::the().minimize_windows(window, false);
     WindowManager::the().move_to_front_and_make_active(window);
 }
 
@@ -87,7 +86,7 @@ void WMConnectionFromClient::popup_window_menu(i32 client_id, i32 window_id, Gfx
     }
 }
 
-void WMConnectionFromClient::start_window_resize(i32 client_id, i32 window_id)
+void WMConnectionFromClient::start_window_resize(i32 client_id, i32 window_id, i32 resize_direction)
 {
     auto* client = WindowServer::ConnectionFromClient::from_client_id(client_id);
     if (!client) {
@@ -102,7 +101,7 @@ void WMConnectionFromClient::start_window_resize(i32 client_id, i32 window_id)
     auto& window = *(*it).value;
     // FIXME: We are cheating a bit here by using the current cursor location and hard-coding the left button.
     //        Maybe the client should be allowed to specify what initiated this request?
-    WindowManager::the().start_window_resize(window, ScreenInput::the().cursor_location(), MouseButton::Primary);
+    WindowManager::the().start_window_resize(window, ScreenInput::the().cursor_location(), MouseButton::Primary, (ResizeDirection)resize_direction);
 }
 
 void WMConnectionFromClient::set_window_minimized(i32 client_id, i32 window_id, bool minimized)
@@ -181,6 +180,11 @@ void WMConnectionFromClient::set_window_taskbar_rect(i32 client_id, i32 window_i
 
     auto& window = *(*it).value;
     window.set_taskbar_rect(rect);
+}
+
+void WMConnectionFromClient::set_keymap(String const& keymap)
+{
+    WindowManager::the().keymap_switcher()->set_keymap(keymap);
 }
 
 }

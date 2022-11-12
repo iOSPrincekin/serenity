@@ -15,7 +15,7 @@ namespace Kernel {
 File::File() = default;
 File::~File() = default;
 
-ErrorOr<NonnullRefPtr<OpenFileDescription>> File::open(int options)
+ErrorOr<NonnullLockRefPtr<OpenFileDescription>> File::open(int options)
 {
     auto description = OpenFileDescription::try_create(*this);
     if (!description.is_error()) {
@@ -35,7 +35,7 @@ ErrorOr<void> File::ioctl(OpenFileDescription&, unsigned, Userspace<void*>)
     return ENOTTY;
 }
 
-ErrorOr<Memory::Region*> File::mmap(Process&, OpenFileDescription&, Memory::VirtualRange const&, u64, int, bool)
+ErrorOr<NonnullLockRefPtr<Memory::VMObject>> File::vmobject_for_mmap(Process&, Memory::VirtualRange const&, u64&, bool)
 {
     return ENODEV;
 }

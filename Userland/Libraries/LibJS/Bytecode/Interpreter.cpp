@@ -25,9 +25,8 @@ Interpreter* Interpreter::current()
     return s_current;
 }
 
-Interpreter::Interpreter(GlobalObject& global_object, Realm& realm)
-    : m_vm(global_object.vm())
-    , m_global_object(global_object)
+Interpreter::Interpreter(Realm& realm)
+    : m_vm(realm.vm())
     , m_realm(realm)
 {
     VERIFY(!s_current);
@@ -51,29 +50,29 @@ Interpreter::ValueAndFrame Interpreter::run_and_return_frame(Executable const& e
     ExecutionContext execution_context(vm().heap());
     if (vm().execution_context_stack().is_empty() || !vm().running_execution_context().lexical_environment) {
         // The "normal" interpreter pushes an execution context without environment so in that case we also want to push one.
-        execution_context.this_value = &global_object();
+        execution_context.this_value = &m_realm.global_object();
         static FlyString global_execution_context_name = "(*BC* global execution context)";
         execution_context.function_name = global_execution_context_name;
         execution_context.lexical_environment = &m_realm.global_environment();
         execution_context.variable_environment = &m_realm.global_environment();
         execution_context.realm = &m_realm;
-        // FIXME: How do we know if we're in strict mode? Maybe the Bytecode::Block should know this?
-        // execution_context.is_strict_mode = ???;
+        execution_context.is_strict_mode = executable.is_strict_mode;
         vm().push_execution_context(execution_context);
         pushed_execution_context = true;
     }
 
-    auto block = entry_point ?: &executable.basic_blocks.first();
+    m_current_block = entry_point ?: &executable.basic_blocks.first();
     if (in_frame)
         m_register_windows.append(in_frame);
     else
         m_register_windows.append(make<RegisterWindow>(MarkedVector<Value>(vm().heap()), MarkedVector<Environment*>(vm().heap()), MarkedVector<Environment*>(vm().heap())));
 
     registers().resize(executable.number_of_registers);
-    registers()[Register::global_object_index] = Value(&global_object());
 
     for (;;) {
-        Bytecode::InstructionStreamIterator pc(block->instruction_stream());
+        Bytecode::InstructionStreamIterator pc(m_current_block->instruction_stream());
+        TemporaryChange temp_change { m_pc, &pc };
+
         bool will_jump = false;
         bool will_return = false;
         while (!pc.at_end()) {
@@ -88,7 +87,7 @@ Interpreter::ValueAndFrame Interpreter::run_and_return_frame(Executable const& e
                 if (unwind_context.executable != m_current_executable)
                     break;
                 if (unwind_context.handler) {
-                    block = unwind_context.handler;
+                    m_current_block = unwind_context.handler;
                     unwind_context.handler = nullptr;
 
                     // If there's no finalizer, there's nowhere for the handler block to unwind to, so the unwind context is no longer needed.
@@ -101,7 +100,7 @@ Interpreter::ValueAndFrame Interpreter::run_and_return_frame(Executable const& e
                     break;
                 }
                 if (unwind_context.finalizer) {
-                    block = unwind_context.finalizer;
+                    m_current_block = unwind_context.finalizer;
                     m_unwind_contexts.take_last();
                     will_jump = true;
                     break;
@@ -111,7 +110,7 @@ Interpreter::ValueAndFrame Interpreter::run_and_return_frame(Executable const& e
                 VERIFY_NOT_REACHED();
             }
             if (m_pending_jump.has_value()) {
-                block = m_pending_jump.release_value();
+                m_current_block = m_pending_jump.release_value();
                 will_jump = true;
                 break;
             }
@@ -220,7 +219,9 @@ Bytecode::PassManager& Interpreter::optimization_pipeline(Interpreter::Optimizat
         return *entry;
 
     auto pm = make<PassManager>();
-    if (level == OptimizationLevel::Default) {
+    if (level == OptimizationLevel::None) {
+        // No optimization.
+    } else if (level == OptimizationLevel::Optimize) {
         pm->add<Passes::GenerateCFG>();
         pm->add<Passes::UnifySameBlocks>();
         pm->add<Passes::GenerateCFG>();

@@ -4,9 +4,8 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <Kernel/Arch/InterruptManagement.h>
 #include <Kernel/Arch/x86/Interrupts.h>
-#include <Kernel/Interrupts/InterruptManagement.h>
-#include <Kernel/Interrupts/PIC.h>
 #include <Kernel/Interrupts/SpuriousInterruptHandler.h>
 #include <Kernel/Sections.h>
 
@@ -110,7 +109,7 @@ void SpuriousInterruptHandler::disable_interrupt_vector()
 StringView SpuriousInterruptHandler::controller() const
 {
     if (m_responsible_irq_controller->type() == IRQControllerType::i82093AA)
-        return "";
+        return ""sv;
     return m_responsible_irq_controller->model();
 }
 }

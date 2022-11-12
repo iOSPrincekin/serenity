@@ -23,7 +23,7 @@ LayoutRange LayoutRange::normalized() const
 {
     if (!is_valid())
         return {};
-    if (m_start.layout_node == m_end.layout_node) {
+    if (m_start.layout_node.ptr() == m_end.layout_node.ptr()) {
         if (m_start.index_in_node < m_end.index_in_node)
             return *this;
         return { m_end, m_start };
@@ -33,7 +33,7 @@ LayoutRange LayoutRange::normalized() const
     return { m_end, m_start };
 }
 
-NonnullRefPtr<DOM::Range> LayoutRange::to_dom_range() const
+JS::NonnullGCPtr<DOM::Range> LayoutRange::to_dom_range() const
 {
     VERIFY(is_valid());
 

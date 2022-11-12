@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020, Andreas Kling <kling@serenityos.org>
+ * Copyright (c) 2018-2022, Andreas Kling <kling@serenityos.org>
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
@@ -14,9 +14,9 @@ class Inode;
 
 class InodeFile final : public File {
 public:
-    static ErrorOr<NonnullRefPtr<InodeFile>> create(NonnullRefPtr<Inode>&& inode)
+    static ErrorOr<NonnullLockRefPtr<InodeFile>> create(NonnullLockRefPtr<Inode>&& inode)
     {
-        auto file = adopt_ref_if_nonnull(new (nothrow) InodeFile(move(inode)));
+        auto file = adopt_lock_ref_if_nonnull(new (nothrow) InodeFile(move(inode)));
         if (!file)
             return ENOMEM;
         return file.release_nonnull();
@@ -33,15 +33,15 @@ public:
     virtual ErrorOr<size_t> read(OpenFileDescription&, u64, UserOrKernelBuffer&, size_t) override;
     virtual ErrorOr<size_t> write(OpenFileDescription&, u64, UserOrKernelBuffer const&, size_t) override;
     virtual ErrorOr<void> ioctl(OpenFileDescription&, unsigned request, Userspace<void*> arg) override;
-    virtual ErrorOr<Memory::Region*> mmap(Process&, OpenFileDescription&, Memory::VirtualRange const&, u64 offset, int prot, bool shared) override;
+    virtual ErrorOr<NonnullLockRefPtr<Memory::VMObject>> vmobject_for_mmap(Process&, Memory::VirtualRange const&, u64& offset, bool shared) override;
     virtual ErrorOr<struct stat> stat() const override { return inode().metadata().stat(); }
 
     virtual ErrorOr<NonnullOwnPtr<KString>> pseudo_path(OpenFileDescription const&) const override;
 
     virtual ErrorOr<void> truncate(u64) override;
     virtual ErrorOr<void> sync() override;
-    virtual ErrorOr<void> chown(OpenFileDescription&, UserID, GroupID) override;
-    virtual ErrorOr<void> chmod(OpenFileDescription&, mode_t) override;
+    virtual ErrorOr<void> chown(Credentials const&, OpenFileDescription&, UserID, GroupID) override;
+    virtual ErrorOr<void> chmod(Credentials const&, OpenFileDescription&, mode_t) override;
 
     virtual StringView class_name() const override { return "InodeFile"sv; }
 
@@ -49,8 +49,8 @@ public:
     virtual bool is_inode() const override { return true; }
 
 private:
-    explicit InodeFile(NonnullRefPtr<Inode>&&);
-    NonnullRefPtr<Inode> m_inode;
+    explicit InodeFile(NonnullLockRefPtr<Inode>&&);
+    NonnullLockRefPtr<Inode> m_inode;
 };
 
 }

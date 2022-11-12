@@ -14,7 +14,6 @@
 #include <AK/JsonObjectSerializer.h>
 #include <AK/JsonValue.h>
 #include <AK/StringBuilder.h>
-#include <LibCore/MappedFile.h>
 #include <LibGUI/Painter.h>
 #include <LibGfx/BMPWriter.h>
 #include <LibGfx/Bitmap.h>
@@ -30,13 +29,14 @@ ErrorOr<NonnullRefPtr<Image>> Image::try_create_with_size(Gfx::IntSize const& si
     VERIFY(!size.is_empty());
 
     if (size.width() > 16384 || size.height() > 16384)
-        return Error::from_string_literal("Image size too large"sv);
+        return Error::from_string_literal("Image size too large");
 
     return adopt_nonnull_ref_or_enomem(new (nothrow) Image(size));
 }
 
 Image::Image(Gfx::IntSize const& size)
     : m_size(size)
+    , m_selection(*this)
 {
 }
 
@@ -62,16 +62,16 @@ ErrorOr<NonnullRefPtr<Gfx::Bitmap>> Image::try_decode_bitmap(ReadonlyBytes bitma
     // FIXME: Find a way to avoid the memory copying here.
     auto maybe_decoded_image = client->decode_image(bitmap_data);
     if (!maybe_decoded_image.has_value())
-        return Error::from_string_literal("Image decode failed"sv);
+        return Error::from_string_literal("Image decode failed");
 
     // FIXME: Support multi-frame images?
     auto decoded_image = maybe_decoded_image.release_value();
     if (decoded_image.frames.is_empty())
-        return Error::from_string_literal("Image decode failed (no frames)"sv);
+        return Error::from_string_literal("Image decode failed (no frames)");
 
     auto decoded_bitmap = decoded_image.frames.first().bitmap;
     if (decoded_bitmap.is_null())
-        return Error::from_string_literal("Image decode failed (no bitmap for frame)"sv);
+        return Error::from_string_literal("Image decode failed (no bitmap for frame)");
     return decoded_bitmap.release_nonnull();
 }
 
@@ -85,37 +85,37 @@ ErrorOr<NonnullRefPtr<Image>> Image::try_create_from_bitmap(NonnullRefPtr<Gfx::B
 
 ErrorOr<NonnullRefPtr<Image>> Image::try_create_from_pixel_paint_json(JsonObject const& json)
 {
-    auto image = TRY(try_create_with_size({ json.get("width").to_i32(), json.get("height").to_i32() }));
+    auto image = TRY(try_create_with_size({ json.get("width"sv).to_i32(), json.get("height"sv).to_i32() }));
 
-    auto layers_value = json.get("layers");
+    auto layers_value = json.get("layers"sv);
     for (auto& layer_value : layers_value.as_array().values()) {
         auto& layer_object = layer_value.as_object();
-        auto name = layer_object.get("name").as_string();
+        auto name = layer_object.get("name"sv).as_string();
 
-        auto bitmap_base64_encoded = layer_object.get("bitmap").as_string();
+        auto bitmap_base64_encoded = layer_object.get("bitmap"sv).as_string();
         auto bitmap_data = TRY(decode_base64(bitmap_base64_encoded));
         auto bitmap = TRY(try_decode_bitmap(bitmap_data));
         auto layer = TRY(Layer::try_create_with_bitmap(*image, move(bitmap), name));
 
-        if (auto mask_object = layer_object.get("mask"); !mask_object.is_null()) {
+        if (auto mask_object = layer_object.get("mask"sv); !mask_object.is_null()) {
             auto mask_base64_encoded = mask_object.as_string();
             auto mask_data = TRY(decode_base64(mask_base64_encoded));
             auto mask = TRY(try_decode_bitmap(mask_data));
             TRY(layer->try_set_bitmaps(layer->content_bitmap(), mask));
         }
 
-        auto width = layer_object.get("width").to_i32();
-        auto height = layer_object.get("height").to_i32();
+        auto width = layer_object.get("width"sv).to_i32();
+        auto height = layer_object.get("height"sv).to_i32();
 
         if (width != layer->size().width() || height != layer->size().height())
-            return Error::from_string_literal("Decoded layer bitmap has wrong size"sv);
+            return Error::from_string_literal("Decoded layer bitmap has wrong size");
 
         image->add_layer(*layer);
 
-        layer->set_location({ layer_object.get("locationx").to_i32(), layer_object.get("locationy").to_i32() });
-        layer->set_opacity_percent(layer_object.get("opacity_percent").to_i32());
-        layer->set_visible(layer_object.get("visible").as_bool());
-        layer->set_selected(layer_object.get("selected").as_bool());
+        layer->set_location({ layer_object.get("locationx"sv).to_i32(), layer_object.get("locationy"sv).to_i32() });
+        layer->set_opacity_percent(layer_object.get("opacity_percent"sv).to_i32());
+        layer->set_visible(layer_object.get("visible"sv).as_bool());
+        layer->set_selected(layer_object.get("selected"sv).as_bool());
     }
 
     return image;
@@ -123,42 +123,29 @@ ErrorOr<NonnullRefPtr<Image>> Image::try_create_from_pixel_paint_json(JsonObject
 
 void Image::serialize_as_json(JsonObjectSerializer<StringBuilder>& json) const
 {
-    MUST(json.add("width", m_size.width()));
-    MUST(json.add("height", m_size.height()));
+    MUST(json.add("width"sv, m_size.width()));
+    MUST(json.add("height"sv, m_size.height()));
     {
-        auto json_layers = MUST(json.add_array("layers"));
+        auto json_layers = MUST(json.add_array("layers"sv));
         for (auto const& layer : m_layers) {
             Gfx::BMPWriter bmp_writer;
             auto json_layer = MUST(json_layers.add_object());
-            MUST(json_layer.add("width", layer.size().width()));
-            MUST(json_layer.add("height", layer.size().height()));
-            MUST(json_layer.add("name", layer.name()));
-            MUST(json_layer.add("locationx", layer.location().x()));
-            MUST(json_layer.add("locationy", layer.location().y()));
-            MUST(json_layer.add("opacity_percent", layer.opacity_percent()));
-            MUST(json_layer.add("visible", layer.is_visible()));
-            MUST(json_layer.add("selected", layer.is_selected()));
-            MUST(json_layer.add("bitmap", encode_base64(bmp_writer.dump(layer.content_bitmap()))));
+            MUST(json_layer.add("width"sv, layer.size().width()));
+            MUST(json_layer.add("height"sv, layer.size().height()));
+            MUST(json_layer.add("name"sv, layer.name()));
+            MUST(json_layer.add("locationx"sv, layer.location().x()));
+            MUST(json_layer.add("locationy"sv, layer.location().y()));
+            MUST(json_layer.add("opacity_percent"sv, layer.opacity_percent()));
+            MUST(json_layer.add("visible"sv, layer.is_visible()));
+            MUST(json_layer.add("selected"sv, layer.is_selected()));
+            MUST(json_layer.add("bitmap"sv, encode_base64(bmp_writer.dump(layer.content_bitmap()))));
             if (layer.is_masked())
-                MUST(json_layer.add("mask", encode_base64(bmp_writer.dump(*layer.mask_bitmap()))));
+                MUST(json_layer.add("mask"sv, encode_base64(bmp_writer.dump(*layer.mask_bitmap()))));
             MUST(json_layer.finish());
         }
 
         MUST(json_layers.finish());
     }
-}
-
-ErrorOr<void> Image::write_to_file(String const& file_path) const
-{
-    StringBuilder builder;
-    auto json = MUST(JsonObjectSerializer<>::try_create(builder));
-    serialize_as_json(json);
-    MUST(json.finish());
-
-    auto file = TRY(Core::File::open(file_path, (Core::OpenMode)(Core::OpenMode::WriteOnly | Core::OpenMode::Truncate)));
-    if (!file->write(builder.string_view()))
-        return Error::from_errno(file->error());
-    return {};
 }
 
 ErrorOr<NonnullRefPtr<Gfx::Bitmap>> Image::try_compose_bitmap(Gfx::BitmapFormat format) const
@@ -244,6 +231,7 @@ ErrorOr<NonnullRefPtr<Image>> Image::take_snapshot() const
         auto layer_snapshot = TRY(Layer::try_create_snapshot(*snapshot, layer));
         snapshot->add_layer(move(layer_snapshot));
     }
+    snapshot->m_selection.set_mask(m_selection.mask());
     return snapshot;
 }
 
@@ -265,6 +253,11 @@ ErrorOr<void> Image::restore_snapshot(Image const& snapshot)
     if (!layer_selected)
         select_layer(&layer(0));
 
+    m_size = snapshot.size();
+
+    m_selection.set_mask(snapshot.m_selection.mask());
+
+    did_change_rect();
     did_modify_layer_stack();
     return {};
 }
@@ -481,9 +474,10 @@ void Image::did_change_rect(Gfx::IntRect const& a_modified_rect)
         client->image_did_change_rect(modified_rect);
 }
 
-ImageUndoCommand::ImageUndoCommand(Image& image)
+ImageUndoCommand::ImageUndoCommand(Image& image, String action_text)
     : m_snapshot(image.take_snapshot().release_value_but_fixme_should_propagate_errors())
     , m_image(image)
+    , m_action_text(move(action_text))
 {
 }
 
@@ -520,11 +514,60 @@ void Image::rotate(Gfx::RotationDirection direction)
 void Image::crop(Gfx::IntRect const& cropped_rect)
 {
     for (auto& layer : m_layers) {
-        layer.crop(cropped_rect);
+        auto layer_location = layer.location();
+        auto layer_local_crop_rect = layer.relative_rect().intersected(cropped_rect).translated(-layer_location.x(), -layer_location.y());
+        layer.crop(layer_local_crop_rect);
+
+        auto new_layer_x = max(0, layer_location.x() - cropped_rect.x());
+        auto new_layer_y = max(0, layer_location.y() - cropped_rect.y());
+
+        layer.set_location({ new_layer_x, new_layer_y });
     }
 
     m_size = { cropped_rect.width(), cropped_rect.height() };
     did_change_rect(cropped_rect);
+}
+
+Optional<Gfx::IntRect> Image::nonempty_content_bounding_rect() const
+{
+    if (m_layers.is_empty())
+        return {};
+
+    Optional<Gfx::IntRect> bounding_rect;
+    for (auto& layer : m_layers) {
+        auto layer_content_rect_in_layer_coordinates = layer.nonempty_content_bounding_rect();
+        if (!layer_content_rect_in_layer_coordinates.has_value())
+            continue;
+        auto layer_content_rect_in_image_coordinates = layer_content_rect_in_layer_coordinates->translated(layer.location());
+        if (!bounding_rect.has_value())
+            bounding_rect = layer_content_rect_in_image_coordinates;
+        else
+            bounding_rect = bounding_rect->united(layer_content_rect_in_image_coordinates);
+    }
+
+    return bounding_rect;
+}
+
+void Image::resize(Gfx::IntSize const& new_size, Gfx::Painter::ScalingMode scaling_mode)
+{
+    float scale_x = 1.0f;
+    float scale_y = 1.0f;
+
+    if (size().width() != 0.0f) {
+        scale_x = new_size.width() / static_cast<float>(size().width());
+    }
+
+    if (size().height() != 0.0f) {
+        scale_y = new_size.height() / static_cast<float>(size().height());
+    }
+
+    for (auto& layer : m_layers) {
+        Gfx::IntPoint new_location(scale_x * layer.location().x(), scale_y * layer.location().y());
+        layer.resize(new_size, new_location, scaling_mode);
+    }
+
+    m_size = { new_size.width(), new_size.height() };
+    did_change_rect();
 }
 
 Color Image::color_at(Gfx::IntPoint const& point) const

@@ -30,9 +30,12 @@ public:
         FocusAndOverlay,
     };
 
-    void paint_descendants(PaintContext&, Layout::Node&, StackingContextPaintPhase) const;
+    void paint_descendants(PaintContext&, Layout::Node const&, StackingContextPaintPhase) const;
     void paint(PaintContext&) const;
     Optional<HitTestResult> hit_test(Gfx::FloatPoint const&, HitTestType) const;
+
+    Gfx::FloatMatrix4x4 const& transform_matrix() const { return m_transform; }
+    Gfx::AffineTransform affine_transform_matrix() const;
 
     void dump(int indent = 0) const;
 
@@ -40,14 +43,16 @@ public:
 
 private:
     Layout::Box& m_box;
+    Gfx::FloatMatrix4x4 m_transform;
+    Gfx::FloatPoint m_transform_origin;
     StackingContext* const m_parent { nullptr };
     Vector<StackingContext*> m_children;
 
     void paint_internal(PaintContext&) const;
     Gfx::FloatMatrix4x4 get_transformation_matrix(CSS::Transformation const& transformation) const;
     Gfx::FloatMatrix4x4 combine_transformations(Vector<CSS::Transformation> const& transformations) const;
-    Gfx::AffineTransform combine_transformations_2d(Vector<CSS::Transformation> const& transformations) const;
-    Gfx::FloatPoint transform_origin() const;
+    Gfx::FloatPoint transform_origin() const { return m_transform_origin; }
+    Gfx::FloatPoint compute_transform_origin() const;
 };
 
 }

@@ -88,9 +88,9 @@ void TCPSocket::set_state(State new_state)
         evaluate_block_conditions();
 }
 
-static Singleton<MutexProtected<HashMap<IPv4SocketTuple, RefPtr<TCPSocket>>>> s_socket_closing;
+static Singleton<MutexProtected<HashMap<IPv4SocketTuple, LockRefPtr<TCPSocket>>>> s_socket_closing;
 
-MutexProtected<HashMap<IPv4SocketTuple, RefPtr<TCPSocket>>>& TCPSocket::closing_sockets()
+MutexProtected<HashMap<IPv4SocketTuple, LockRefPtr<TCPSocket>>>& TCPSocket::closing_sockets()
 {
     return *s_socket_closing;
 }
@@ -102,9 +102,9 @@ MutexProtected<HashMap<IPv4SocketTuple, TCPSocket*>>& TCPSocket::sockets_by_tupl
     return *s_socket_tuples;
 }
 
-RefPtr<TCPSocket> TCPSocket::from_tuple(IPv4SocketTuple const& tuple)
+LockRefPtr<TCPSocket> TCPSocket::from_tuple(IPv4SocketTuple const& tuple)
 {
-    return sockets_by_tuple().with_shared([&](auto const& table) -> RefPtr<TCPSocket> {
+    return sockets_by_tuple().with_shared([&](auto const& table) -> LockRefPtr<TCPSocket> {
         auto exact_match = table.get(tuple);
         if (exact_match.has_value())
             return { *exact_match.value() };
@@ -122,10 +122,10 @@ RefPtr<TCPSocket> TCPSocket::from_tuple(IPv4SocketTuple const& tuple)
         return {};
     });
 }
-ErrorOr<NonnullRefPtr<TCPSocket>> TCPSocket::try_create_client(IPv4Address const& new_local_address, u16 new_local_port, IPv4Address const& new_peer_address, u16 new_peer_port)
+ErrorOr<NonnullLockRefPtr<TCPSocket>> TCPSocket::try_create_client(IPv4Address const& new_local_address, u16 new_local_port, IPv4Address const& new_peer_address, u16 new_peer_port)
 {
     auto tuple = IPv4SocketTuple(new_local_address, new_local_port, new_peer_address, new_peer_port);
-    return sockets_by_tuple().with_exclusive([&](auto& table) -> ErrorOr<NonnullRefPtr<TCPSocket>> {
+    return sockets_by_tuple().with_exclusive([&](auto& table) -> ErrorOr<NonnullLockRefPtr<TCPSocket>> {
         if (table.contains(tuple))
             return EEXIST;
 
@@ -154,7 +154,7 @@ void TCPSocket::release_to_originator()
     m_originator.clear();
 }
 
-void TCPSocket::release_for_accept(NonnullRefPtr<TCPSocket> socket)
+void TCPSocket::release_for_accept(NonnullLockRefPtr<TCPSocket> socket)
 {
     VERIFY(m_pending_release_for_accept.contains(socket->tuple()));
     m_pending_release_for_accept.remove(socket->tuple());
@@ -175,11 +175,11 @@ TCPSocket::~TCPSocket()
     dbgln_if(TCP_SOCKET_DEBUG, "~TCPSocket in state {}", to_string(state()));
 }
 
-ErrorOr<NonnullRefPtr<TCPSocket>> TCPSocket::try_create(int protocol, NonnullOwnPtr<DoubleBuffer> receive_buffer)
+ErrorOr<NonnullLockRefPtr<TCPSocket>> TCPSocket::try_create(int protocol, NonnullOwnPtr<DoubleBuffer> receive_buffer)
 {
     // Note: Scratch buffer is only used for SOCK_STREAM sockets.
-    auto scratch_buffer = TRY(KBuffer::try_create_with_size(65536));
-    return adopt_nonnull_ref_or_enomem(new (nothrow) TCPSocket(protocol, move(receive_buffer), move(scratch_buffer)));
+    auto scratch_buffer = TRY(KBuffer::try_create_with_size("TCPSocket: Scratch buffer"sv, 65536));
+    return adopt_nonnull_lock_ref_or_enomem(new (nothrow) TCPSocket(protocol, move(receive_buffer), move(scratch_buffer)));
 }
 
 ErrorOr<size_t> TCPSocket::protocol_size(ReadonlyBytes raw_ipv4_packet)
@@ -274,19 +274,28 @@ ErrorOr<void> TCPSocket::send_tcp_packet(u16 flags, UserOrKernelBuffer const* pa
 
     tcp_packet.set_checksum(compute_tcp_checksum(local_address(), peer_address(), tcp_packet, payload_size));
 
-    routing_decision.adapter->send_packet(packet->bytes());
-
-    m_packets_out++;
-    m_bytes_out += buffer_size;
-    if (tcp_packet.has_syn() || payload_size > 0) {
+    bool expect_ack { tcp_packet.has_syn() || payload_size > 0 };
+    if (expect_ack) {
+        bool append_failed { false };
         m_unacked_packets.with_exclusive([&](auto& unacked_packets) {
-            unacked_packets.packets.append({ m_sequence_number, move(packet), ipv4_payload_offset, *routing_decision.adapter });
+            auto result = unacked_packets.packets.try_append({ m_sequence_number, packet, ipv4_payload_offset, *routing_decision.adapter });
+            if (result.is_error()) {
+                dbgln("TCPSocket: Dropped outbound packet because try_append() failed");
+                append_failed = true;
+                return;
+            }
             unacked_packets.size += payload_size;
             enqueue_for_retransmit();
         });
-    } else {
-        routing_decision.adapter->release_packet_buffer(*packet);
+        if (append_failed)
+            return set_so_error(ENOMEM);
     }
+
+    m_packets_out++;
+    m_bytes_out += buffer_size;
+    routing_decision.adapter->send_packet(packet->bytes());
+    if (!expect_ack)
+        routing_decision.adapter->release_packet_buffer(*packet);
 
     return {};
 }
@@ -420,7 +429,7 @@ ErrorOr<void> TCPSocket::protocol_listen(bool did_allocate_port)
     return {};
 }
 
-ErrorOr<void> TCPSocket::protocol_connect(OpenFileDescription& description, ShouldBlock should_block)
+ErrorOr<void> TCPSocket::protocol_connect(OpenFileDescription& description)
 {
     MutexLocker locker(mutex());
 
@@ -444,7 +453,7 @@ ErrorOr<void> TCPSocket::protocol_connect(OpenFileDescription& description, Shou
 
     evaluate_block_conditions();
 
-    if (should_block == ShouldBlock::Yes) {
+    if (description.is_blocking()) {
         locker.unlock();
         auto unblock_flags = Thread::FileBlocker::BlockFlags::None;
         if (Thread::current()->block<Thread::ConnectBlocker>({}, description, unblock_flags).was_interrupted())

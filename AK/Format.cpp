@@ -11,7 +11,7 @@
 #include <AK/StringBuilder.h>
 #include <AK/kstdio.h>
 
-#if defined(__serenity__) && !defined(KERNEL)
+#if defined(AK_OS_SERENITY) && !defined(KERNEL)
 #    include <serenity.h>
 #endif
 
@@ -114,7 +114,7 @@ StringView FormatParser::consume_literal()
         if (consume_specific("}}"))
             continue;
 
-        if (next_is(is_any_of("{}")))
+        if (next_is(is_any_of("{}"sv)))
             return m_input.substring_view(begin, tell() - begin);
 
         consume();
@@ -170,7 +170,7 @@ bool FormatParser::consume_specifier(FormatSpecifier& specifier)
         if (!consume_specific('}'))
             VERIFY_NOT_REACHED();
 
-        specifier.flags = "";
+        specifier.flags = ""sv;
     }
 
     return true;
@@ -287,16 +287,16 @@ ErrorOr<void> FormatBuilder::put_u64(
         if (prefix) {
             if (base == 2) {
                 if (upper_case)
-                    TRY(m_builder.try_append("0B"));
+                    TRY(m_builder.try_append("0B"sv));
                 else
-                    TRY(m_builder.try_append("0b"));
+                    TRY(m_builder.try_append("0b"sv));
             } else if (base == 8) {
-                TRY(m_builder.try_append("0"));
+                TRY(m_builder.try_append("0"sv));
             } else if (base == 16) {
                 if (upper_case)
-                    TRY(m_builder.try_append("0X"));
+                    TRY(m_builder.try_append("0X"sv));
                 else
-                    TRY(m_builder.try_append("0x"));
+                    TRY(m_builder.try_append("0x"sv));
             }
         }
         return {};
@@ -587,8 +587,8 @@ ErrorOr<void> vformat(StringBuilder& builder, StringView fmtstr, TypeErasedForma
 
 void StandardFormatter::parse(TypeErasedFormatParams& params, FormatParser& parser)
 {
-    if (StringView { "<^>" }.contains(parser.peek(1))) {
-        VERIFY(!parser.next_is(is_any_of("{}")));
+    if ("<^>"sv.contains(parser.peek(1))) {
+        VERIFY(!parser.next_is(is_any_of("{}"sv)));
         m_fill = parser.consume();
     }
 
@@ -788,7 +788,7 @@ ErrorOr<void> Formatter<bool>::format(FormatBuilder& builder, bool value)
         return builder.put_hexdump({ &value, sizeof(value) }, m_width.value_or(32), m_fill);
     } else {
         Formatter<StringView> formatter { *this };
-        return formatter.format(builder, value ? "true" : "false");
+        return formatter.format(builder, value ? "true"sv : "false"sv);
     }
 }
 #ifndef KERNEL
@@ -877,7 +877,7 @@ void vdbgln(StringView fmtstr, TypeErasedFormatParams& params)
 
     StringBuilder builder;
 
-#ifdef __serenity__
+#ifdef AK_OS_SERENITY
 #    ifdef KERNEL
     if (Kernel::Processor::is_initialized()) {
         struct timespec ts = {};
@@ -914,7 +914,7 @@ void vdbgln(StringView fmtstr, TypeErasedFormatParams& params)
 
     auto const string = builder.string_view();
 
-#ifdef __serenity__
+#ifdef AK_OS_SERENITY
 #    ifdef KERNEL
     if (!Kernel::Processor::is_initialized()) {
         kernelearlyputstr(string.characters_without_null_termination(), string.length());
@@ -930,13 +930,11 @@ void vdmesgln(StringView fmtstr, TypeErasedFormatParams& params)
 {
     StringBuilder builder;
 
-#    ifdef __serenity__
+#    ifdef AK_OS_SERENITY
     struct timespec ts = {};
 
-#        if !ARCH(AARCH64)
     if (TimeManagement::is_initialized())
         ts = TimeManagement::the().monotonic_time(TimePrecision::Coarse).to_timespec();
-#        endif
 
     if (Kernel::Processor::is_initialized() && Kernel::Thread::current()) {
         auto& thread = *Kernel::Thread::current();
@@ -959,7 +957,7 @@ void v_critical_dmesgln(StringView fmtstr, TypeErasedFormatParams& params)
     // at OOM conditions.
 
     StringBuilder builder;
-#    ifdef __serenity__
+#    ifdef AK_OS_SERENITY
     if (Kernel::Processor::is_initialized() && Kernel::Thread::current()) {
         auto& thread = *Kernel::Thread::current();
         builder.appendff("[{}({}:{})]: ", thread.process().name(), thread.pid().value(), thread.tid().value());

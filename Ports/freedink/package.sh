@@ -3,7 +3,7 @@ port=freedink
 version=109.6
 useconfigure="true"
 use_fresh_config_sub="true"
-config_sub_path=autotools/config.sub
+config_sub_paths=("autotools/config.sub")
 depends=("SDL2" "SDL2_image" "SDL2_mixer" "SDL2_ttf" "SDL2_gfx" "gettext" "fontconfig" "glm")
 freedink_data="freedink-data-1.08.20190120"
 files="https://ftpmirror.gnu.org/gnu/freedink/freedink-${version}.tar.gz freedink-${version}.tar.gz
@@ -23,7 +23,6 @@ launcher_command="/usr/local/bin/freedink --software-rendering --truecolor --ref
 install() {
     target_dir="${SERENITY_INSTALL_ROOT}${resource_path}"
     run_nocd mkdir -p ${target_dir}
-    run_nocd tar zxvf ${freedink_data}.tar.gz
     run_nocd cp -R ${freedink_data}/* ${target_dir}
 }
 

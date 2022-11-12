@@ -33,7 +33,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     args_parser.add_option(flag_human_readable, "Print human-readable sizes", "human-readable", 'h');
     args_parser.parse(arguments);
 
-    auto file = TRY(Core::File::open("/proc/df", Core::OpenMode::ReadOnly));
+    auto file = TRY(Core::File::open("/sys/kernel/df", Core::OpenMode::ReadOnly));
 
     if (flag_human_readable) {
         outln("Filesystem      Size        Used    Available   Mount point");
@@ -46,13 +46,13 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     auto const& json = json_result.as_array();
     json.for_each([](auto& value) {
         auto& fs_object = value.as_object();
-        auto fs = fs_object.get("class_name").to_string();
-        auto total_block_count = fs_object.get("total_block_count").to_u64();
-        auto free_block_count = fs_object.get("free_block_count").to_u64();
-        [[maybe_unused]] auto total_inode_count = fs_object.get("total_inode_count").to_u64();
-        [[maybe_unused]] auto free_inode_count = fs_object.get("free_inode_count").to_u64();
-        auto block_size = fs_object.get("block_size").to_u64();
-        auto mount_point = fs_object.get("mount_point").to_string();
+        auto fs = fs_object.get("class_name"sv).to_string();
+        auto total_block_count = fs_object.get("total_block_count"sv).to_u64();
+        auto free_block_count = fs_object.get("free_block_count"sv).to_u64();
+        [[maybe_unused]] auto total_inode_count = fs_object.get("total_inode_count"sv).to_u64();
+        [[maybe_unused]] auto free_inode_count = fs_object.get("free_inode_count"sv).to_u64();
+        auto block_size = fs_object.get("block_size"sv).to_u64();
+        auto mount_point = fs_object.get("mount_point"sv).to_string();
 
         out("{:10}", fs);
 

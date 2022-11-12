@@ -534,12 +534,12 @@ bool FILE::Buffer::enqueue_front(u8 byte)
 
 void FILE::lock()
 {
-    __pthread_mutex_lock(&m_mutex);
+    pthread_mutex_lock(&m_mutex);
 }
 
 void FILE::unlock()
 {
-    __pthread_mutex_unlock(&m_mutex);
+    pthread_mutex_unlock(&m_mutex);
 }
 
 extern "C" {
@@ -631,18 +631,19 @@ char* fgets(char* buffer, int size, FILE* stream)
 int fgetc(FILE* stream)
 {
     VERIFY(stream);
-    char ch;
-    size_t nread = fread(&ch, sizeof(char), 1, stream);
-    if (nread == 1)
+    unsigned char ch;
+    size_t nread = fread(&ch, sizeof(unsigned char), 1, stream);
+    if (nread == 1) {
         return ch;
+    }
     return EOF;
 }
 
 int fgetc_unlocked(FILE* stream)
 {
     VERIFY(stream);
-    char ch;
-    size_t nread = fread_unlocked(&ch, sizeof(char), 1, stream);
+    unsigned char ch;
+    size_t nread = fread_unlocked(&ch, sizeof(unsigned char), 1, stream);
     if (nread == 1)
         return ch;
     return EOF;
@@ -1297,6 +1298,15 @@ FILE* tmpfile()
     // FIXME: instead of using this hack, implement with O_TMPFILE or similar
     unlink(tmp_path);
     return fdopen(fd, "rw");
+}
+
+// https://pubs.opengroup.org/onlinepubs/9699919799/functions/ctermid.html
+char* ctermid(char* s)
+{
+    static char tty_path[L_ctermid] = "/dev/tty";
+    if (s)
+        return strcpy(s, tty_path);
+    return tty_path;
 }
 
 size_t __fpending(FILE* stream)

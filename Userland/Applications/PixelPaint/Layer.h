@@ -2,6 +2,7 @@
  * Copyright (c) 2020-2021, Andreas Kling <kling@serenityos.org>
  * Copyright (c) 2022, the SerenityOS developers.
  * Copyright (c) 2022, Tobias Christiansen <tobyase@serenityos.org>
+ * Copyright (c) 2022, Timothy Slater <tslater2006@gmail.com>
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
@@ -13,6 +14,7 @@
 #include <AK/String.h>
 #include <AK/Weakable.h>
 #include <LibGfx/Bitmap.h>
+#include <LibGfx/Painter.h>
 
 namespace PixelPaint {
 
@@ -44,6 +46,7 @@ public:
     Gfx::Bitmap* mask_bitmap() { return m_mask_bitmap; }
 
     void create_mask();
+    Gfx::Bitmap& get_scratch_edited_bitmap();
 
     Gfx::IntSize size() const { return content_bitmap().size(); }
 
@@ -56,6 +59,11 @@ public:
     void flip(Gfx::Orientation orientation);
     void rotate(Gfx::RotationDirection direction);
     void crop(Gfx::IntRect const& rect);
+    void resize(Gfx::IntSize const& new_size, Gfx::Painter::ScalingMode scaling_mode);
+    void resize(Gfx::IntRect const& new_rect, Gfx::Painter::ScalingMode scaling_mode);
+    void resize(Gfx::IntSize const& new_size, Gfx::IntPoint const& new_location, Gfx::Painter::ScalingMode scaling_mode);
+
+    Optional<Gfx::IntRect> nonempty_content_bounding_rect() const;
 
     ErrorOr<void> try_set_bitmaps(NonnullRefPtr<Gfx::Bitmap> content, RefPtr<Gfx::Bitmap> mask);
 
@@ -96,6 +104,7 @@ private:
     String m_name;
     Gfx::IntPoint m_location;
     NonnullRefPtr<Gfx::Bitmap> m_content_bitmap;
+    RefPtr<Gfx::Bitmap> m_scratch_edited_bitmap { nullptr };
     RefPtr<Gfx::Bitmap> m_mask_bitmap { nullptr };
     NonnullRefPtr<Gfx::Bitmap> m_cached_display_bitmap;
 

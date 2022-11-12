@@ -92,11 +92,14 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 
     TRY(server->listen(ipv4_address.value(), port));
 
-    outln("Listening on {}:{}", ipv4_address.value(), port);
+    out("Listening on ");
+    out("\033]8;;http://{}:{}\033\\", ipv4_address.value(), port);
+    out("{}:{}", ipv4_address.value(), port);
+    outln("\033]8;;\033\\");
 
     TRY(Core::System::unveil("/etc/timezone", "r"));
     TRY(Core::System::unveil("/res/icons", "r"));
-    TRY(Core::System::unveil(real_root_path.characters(), "r"));
+    TRY(Core::System::unveil(real_root_path, "r"sv));
     TRY(Core::System::unveil(nullptr, nullptr));
 
     TRY(Core::System::pledge("stdio accept rpath"));

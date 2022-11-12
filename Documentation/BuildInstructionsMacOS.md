@@ -13,7 +13,7 @@ Make sure you also have all the following dependencies installed:
 
 ```console
 # core
-brew install coreutils e2fsprogs qemu bash gcc@11 imagemagick ninja cmake ccache rsync zstd
+brew install coreutils e2fsprogs qemu bash gcc@12 imagemagick ninja cmake ccache rsync zstd
 
 # (option 1) fuse + ext2
 brew install m4 autoconf automake libtool
@@ -34,3 +34,4 @@ Notes:
 
 - Installing macfuse for the first time requires enabling its system extension in System Preferences and then restarting
   your machine. The output from installing macfuse with brew says this, but it's easy to miss.
+- It's important to make sure that Xcode is not only installed but also accordingly updated, otherwise CMake will run into incompatibilities with GCC.

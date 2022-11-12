@@ -6,7 +6,7 @@
     }
 
     @GUI::Widget {
-        shrink_to_fit: true
+        preferred_width: 103
         layout: @GUI::VerticalBoxLayout {
             margins: [0, 4]
         }
@@ -19,7 +19,7 @@
 
         @GUI::Tray {
             name: "common_locations_tray"
-            fixed_width: 95
+            min_width: 60
         }
 
         @GUI::Label {
@@ -37,15 +37,18 @@
         layout: @GUI::VerticalBoxLayout {}
 
         @GUI::Widget {
-            shrink_to_fit: true
+            preferred_height: "fit"
             layout: @GUI::HorizontalBoxLayout {}
 
             @GUI::TextBox {
                 name: "location_textbox"
+                preferred_width: "opportunistic_grow"
+                min_width: 80
             }
 
             @GUI::Toolbar {
                 name: "toolbar"
+                preferred_width: "shrink"
             }
         }
 
@@ -54,7 +57,7 @@
         }
 
         @GUI::Widget {
-            shrink_to_fit: true
+            preferred_height: "fit"
             layout: @GUI::VerticalBoxLayout {}
 
             @GUI::Widget {
@@ -69,10 +72,9 @@
                     fixed_width: 20
                 }
 
-                @GUI::Button {
+                @GUI::DialogButton {
                     name: "ok_button"
                     text: "OK"
-                    fixed_width: 75
                 }
             }
 
@@ -80,12 +82,11 @@
                 fixed_height: 22
                 layout: @GUI::HorizontalBoxLayout {}
 
-                @GUI::Widget {}
+                @GUI::Layout::Spacer {}
 
-                @GUI::Button {
+                @GUI::DialogButton {
                     name: "cancel_button"
                     text: "Cancel"
-                    fixed_width: 75
                 }
             }
         }

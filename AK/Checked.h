@@ -199,6 +199,28 @@ public:
         m_value /= other;
     }
 
+    constexpr void saturating_sub(T other)
+    {
+        sub(other);
+        // Depending on whether other was positive or negative, we have to saturate to min or max.
+        if (m_overflow && other <= 0)
+            m_value = NumericLimits<T>::max();
+        else if (m_overflow)
+            m_value = NumericLimits<T>::min();
+        m_overflow = false;
+    }
+
+    constexpr void saturating_add(T other)
+    {
+        add(other);
+        // Depending on whether other was positive or negative, we have to saturate to max or min.
+        if (m_overflow && other >= 0)
+            m_value = NumericLimits<T>::max();
+        else if (m_overflow)
+            m_value = NumericLimits<T>::min();
+        m_overflow = false;
+    }
+
     constexpr Checked& operator+=(Checked const& other)
     {
         m_overflow |= other.m_overflow;
@@ -280,7 +302,7 @@ public:
     template<typename U, typename V>
     [[nodiscard]] static constexpr bool addition_would_overflow(U u, V v)
     {
-#ifdef __clang__
+#if defined(AK_COMPILER_CLANG)
         Checked checked;
         checked = u;
         checked += v;
@@ -293,7 +315,7 @@ public:
     template<typename U, typename V>
     [[nodiscard]] static constexpr bool multiplication_would_overflow(U u, V v)
     {
-#ifdef __clang__
+#if defined(AK_COMPILER_CLANG)
         Checked checked;
         checked = u;
         checked *= v;

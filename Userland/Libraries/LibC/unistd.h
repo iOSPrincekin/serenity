@@ -16,6 +16,7 @@
 #include <Kernel/API/POSIX/unistd.h>
 #include <fd_set.h>
 #include <limits.h>
+#include <sys/cdefs.h>
 
 __BEGIN_DECLS
 
@@ -120,6 +121,9 @@ char* getpass(char const* prompt);
 int pause(void);
 int chroot(char const*);
 int getdtablesize(void);
+int nice(int incr);
+int brk(void* addr);
+void* sbrk(intptr_t incr);
 
 enum {
     _PC_NAME_MAX,
@@ -166,5 +170,6 @@ extern int optreset;
 extern char* optarg;
 
 int getopt(int argc, char* const* argv, char const* short_options);
+int getsubopt(char** optionp, char* const* tokens, char** valuep);
 
 __END_DECLS

@@ -38,10 +38,17 @@ ALWAYS_INLINE ErrorOr<u64> read_utf8_char(BigEndianInputBitStream& input);
 // decode a single number encoded with exponential golomb encoding of the specified order
 ALWAYS_INLINE ErrorOr<i32> decode_unsigned_exp_golomb(u8 order, BigEndianInputBitStream& bit_input);
 
+// Loader for the Free Lossless Audio Codec (FLAC)
+// This loader supports all audio features of FLAC, although audio from more than two channels is discarded.
+// The loader currently supports the STREAMINFO, PADDING, and SEEKTABLE metadata blocks.
+// See: https://xiph.org/flac/documentation_format_overview.html
+//      https://xiph.org/flac/format.html (identical to IETF draft version 2)
+//      https://datatracker.ietf.org/doc/html/draft-ietf-cellar-flac-02 (all section numbers refer to this specification)
+//      https://datatracker.ietf.org/doc/html/draft-ietf-cellar-flac-03 (newer IETF draft that uses incompatible numberings and names)
 class FlacLoaderPlugin : public LoaderPlugin {
 public:
     explicit FlacLoaderPlugin(StringView path);
-    explicit FlacLoaderPlugin(Bytes& buffer);
+    explicit FlacLoaderPlugin(Bytes buffer);
     ~FlacLoaderPlugin()
     {
     }
@@ -59,7 +66,6 @@ public:
     virtual u16 num_channels() override { return m_num_channels; }
     virtual String format_name() override { return "FLAC (.flac)"; }
     virtual PcmSampleFormat pcm_format() override { return m_sample_format; }
-    virtual RefPtr<Core::File> file() override { return m_file; }
 
     bool is_fixed_blocksize_stream() const { return m_min_block_size == m_max_block_size; }
     bool sample_count_unknown() const { return m_total_samples == 0; }
@@ -89,9 +95,6 @@ private:
     ALWAYS_INLINE ErrorOr<u32, LoaderError> convert_sample_rate_code(u8 sample_rate_code);
     ALWAYS_INLINE ErrorOr<PcmSampleFormat, LoaderError> convert_bit_depth_code(u8 bit_depth_code);
 
-    RefPtr<Core::File> m_file;
-    Optional<LoaderError> m_error {};
-
     // Data obtained directly from the FLAC metadata: many values have specific bit counts
     u32 m_sample_rate { 0 };         // 20 bit
     u8 m_num_channels { 0 };         // 3 bit
@@ -108,7 +111,6 @@ private:
 
     // keep track of the start of the data in the FLAC stream to seek back more easily
     u64 m_data_start_location { 0 };
-    OwnPtr<Core::Stream::SeekableStream> m_stream;
     Optional<FlacFrameHeader> m_current_frame;
     // Whatever the last get_more_samples() call couldn't return gets stored here.
     Vector<Sample, FLAC_BUFFER_SIZE> m_unread_data;

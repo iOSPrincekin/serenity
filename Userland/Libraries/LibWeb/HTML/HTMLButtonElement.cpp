@@ -13,6 +13,8 @@ namespace Web::HTML {
 HTMLButtonElement::HTMLButtonElement(DOM::Document& document, DOM::QualifiedName qualified_name)
     : HTMLElement(document, move(qualified_name))
 {
+    set_prototype(&Bindings::cached_web_prototype(realm(), "HTMLButtonElement"));
+
     // https://html.spec.whatwg.org/multipage/form-elements.html#the-button-element:activation-behaviour
     activation_behavior = [this](auto&) {
         // 1. If element is disabled, then return.
@@ -56,7 +58,7 @@ String HTMLButtonElement::type() const
     auto value = attribute(HTML::AttributeNames::type);
 
 #define __ENUMERATE_HTML_BUTTON_TYPE_ATTRIBUTE(keyword, _) \
-    if (value.equals_ignoring_case(#keyword))              \
+    if (value.equals_ignoring_case(#keyword##sv))          \
         return #keyword;
     ENUMERATE_HTML_BUTTON_TYPE_ATTRIBUTES
 #undef __ENUMERATE_HTML_BUTTON_TYPE_ATTRIBUTE
@@ -70,7 +72,7 @@ HTMLButtonElement::TypeAttributeState HTMLButtonElement::type_state() const
     auto value = attribute(HTML::AttributeNames::type);
 
 #define __ENUMERATE_HTML_BUTTON_TYPE_ATTRIBUTE(keyword, state) \
-    if (value.equals_ignoring_case(#keyword))                  \
+    if (value.equals_ignoring_case(#keyword##sv))              \
         return HTMLButtonElement::TypeAttributeState::state;
     ENUMERATE_HTML_BUTTON_TYPE_ATTRIBUTES
 #undef __ENUMERATE_HTML_BUTTON_TYPE_ATTRIBUTE
@@ -81,7 +83,14 @@ HTMLButtonElement::TypeAttributeState HTMLButtonElement::type_state() const
 
 void HTMLButtonElement::set_type(String const& type)
 {
-    set_attribute(HTML::AttributeNames::type, type);
+    MUST(set_attribute(HTML::AttributeNames::type, type));
+}
+
+// https://html.spec.whatwg.org/multipage/interaction.html#dom-tabindex
+i32 HTMLButtonElement::default_tab_index_value() const
+{
+    // See the base function for the spec comments.
+    return 0;
 }
 
 }

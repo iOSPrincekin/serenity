@@ -11,9 +11,9 @@
 namespace Web::DOM {
 
 class ShadowRoot final : public DocumentFragment {
-public:
-    ShadowRoot(Document&, Element&);
+    WEB_PLATFORM_OBJECT(ShadowRoot, DocumentFragment);
 
+public:
     bool closed() const { return m_closed; }
 
     bool delegates_focus() const { return m_delegates_focus; }
@@ -28,10 +28,12 @@ public:
     // NOTE: This is intended for the JS bindings.
     String mode() const { return m_closed ? "closed" : "open"; }
 
-    String inner_html() const;
-    ExceptionOr<void> set_inner_html(String const&);
+    WebIDL::ExceptionOr<String> inner_html() const;
+    WebIDL::ExceptionOr<void> set_inner_html(String const&);
 
 private:
+    ShadowRoot(Document&, Element&);
+
     // ^Node
     virtual FlyString node_name() const override { return "#shadow-root"; }
     virtual bool is_shadow_root() const final { return true; }
@@ -44,5 +46,23 @@ private:
 
 template<>
 inline bool Node::fast_is<ShadowRoot>() const { return is_shadow_root(); }
+
+template<typename Callback>
+inline IterationDecision Node::for_each_shadow_including_descendant(Callback callback)
+{
+    if (callback(*this) == IterationDecision::Break)
+        return IterationDecision::Break;
+    for (auto* child = first_child(); child; child = child->next_sibling()) {
+        if (child->is_element()) {
+            if (JS::GCPtr<ShadowRoot> shadow_root = static_cast<Element*>(child)->shadow_root()) {
+                if (shadow_root->for_each_shadow_including_descendant(callback) == IterationDecision::Break)
+                    return IterationDecision::Break;
+            }
+        }
+        if (child->for_each_shadow_including_descendant(callback) == IterationDecision::Break)
+            return IterationDecision::Break;
+    }
+    return IterationDecision::Continue;
+}
 
 }

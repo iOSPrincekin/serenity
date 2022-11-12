@@ -6,28 +6,26 @@
 
 #pragma once
 
+#include <AK/AtomicRefCounted.h>
 #include <AK/Error.h>
-#include <AK/RefCounted.h>
-#include <AK/RefPtr.h>
 #include <AK/StringView.h>
 #include <Kernel/FileSystem/InodeIdentifier.h>
 #include <Kernel/Forward.h>
+#include <Kernel/Library/LockRefPtr.h>
 #include <Kernel/Locking/Mutex.h>
 #include <Kernel/UnixTypes.h>
 #include <Kernel/UserOrKernelBuffer.h>
 
 namespace Kernel {
 
-static constexpr u32 mepoch = 476763780;
-
-class FileSystem : public RefCounted<FileSystem> {
+class FileSystem : public AtomicRefCounted<FileSystem> {
     friend class Inode;
+    friend class VirtualFileSystem;
 
 public:
     virtual ~FileSystem();
 
     FileSystemID fsid() const { return m_fsid; }
-    static FileSystem* from_fsid(FileSystemID);
     static void sync();
     static void lock_all();
 
@@ -43,7 +41,7 @@ public:
     virtual unsigned total_inode_count() const { return 0; }
     virtual unsigned free_inode_count() const { return 0; }
 
-    virtual ErrorOr<void> prepare_to_unmount() { return {}; }
+    ErrorOr<void> prepare_to_unmount();
 
     struct DirectoryEntryView {
         DirectoryEntryView(StringView name, InodeIdentifier, u8 file_type);
@@ -63,30 +61,27 @@ public:
     // Converts file types that are used internally by the filesystem to DT_* types
     virtual u8 internal_file_type_to_directory_entry_type(DirectoryEntryView const& entry) const { return entry.file_type; }
 
+    SpinlockProtected<size_t>& mounted_count(Badge<VirtualFileSystem>) { return m_attach_count; }
+
 protected:
     FileSystem();
 
     void set_block_size(u64 size) { m_block_size = size; }
     void set_fragment_size(size_t size) { m_fragment_size = size; }
 
-    mutable Mutex m_lock { "FS" };
+    virtual ErrorOr<void> prepare_to_clear_last_mount() { return {}; }
+
+    mutable Mutex m_lock { "FS"sv };
 
 private:
     FileSystemID m_fsid;
     u64 m_block_size { 0 };
     size_t m_fragment_size { 0 };
     bool m_readonly { false };
+
+    SpinlockProtected<size_t> m_attach_count { LockRank::FileSystem, 0 };
+    IntrusiveListNode<FileSystem> m_file_system_node;
 };
-
-inline FileSystem* InodeIdentifier::fs() // NOLINT(readability-make-member-function-const) const InodeIdentifiers should not be able to modify the FileSystem
-{
-    return FileSystem::from_fsid(m_fsid);
-}
-
-inline FileSystem const* InodeIdentifier::fs() const
-{
-    return FileSystem::from_fsid(m_fsid);
-}
 
 }
 

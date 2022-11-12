@@ -31,13 +31,13 @@ public:
     virtual ErrorOr<void> unmap_framebuffer() override;
     virtual ErrorOr<void> map_framebuffer() override;
 
+    virtual ErrorOr<void> set_safe_head_mode_setting() override;
+
     virtual ErrorOr<void> set_head_mode_setting(GraphicsHeadModeSetting) override;
     virtual ErrorOr<GraphicsHeadModeSetting> get_head_mode_setting() override;
 
-    virtual ErrorOr<void> write_all_contents(Gfx::IntRect const&) override;
-
     String m_device {};
-    int m_framebuffer_fd { -1 };
+    int m_display_connector_fd { -1 };
 
     Gfx::ARGB32* scanline(int buffer_index, int y) const
     {

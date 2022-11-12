@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
-#include <Kernel/Arch/x86/IO.h>
+#include <Kernel/Arch/Delay.h>
 #include <Kernel/Bus/PCI/API.h>
 #include <Kernel/Debug.h>
 #include <Kernel/Devices/DeviceManagement.h>
@@ -175,10 +175,10 @@ Optional<IntelGraphics::PLLSettings> IntelNativeDisplayConnector::create_pll_set
     return {};
 }
 
-NonnullRefPtr<IntelNativeDisplayConnector> IntelNativeDisplayConnector::must_create(PhysicalAddress framebuffer_address, PhysicalAddress registers_region_address, size_t registers_region_length)
+NonnullLockRefPtr<IntelNativeDisplayConnector> IntelNativeDisplayConnector::must_create(PhysicalAddress framebuffer_address, size_t framebuffer_resource_size, PhysicalAddress registers_region_address, size_t registers_region_length)
 {
-    auto registers_region = MUST(MM.allocate_kernel_region(PhysicalAddress(registers_region_address), registers_region_length, "Intel Native Graphics Registers", Memory::Region::Access::ReadWrite));
-    auto device_or_error = DeviceManagement::try_create_device<IntelNativeDisplayConnector>(framebuffer_address, move(registers_region));
+    auto registers_region = MUST(MM.allocate_kernel_region(PhysicalAddress(registers_region_address), registers_region_length, "Intel Native Graphics Registers"sv, Memory::Region::Access::ReadWrite));
+    auto device_or_error = DeviceManagement::try_create_device<IntelNativeDisplayConnector>(framebuffer_address, framebuffer_resource_size, move(registers_region));
     VERIFY(!device_or_error.is_error());
     auto connector = device_or_error.release_value();
     MUST(connector->initialize_gmbus_settings_and_read_edid());
@@ -208,15 +208,6 @@ ErrorOr<void> IntelNativeDisplayConnector::unblank()
     return Error::from_errno(ENOTIMPL);
 }
 
-ErrorOr<size_t> IntelNativeDisplayConnector::write_to_first_surface(u64 offset, UserOrKernelBuffer const& buffer, size_t length)
-{
-    VERIFY(m_control_lock.is_locked());
-    if (offset + length > m_framebuffer_region->size())
-        return Error::from_errno(EOVERFLOW);
-    TRY(buffer.read(m_framebuffer_data + offset, 0, length));
-    return length;
-}
-
 void IntelNativeDisplayConnector::enable_console()
 {
     VERIFY(m_control_lock.is_locked());
@@ -238,19 +229,13 @@ ErrorOr<void> IntelNativeDisplayConnector::flush_first_surface()
 
 ErrorOr<void> IntelNativeDisplayConnector::create_attached_framebuffer_console()
 {
-    auto rounded_size = TRY(Memory::page_round_up(m_current_mode_setting.vertical_active * m_current_mode_setting.horizontal_stride));
-    m_framebuffer_region = TRY(MM.allocate_kernel_region(m_framebuffer_address.page_base(), rounded_size, "Framebuffer"sv, Memory::Region::Access::ReadWrite));
-    [[maybe_unused]] auto result = m_framebuffer_region->set_write_combine(true);
-    m_framebuffer_data = m_framebuffer_region->vaddr().offset(m_framebuffer_address.offset_in_page()).as_ptr();
-
-    m_framebuffer_console = Graphics::ContiguousFramebufferConsole::initialize(m_framebuffer_address, m_current_mode_setting.horizontal_active, m_current_mode_setting.vertical_active, m_current_mode_setting.horizontal_stride);
+    m_framebuffer_console = Graphics::ContiguousFramebufferConsole::initialize(m_framebuffer_address.value(), m_current_mode_setting.horizontal_active, m_current_mode_setting.vertical_active, m_current_mode_setting.horizontal_stride);
     GraphicsManagement::the().set_console(*m_framebuffer_console);
     return {};
 }
 
-IntelNativeDisplayConnector::IntelNativeDisplayConnector(PhysicalAddress framebuffer_address, NonnullOwnPtr<Memory::Region> registers_region)
-    : DisplayConnector()
-    , m_framebuffer_address(framebuffer_address)
+IntelNativeDisplayConnector::IntelNativeDisplayConnector(PhysicalAddress framebuffer_address, size_t framebuffer_resource_size, NonnullOwnPtr<Memory::Region> registers_region)
+    : DisplayConnector(framebuffer_address, framebuffer_resource_size, true)
     , m_registers_region(move(registers_region))
 {
     {
@@ -386,7 +371,7 @@ bool IntelNativeDisplayConnector::gmbus_wait_for(IntelGraphics::GMBusStatus desi
         default:
             VERIFY_NOT_REACHED();
         }
-        IO::delay(1000);
+        microseconds_delay(1000);
         milliseconds_passed++;
     }
 }
@@ -506,7 +491,7 @@ bool IntelNativeDisplayConnector::set_safe_crt_resolution()
     dbgln_if(INTEL_GRAPHICS_DEBUG, "PLL settings for {} {} {} {} {}", settings.n, settings.m1, settings.m2, settings.p1, settings.p2);
     enable_dpll_without_vga(pll_settings.value(), dac_multiplier);
     set_display_timings(modesetting);
-    enable_output(m_framebuffer_address, modesetting.horizontal.blanking_start());
+    enable_output(m_framebuffer_address.value(), modesetting.horizontal.blanking_start());
 
     DisplayConnector::ModeSetting mode_set {
         .horizontal_stride = modesetting.horizontal.blanking_start() * sizeof(u32),
@@ -524,10 +509,6 @@ bool IntelNativeDisplayConnector::set_safe_crt_resolution()
     };
 
     m_current_mode_setting = mode_set;
-
-    auto rounded_size = MUST(Memory::page_round_up(m_current_mode_setting.vertical_active * m_current_mode_setting.horizontal_stride));
-    m_framebuffer_region = MUST(MM.allocate_kernel_region(m_framebuffer_address, rounded_size, "Intel Native Graphics Framebuffer", Memory::Region::Access::ReadWrite));
-    m_framebuffer_data = m_framebuffer_region->vaddr().offset(m_framebuffer_address.offset_in_page()).as_ptr();
 
     if (m_framebuffer_console)
         m_framebuffer_console->set_resolution(m_current_mode_setting.horizontal_active, m_current_mode_setting.vertical_active, m_current_mode_setting.horizontal_stride);
@@ -563,7 +544,7 @@ void IntelNativeDisplayConnector::set_display_timings(Graphics::Modesetting cons
     dbgln_if(INTEL_GRAPHICS_DEBUG, "sourceSize - {}, {}", (modesetting.vertical.active - 1), (modesetting.horizontal.active - 1));
     write_to_register(IntelGraphics::RegisterIndex::PipeASource, (modesetting.vertical.active - 1) | (modesetting.horizontal.active - 1) << 16);
 
-    IO::delay(200);
+    microseconds_delay(200);
 }
 
 bool IntelNativeDisplayConnector::wait_for_enabled_pipe_a(size_t milliseconds_timeout) const
@@ -572,7 +553,7 @@ bool IntelNativeDisplayConnector::wait_for_enabled_pipe_a(size_t milliseconds_ti
     while (current_time < milliseconds_timeout) {
         if (pipe_a_enabled())
             return true;
-        IO::delay(1000);
+        microseconds_delay(1000);
         current_time++;
     }
     return false;
@@ -583,7 +564,7 @@ bool IntelNativeDisplayConnector::wait_for_disabled_pipe_a(size_t milliseconds_t
     while (current_time < milliseconds_timeout) {
         if (!pipe_a_enabled())
             return true;
-        IO::delay(1000);
+        microseconds_delay(1000);
         current_time++;
     }
     return false;
@@ -595,7 +576,7 @@ bool IntelNativeDisplayConnector::wait_for_disabled_pipe_b(size_t milliseconds_t
     while (current_time < milliseconds_timeout) {
         if (!pipe_b_enabled())
             return true;
-        IO::delay(1000);
+        microseconds_delay(1000);
         current_time++;
     }
     return false;
@@ -681,14 +662,14 @@ void IntelNativeDisplayConnector::enable_dpll_without_vga(IntelGraphics::PLLSett
 
     set_dpll_registers(settings);
 
-    IO::delay(200);
+    microseconds_delay(200);
 
     write_to_register(IntelGraphics::RegisterIndex::DPLLControlA, (6 << 9) | (settings.p1) << 16 | (1 << 26) | (1 << 28) | (1 << 31));
     write_to_register(IntelGraphics::RegisterIndex::DPLLMultiplierA, (dac_multiplier - 1) | ((dac_multiplier - 1) << 8));
 
     // The specification says we should wait (at least) about 150 microseconds
     // after enabling the DPLL to allow the clock to stabilize
-    IO::delay(200);
+    microseconds_delay(200);
     VERIFY(read_from_register(IntelGraphics::RegisterIndex::DPLLControlA) & (1 << 31));
 }
 

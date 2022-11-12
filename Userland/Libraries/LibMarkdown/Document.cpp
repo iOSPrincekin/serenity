@@ -12,23 +12,29 @@
 
 namespace Markdown {
 
-String Document::render_to_html() const
+String Document::render_to_html(StringView extra_head_contents) const
 {
     StringBuilder builder;
-
-    builder.append("<!DOCTYPE html>\n");
-    builder.append("<html>\n");
-    builder.append("<head>\n");
-    builder.append("<style>\n");
-    builder.append("code { white-space: pre; }\n");
-    builder.append("</style>\n");
-    builder.append("</head>\n");
-    builder.append("<body>\n");
+    builder.append(R"~~~(<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        code { white-space: pre; }
+    </style>
+)~~~"sv);
+    if (!extra_head_contents.is_empty())
+        builder.append(extra_head_contents);
+    builder.append(R"~~~(
+</head>
+<body>
+)~~~"sv);
 
     builder.append(render_to_inline_html());
 
-    builder.append("</body>\n");
-    builder.append("</html>\n");
+    builder.append(R"~~~(
+</body>
+</html>)~~~"sv);
+
     return builder.build();
 }
 

@@ -26,13 +26,12 @@ struct RegisterWindow {
 
 class Interpreter {
 public:
-    Interpreter(GlobalObject&, Realm&);
+    explicit Interpreter(Realm&);
     ~Interpreter();
 
     // FIXME: Remove this thing once we don't need it anymore!
     static Interpreter* current();
 
-    GlobalObject& global_object() { return m_global_object; }
     Realm& realm() { return m_realm; }
     VM& vm() { return m_vm; }
 
@@ -65,10 +64,14 @@ public:
     ThrowCompletionOr<void> continue_pending_unwind(Label const& resume_label);
 
     Executable const& current_executable() { return *m_current_executable; }
+    BasicBlock const& current_block() const { return *m_current_block; }
+    size_t pc() const { return m_pc ? m_pc->offset() : 0; }
 
     enum class OptimizationLevel {
-        Default,
+        None,
+        Optimize,
         __Count,
+        Default = None,
     };
     static Bytecode::PassManager& optimization_pipeline(OptimizationLevel = OptimizationLevel::Default);
 
@@ -90,7 +93,6 @@ private:
     static AK::Array<OwnPtr<PassManager>, static_cast<UnderlyingType<Interpreter::OptimizationLevel>>(Interpreter::OptimizationLevel::__Count)> s_optimization_pipelines;
 
     VM& m_vm;
-    GlobalObject& m_global_object;
     Realm& m_realm;
     Vector<Variant<NonnullOwnPtr<RegisterWindow>, RegisterWindow*>> m_register_windows;
     Optional<BasicBlock const*> m_pending_jump;
@@ -99,6 +101,8 @@ private:
     Vector<UnwindInfo> m_unwind_contexts;
     Handle<Value> m_saved_exception;
     OwnPtr<JS::Interpreter> m_ast_interpreter;
+    BasicBlock const* m_current_block { nullptr };
+    InstructionStreamIterator* m_pc { nullptr };
 };
 
 extern bool g_dump_bytecode;

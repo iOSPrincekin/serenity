@@ -14,10 +14,9 @@ namespace Web::HTML {
 class HTMLAnchorElement final
     : public HTMLElement
     , public HTMLHyperlinkElementUtils {
-public:
-    using WrapperType = Bindings::HTMLAnchorElementWrapper;
+    WEB_PLATFORM_OBJECT(HTMLAnchorElement, HTMLElement);
 
-    HTMLAnchorElement(DOM::Document&, DOM::QualifiedName);
+public:
     virtual ~HTMLAnchorElement() override;
 
     String target() const { return attribute(HTML::AttributeNames::target); }
@@ -30,10 +29,13 @@ public:
     virtual bool is_html_anchor_element() const override { return true; }
 
 private:
+    HTMLAnchorElement(DOM::Document&, DOM::QualifiedName);
+
     void run_activation_behavior(Web::DOM::Event const&);
 
     // ^DOM::Element
     virtual void parse_attribute(FlyString const& name, String const& value) override;
+    virtual i32 default_tab_index_value() const override;
 
     // ^HTML::HTMLHyperlinkElementUtils
     virtual DOM::Document& hyperlink_element_utils_document() override { return document(); }

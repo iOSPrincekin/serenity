@@ -11,13 +11,12 @@
 namespace Web::HTML {
 
 class HTMLProgressElement final : public HTMLElement {
-public:
-    using WrapperType = Bindings::HTMLProgressElementWrapper;
+    WEB_PLATFORM_OBJECT(HTMLProgressElement, HTMLElement);
 
-    HTMLProgressElement(DOM::Document&, DOM::QualifiedName);
+public:
     virtual ~HTMLProgressElement() override;
 
-    virtual RefPtr<Layout::Node> create_layout_node(NonnullRefPtr<CSS::StyleProperties>) override;
+    virtual JS::GCPtr<Layout::Node> create_layout_node(NonnullRefPtr<CSS::StyleProperties>) override;
 
     double value() const;
     void set_value(double);
@@ -31,7 +30,13 @@ public:
     // https://html.spec.whatwg.org/multipage/forms.html#category-label
     virtual bool is_labelable() const override { return true; }
 
+    bool using_system_appearance() const;
+
 private:
+    HTMLProgressElement(DOM::Document&, DOM::QualifiedName);
+
+    void progress_position_updated();
+
     bool is_determinate() const { return has_attribute(HTML::AttributeNames::value); }
 };
 

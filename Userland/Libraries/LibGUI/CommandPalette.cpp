@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2022, Andreas Kling <kling@serenityos.org>
- * Copyright (c) 2022, Jakob-Niklas See <git@nwex.de>
+ * Copyright (c) 2022, networkException <networkexception@serenityos.org>
  * Copyright (c) 2022, the SerenityOS developers.
  *
  * SPDX-License-Identifier: BSD-2-Clause
@@ -176,6 +176,7 @@ CommandPalette::CommandPalette(GUI::Window& parent_window, ScreenPosition screen
     : GUI::Dialog(&parent_window, screen_position)
 {
     set_frameless(true);
+    set_blocks_emoji_input(true);
     resize(450, 300);
 
     collect_actions(parent_window);
@@ -193,7 +194,7 @@ CommandPalette::CommandPalette(GUI::Window& parent_window, ScreenPosition screen
     m_table_view->set_column_headers_visible(false);
 
     m_filter_model = MUST(GUI::FilteringProxyModel::create(*m_model));
-    m_filter_model->set_filter_term("");
+    m_filter_model->set_filter_term(""sv);
 
     m_table_view->set_column_painting_delegate(0, make<ActionIconDelegate>());
     m_table_view->set_model(*m_filter_model);
@@ -223,8 +224,13 @@ CommandPalette::CommandPalette(GUI::Window& parent_window, ScreenPosition screen
 
     m_text_box->set_focus(true);
 
-    on_active_window_change = [this](bool is_active_window) {
-        if (!is_active_window)
+    on_active_input_change = [this](bool is_active_input) {
+        if (!is_active_input)
+            close();
+    };
+
+    on_input_preemption = [this](InputPreemptor preemptor) {
+        if (preemptor != InputPreemptor::ContextMenu)
             close();
     };
 }
@@ -241,13 +247,17 @@ void CommandPalette::collect_actions(GUI::Window& parent_window)
         });
     };
 
+    Function<bool(GUI::Action*)> should_show_action = [&](GUI::Action* action) {
+        return action && action->is_enabled() && action->shortcut() != Shortcut(Mod_Ctrl | Mod_Shift, Key_A);
+    };
+
     Function<void(Menu&)> collect_actions_from_menu = [&](Menu& menu) {
         for (auto menu_item : menu.items()) {
             if (menu_item.submenu())
                 collect_actions_from_menu(*menu_item.submenu());
 
-            auto const* action = menu_item.action();
-            if (action && action->is_enabled())
+            auto* action = menu_item.action();
+            if (should_show_action(action))
                 actions.set(*action);
         }
     };
@@ -265,7 +275,7 @@ void CommandPalette::collect_actions(GUI::Window& parent_window)
 
     if (!parent_window.is_modal()) {
         for (auto const& it : GUI::Application::the()->global_shortcut_actions({})) {
-            if (it.value->is_enabled())
+            if (should_show_action(it.value))
                 actions.set(*it.value);
         }
     }

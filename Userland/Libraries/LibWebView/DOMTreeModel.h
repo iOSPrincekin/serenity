@@ -20,7 +20,13 @@ public:
     static NonnullRefPtr<DOMTreeModel> create(StringView dom_tree, GUI::TreeView& tree_view)
     {
         auto json_or_error = JsonValue::from_string(dom_tree).release_value_but_fixme_should_propagate_errors();
-        return adopt_ref(*new DOMTreeModel(json_or_error.as_object(), tree_view));
+        return adopt_ref(*new DOMTreeModel(json_or_error.as_object(), &tree_view));
+    }
+
+    static NonnullRefPtr<DOMTreeModel> create(StringView dom_tree)
+    {
+        auto json_or_error = JsonValue::from_string(dom_tree).release_value_but_fixme_should_propagate_errors();
+        return adopt_ref(*new DOMTreeModel(json_or_error.as_object(), nullptr));
     }
 
     virtual ~DOMTreeModel() override;
@@ -34,7 +40,7 @@ public:
     GUI::ModelIndex index_for_node(i32 node_id, Optional<Web::CSS::Selector::PseudoElement> pseudo_element) const;
 
 private:
-    DOMTreeModel(JsonObject, GUI::TreeView&);
+    DOMTreeModel(JsonObject, GUI::TreeView*);
 
     ALWAYS_INLINE JsonObject const* get_parent(JsonObject const& o) const
     {
@@ -45,14 +51,14 @@ private:
 
     ALWAYS_INLINE static JsonArray const* get_children(JsonObject const& o)
     {
-        if (auto const* maybe_children = o.get_ptr("children"); maybe_children)
+        if (auto const* maybe_children = o.get_ptr("children"sv); maybe_children)
             return &maybe_children->as_array();
         return nullptr;
     }
 
     void map_dom_nodes_to_parent(JsonObject const* parent, JsonObject const* child);
 
-    GUI::TreeView& m_tree_view;
+    GUI::TreeView* m_tree_view { nullptr };
     GUI::Icon m_document_icon;
     GUI::Icon m_element_icon;
     GUI::Icon m_text_icon;

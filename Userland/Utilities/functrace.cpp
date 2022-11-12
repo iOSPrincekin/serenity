@@ -58,7 +58,7 @@ static void print_syscall(PtraceRegisters& regs, size_t depth)
         regs.ecx,
         regs.ebx,
         end_color);
-#else
+#elif ARCH(X86_64)
     outln("=> {}SC_{}({:#x}, {:#x}, {:#x}){}",
         begin_color,
         Syscall::to_string((Syscall::Function)regs.rax),
@@ -66,6 +66,13 @@ static void print_syscall(PtraceRegisters& regs, size_t depth)
         regs.rcx,
         regs.rbx,
         end_color);
+#elif ARCH(AARCH64)
+    (void)regs;
+    (void)begin_color;
+    (void)end_color;
+    TODO_AARCH64();
+#else
+#    error Unknown architecture
 #endif
 }
 
@@ -141,8 +148,13 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 
 #if ARCH(I386)
         const FlatPtr ip = regs.value().eip;
-#else
+#elif ARCH(X86_64)
         const FlatPtr ip = regs.value().rip;
+#elif ARCH(AARCH64)
+        const FlatPtr ip = 0; // FIXME
+        TODO_AARCH64();
+#else
+#    error Unknown architecture
 #endif
 
         if (new_function) {

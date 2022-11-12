@@ -1,14 +1,17 @@
 /*
  * Copyright (c) 2018-2021, Andreas Kling <kling@serenityos.org>
+ * Copyright (c) 2022, Timothy Slater <tslater2006@gmail.com>
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/Bitmap.h>
 #include <AK/Checked.h>
 #include <AK/LexicalPath.h>
 #include <AK/Memory.h>
 #include <AK/MemoryStream.h>
 #include <AK/Optional.h>
+#include <AK/Queue.h>
 #include <AK/ScopeGuard.h>
 #include <AK/String.h>
 #include <AK/Try.h>
@@ -70,7 +73,7 @@ ErrorOr<NonnullRefPtr<Bitmap>> Bitmap::try_create(BitmapFormat format, IntSize c
 ErrorOr<NonnullRefPtr<Bitmap>> Bitmap::try_create_shareable(BitmapFormat format, IntSize const& size, int scale_factor)
 {
     if (size_would_overflow(format, size, scale_factor))
-        return Error::from_string_literal("Gfx::Bitmap::try_create_shareable size overflow"sv);
+        return Error::from_string_literal("Gfx::Bitmap::try_create_shareable size overflow");
 
     auto const pitch = minimum_pitch(size.width() * scale_factor, format);
     auto const data_size = size_in_bytes(pitch, size.height() * scale_factor);
@@ -98,38 +101,46 @@ Bitmap::Bitmap(BitmapFormat format, IntSize const& size, int scale_factor, Backi
 ErrorOr<NonnullRefPtr<Bitmap>> Bitmap::try_create_wrapper(BitmapFormat format, IntSize const& size, int scale_factor, size_t pitch, void* data)
 {
     if (size_would_overflow(format, size, scale_factor))
-        return Error::from_string_literal("Gfx::Bitmap::try_create_wrapper size overflow"sv);
+        return Error::from_string_literal("Gfx::Bitmap::try_create_wrapper size overflow");
     return adopt_ref(*new Bitmap(format, size, scale_factor, pitch, data));
 }
 
-ErrorOr<NonnullRefPtr<Bitmap>> Bitmap::try_load_from_file(String const& path, int scale_factor)
+ErrorOr<NonnullRefPtr<Bitmap>> Bitmap::try_load_from_file(StringView path, int scale_factor)
 {
-    if (scale_factor > 1 && path.starts_with("/res/")) {
-        LexicalPath lexical_path { path };
-        StringBuilder highdpi_icon_path;
-        highdpi_icon_path.append(lexical_path.dirname());
-        highdpi_icon_path.append('/');
-        highdpi_icon_path.append(lexical_path.title());
-        highdpi_icon_path.appendff("-{}x.", scale_factor);
-        highdpi_icon_path.append(lexical_path.extension());
+    if (scale_factor > 1 && path.starts_with("/res/"sv)) {
+        auto load_scaled_bitmap = [](StringView path, int scale_factor) -> ErrorOr<NonnullRefPtr<Bitmap>> {
+            LexicalPath lexical_path { path };
+            StringBuilder highdpi_icon_path;
+            TRY(highdpi_icon_path.try_appendff("{}/{}-{}x.{}", lexical_path.dirname(), lexical_path.title(), scale_factor, lexical_path.extension()));
 
-        auto highdpi_icon_string = highdpi_icon_path.to_string();
-        auto fd = TRY(Core::System::open(highdpi_icon_string, O_RDONLY));
+            auto highdpi_icon_string = highdpi_icon_path.string_view();
+            auto fd = TRY(Core::System::open(highdpi_icon_string, O_RDONLY));
 
-        auto bitmap = TRY(try_load_from_fd_and_close(fd, highdpi_icon_string));
-        if (bitmap->width() % scale_factor != 0 || bitmap->height() % scale_factor != 0)
-            return Error::from_string_literal("Bitmap::try_load_from_file: HighDPI image size should be divisible by scale factor");
-        bitmap->m_size.set_width(bitmap->width() / scale_factor);
-        bitmap->m_size.set_height(bitmap->height() / scale_factor);
-        bitmap->m_scale = scale_factor;
-        return bitmap;
+            auto bitmap = TRY(try_load_from_fd_and_close(fd, highdpi_icon_string));
+            if (bitmap->width() % scale_factor != 0 || bitmap->height() % scale_factor != 0)
+                return Error::from_string_literal("Bitmap::try_load_from_file: HighDPI image size should be divisible by scale factor");
+            bitmap->m_size.set_width(bitmap->width() / scale_factor);
+            bitmap->m_size.set_height(bitmap->height() / scale_factor);
+            bitmap->m_scale = scale_factor;
+            return bitmap;
+        };
+
+        auto scaled_bitmap_or_error = load_scaled_bitmap(path, scale_factor);
+        if (!scaled_bitmap_or_error.is_error())
+            return scaled_bitmap_or_error.release_value();
+
+        auto error = scaled_bitmap_or_error.release_error();
+        if (!(error.is_syscall() && error.code() == ENOENT)) {
+            dbgln("Couldn't load scaled bitmap: {}", error);
+            dbgln("Trying base scale instead.");
+        }
     }
 
     auto fd = TRY(Core::System::open(path, O_RDONLY));
     return try_load_from_fd_and_close(fd, path);
 }
 
-ErrorOr<NonnullRefPtr<Bitmap>> Bitmap::try_load_from_fd_and_close(int fd, String const& path)
+ErrorOr<NonnullRefPtr<Bitmap>> Bitmap::try_load_from_fd_and_close(int fd, StringView path)
 {
     auto file = TRY(Core::MappedFile::map_from_fd_and_close(fd, path));
     if (auto decoder = ImageDecoder::try_create(file->bytes())) {
@@ -138,7 +149,7 @@ ErrorOr<NonnullRefPtr<Bitmap>> Bitmap::try_load_from_fd_and_close(int fd, String
             return bitmap.release_nonnull();
     }
 
-    return Error::from_string_literal("Gfx::Bitmap unable to load from fd"sv);
+    return Error::from_string_literal("Gfx::Bitmap unable to load from fd");
 }
 
 Bitmap::Bitmap(BitmapFormat format, IntSize const& size, int scale_factor, size_t pitch, void* data)
@@ -210,22 +221,22 @@ ErrorOr<NonnullRefPtr<Bitmap>> Bitmap::try_create_from_serialized_byte_buffer(By
     };
 
     if (!read(actual_size) || !read(width) || !read(height) || !read(scale_factor) || !read(format) || !read(palette_size))
-        return Error::from_string_literal("Gfx::Bitmap::try_create_from_serialized_byte_buffer: decode failed"sv);
+        return Error::from_string_literal("Gfx::Bitmap::try_create_from_serialized_byte_buffer: decode failed");
 
     if (format > BitmapFormat::BGRA8888 || format < BitmapFormat::Indexed1)
-        return Error::from_string_literal("Gfx::Bitmap::try_create_from_serialized_byte_buffer: decode failed"sv);
+        return Error::from_string_literal("Gfx::Bitmap::try_create_from_serialized_byte_buffer: decode failed");
 
     if (!check_size({ width, height }, scale_factor, format, actual_size))
-        return Error::from_string_literal("Gfx::Bitmap::try_create_from_serialized_byte_buffer: decode failed"sv);
+        return Error::from_string_literal("Gfx::Bitmap::try_create_from_serialized_byte_buffer: decode failed");
 
     palette.ensure_capacity(palette_size);
     for (size_t i = 0; i < palette_size; ++i) {
         if (!read(palette[i]))
-            return Error::from_string_literal("Gfx::Bitmap::try_create_from_serialized_byte_buffer: decode failed"sv);
+            return Error::from_string_literal("Gfx::Bitmap::try_create_from_serialized_byte_buffer: decode failed");
     }
 
     if (stream.remaining() < actual_size)
-        return Error::from_string_literal("Gfx::Bitmap::try_create_from_serialized_byte_buffer: decode failed"sv);
+        return Error::from_string_literal("Gfx::Bitmap::try_create_from_serialized_byte_buffer: decode failed");
 
     auto data = stream.bytes().slice(stream.offset(), actual_size);
 
@@ -441,9 +452,9 @@ ErrorOr<NonnullRefPtr<Gfx::Bitmap>> Bitmap::scaled(float sx, float sy) const
     return new_bitmap;
 }
 
-ErrorOr<NonnullRefPtr<Gfx::Bitmap>> Bitmap::cropped(Gfx::IntRect crop) const
+ErrorOr<NonnullRefPtr<Gfx::Bitmap>> Bitmap::cropped(Gfx::IntRect crop, Optional<BitmapFormat> new_bitmap_format) const
 {
-    auto new_bitmap = TRY(Gfx::Bitmap::try_create(format(), { crop.width(), crop.height() }, 1));
+    auto new_bitmap = TRY(Gfx::Bitmap::try_create(new_bitmap_format.value_or(format()), { crop.width(), crop.height() }, 1));
 
     for (int y = 0; y < crop.height(); ++y) {
         for (int x = 0; x < crop.width(); ++x) {
@@ -469,6 +480,14 @@ ErrorOr<NonnullRefPtr<Bitmap>> Bitmap::to_bitmap_backed_by_anonymous_buffer() co
     return bitmap;
 }
 
+void Bitmap::invert()
+{
+    for (auto y = 0; y < height(); y++) {
+        for (auto x = 0; x < width(); x++)
+            set_pixel(x, y, get_pixel(x, y).inverted());
+    }
+}
+
 Bitmap::~Bitmap()
 {
     if (m_needs_munmap) {
@@ -482,7 +501,7 @@ Bitmap::~Bitmap()
 void Bitmap::set_mmap_name([[maybe_unused]] String const& name)
 {
     VERIFY(m_needs_munmap);
-#ifdef __serenity__
+#ifdef AK_OS_SERENITY
     ::set_mmap_name(m_data, size_in_bytes(), name.characters());
 #endif
 }
@@ -500,7 +519,7 @@ void Bitmap::set_volatile()
 {
     if (m_volatile)
         return;
-#ifdef __serenity__
+#ifdef AK_OS_SERENITY
     int rc = madvise(m_data, size_in_bytes(), MADV_SET_VOLATILE);
     if (rc < 0) {
         perror("madvise(MADV_SET_VOLATILE)");
@@ -517,7 +536,7 @@ void Bitmap::set_volatile()
         return true;
     }
 
-#ifdef __serenity__
+#ifdef AK_OS_SERENITY
     int rc = madvise(m_data, size_in_bytes(), MADV_SET_NONVOLATILE);
     if (rc < 0) {
         if (errno == ENOMEM) {
@@ -544,17 +563,17 @@ Gfx::ShareableBitmap Bitmap::to_shareable_bitmap() const
 ErrorOr<BackingStore> Bitmap::allocate_backing_store(BitmapFormat format, IntSize const& size, int scale_factor)
 {
     if (size_would_overflow(format, size, scale_factor))
-        return Error::from_string_literal("Gfx::Bitmap backing store size overflow"sv);
+        return Error::from_string_literal("Gfx::Bitmap backing store size overflow");
 
     auto const pitch = minimum_pitch(size.width() * scale_factor, format);
     auto const data_size_in_bytes = size_in_bytes(pitch, size.height() * scale_factor);
 
     int map_flags = MAP_ANONYMOUS | MAP_PRIVATE;
-#ifdef __serenity__
+#ifdef AK_OS_SERENITY
     map_flags |= MAP_PURGEABLE;
     void* data = mmap_with_name(nullptr, data_size_in_bytes, PROT_READ | PROT_WRITE, map_flags, 0, 0, String::formatted("GraphicsBitmap [{}]", size).characters());
 #else
-    void* data = mmap(nullptr, data_size_in_bytes, PROT_READ | PROT_WRITE, map_flags, 0, 0);
+    void* data = mmap(nullptr, data_size_in_bytes, PROT_READ | PROT_WRITE, map_flags, -1, 0);
 #endif
     if (data == MAP_FAILED)
         return Error::from_errno(errno);
@@ -598,6 +617,69 @@ bool Bitmap::visually_equals(Bitmap const& other) const
     }
 
     return true;
+}
+
+Optional<Color> Bitmap::solid_color(u8 alpha_threshold) const
+{
+    Optional<Color> color;
+    for (auto y = 0; y < height(); ++y) {
+        for (auto x = 0; x < width(); ++x) {
+            auto const& pixel = get_pixel(x, y);
+            if (has_alpha_channel() && pixel.alpha() <= alpha_threshold)
+                continue;
+            if (!color.has_value())
+                color = pixel;
+            else if (pixel != color)
+                return {};
+        }
+    }
+    return color;
+}
+
+void Bitmap::flood_visit_from_point(Gfx::IntPoint const& start_point, int threshold,
+    Function<void(Gfx::IntPoint location)> pixel_reached)
+{
+
+    VERIFY(rect().contains(start_point));
+
+    auto target_color = get_pixel(start_point.x(), start_point.y());
+
+    float threshold_normalized_squared = (threshold / 100.0f) * (threshold / 100.0f);
+
+    Queue<Gfx::IntPoint> points_to_visit = Queue<Gfx::IntPoint>();
+
+    points_to_visit.enqueue(start_point);
+    pixel_reached(start_point);
+    auto flood_mask = AK::Bitmap::must_create(width() * height(), false);
+
+    flood_mask.set(width() * start_point.y() + start_point.x(), true);
+
+    // This implements a non-recursive flood fill. This is a breadth-first search of paintable neighbors
+    // As we find neighbors that are reachable we call the location_reached callback, add them to the queue, and mark them in the mask
+    while (!points_to_visit.is_empty()) {
+        auto current_point = points_to_visit.dequeue();
+        auto candidate_points = Array {
+            current_point.moved_left(1),
+            current_point.moved_right(1),
+            current_point.moved_up(1),
+            current_point.moved_down(1)
+        };
+        for (auto candidate_point : candidate_points) {
+            auto flood_mask_index = width() * candidate_point.y() + candidate_point.x();
+            if (!rect().contains(candidate_point))
+                continue;
+
+            auto pixel_color = get_pixel<Gfx::StorageFormat::BGRA8888>(candidate_point.x(), candidate_point.y());
+            auto can_paint = pixel_color.distance_squared_to(target_color) <= threshold_normalized_squared;
+
+            if (flood_mask.get(flood_mask_index) == false && can_paint) {
+                points_to_visit.enqueue(candidate_point);
+                pixel_reached(candidate_point);
+            }
+
+            flood_mask.set(flood_mask_index, true);
+        }
+    }
 }
 
 }

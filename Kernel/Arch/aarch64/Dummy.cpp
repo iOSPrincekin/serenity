@@ -7,78 +7,63 @@
 #include <AK/Singleton.h>
 #include <AK/Types.h>
 
-#include <Kernel/FileSystem/Inode.h>
-#include <Kernel/KString.h>
-#include <Kernel/Locking/SpinlockProtected.h>
-#include <Kernel/Memory/SharedInodeVMObject.h>
-#include <Kernel/Panic.h>
-#include <Kernel/PhysicalAddress.h>
-#include <Kernel/Random.h>
+#include <Kernel/Arch/Delay.h>
+#include <Kernel/Process.h>
 #include <Kernel/Sections.h>
-#include <Kernel/UserOrKernelBuffer.h>
+#include <Kernel/kstdio.h>
 
-// Scheduler
+// Process
+char const* asm_signal_trampoline = nullptr;
+char const* asm_signal_trampoline_end = nullptr;
+
 namespace Kernel {
 
-READONLY_AFTER_INIT Thread* g_finalizer;
+ProcessID g_init_pid { 0 };
+
+bool Process::has_tracee_thread(ProcessID)
+{
+    TODO_AARCH64();
+}
+
+ErrorOr<void> Process::exec(NonnullOwnPtr<KString>, NonnullOwnPtrVector<KString>, NonnullOwnPtrVector<KString>, Thread*&, u32&, int)
+{
+    TODO_AARCH64();
+}
 
 }
 
-// Random
+// Delay.cpp
 namespace Kernel {
 
-void get_fast_random_bytes(Bytes)
+void microseconds_delay(u32)
 {
-    VERIFY_NOT_REACHED();
+    TODO_AARCH64();
 }
 
 }
 
-// Inode
-namespace Kernel {
+// Initializer.cpp
+namespace Kernel::PCI {
 
-static Singleton<SpinlockProtected<Inode::AllInstancesList>> s_all_instances;
+bool g_pci_access_io_probe_failed { false };
+bool g_pci_access_is_disabled_from_commandline { false };
 
-SpinlockProtected<Inode::AllInstancesList>& Inode::all_instances()
+}
+
+// kprintf.cpp
+void dbgputstr(StringView)
 {
-    VERIFY_NOT_REACHED();
-    return s_all_instances;
+    TODO_AARCH64();
 }
 
-RefPtr<Memory::SharedInodeVMObject> Inode::shared_vmobject() const
+void dbgputstr(char const*, size_t)
 {
-    VERIFY_NOT_REACHED();
-    return RefPtr<Memory::SharedInodeVMObject>(nullptr);
+    TODO_AARCH64();
 }
 
-void Inode::will_be_destroyed()
+void dbgputchar(char)
 {
-    VERIFY_NOT_REACHED();
-}
-
-ErrorOr<void> Inode::set_shared_vmobject(Memory::SharedInodeVMObject&)
-{
-    VERIFY_NOT_REACHED();
-    return {};
-}
-
-}
-
-// UserOrKernelBuffer.cpp
-namespace Kernel {
-
-ErrorOr<void> UserOrKernelBuffer::write(void const*, size_t, size_t)
-{
-    VERIFY_NOT_REACHED();
-    return {};
-}
-
-ErrorOr<void> UserOrKernelBuffer::read(void*, size_t, size_t) const
-{
-    VERIFY_NOT_REACHED();
-    return {};
-}
-
+    TODO_AARCH64();
 }
 
 // x86 init
@@ -111,26 +96,6 @@ READONLY_AFTER_INIT u32 multiboot_framebuffer_width;
 READONLY_AFTER_INIT u32 multiboot_framebuffer_height;
 READONLY_AFTER_INIT u8 multiboot_framebuffer_bpp;
 READONLY_AFTER_INIT u8 multiboot_framebuffer_type;
-}
-
-namespace Kernel {
-
-// KString.cpp
-ErrorOr<NonnullOwnPtr<KString>> KString::try_create_uninitialized(size_t, char*&)
-{
-    VERIFY_NOT_REACHED();
-    return ENOMEM;
-}
-ErrorOr<NonnullOwnPtr<KString>> KString::try_create(StringView)
-{
-    VERIFY_NOT_REACHED();
-    return ENOMEM;
-}
-void KString::operator delete(void*)
-{
-    VERIFY_NOT_REACHED();
-}
-
 }
 
 extern "C" {

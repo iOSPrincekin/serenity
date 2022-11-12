@@ -8,6 +8,7 @@
 
 #include <AK/Types.h>
 #include <AK/Userspace.h>
+#include <Kernel/API/POSIX/sched.h>
 
 constexpr int syscall_vector = 0x82;
 
@@ -52,6 +53,7 @@ enum class NeedsBigProcessLock {
     S(chown, NeedsBigProcessLock::No)                       \
     S(clock_gettime, NeedsBigProcessLock::No)               \
     S(clock_nanosleep, NeedsBigProcessLock::No)             \
+    S(clock_getres, NeedsBigProcessLock::No)                \
     S(clock_settime, NeedsBigProcessLock::No)               \
     S(close, NeedsBigProcessLock::No)                       \
     S(connect, NeedsBigProcessLock::No)                     \
@@ -81,30 +83,32 @@ enum class NeedsBigProcessLock {
     S(get_stack_bounds, NeedsBigProcessLock::No)            \
     S(get_thread_name, NeedsBigProcessLock::Yes)            \
     S(getcwd, NeedsBigProcessLock::No)                      \
-    S(getegid, NeedsBigProcessLock::Yes)                    \
-    S(geteuid, NeedsBigProcessLock::Yes)                    \
-    S(getgid, NeedsBigProcessLock::Yes)                     \
-    S(getgroups, NeedsBigProcessLock::Yes)                  \
+    S(getegid, NeedsBigProcessLock::No)                     \
+    S(geteuid, NeedsBigProcessLock::No)                     \
+    S(getgid, NeedsBigProcessLock::No)                      \
+    S(getgroups, NeedsBigProcessLock::No)                   \
     S(gethostname, NeedsBigProcessLock::No)                 \
     S(getkeymap, NeedsBigProcessLock::No)                   \
     S(getpeername, NeedsBigProcessLock::Yes)                \
     S(getpgid, NeedsBigProcessLock::Yes)                    \
     S(getpgrp, NeedsBigProcessLock::Yes)                    \
     S(getpid, NeedsBigProcessLock::No)                      \
-    S(getppid, NeedsBigProcessLock::Yes)                    \
+    S(getppid, NeedsBigProcessLock::No)                     \
     S(getrandom, NeedsBigProcessLock::No)                   \
-    S(getresgid, NeedsBigProcessLock::Yes)                  \
-    S(getresuid, NeedsBigProcessLock::Yes)                  \
+    S(getresgid, NeedsBigProcessLock::No)                   \
+    S(getresuid, NeedsBigProcessLock::No)                   \
     S(getrusage, NeedsBigProcessLock::Yes)                  \
     S(getsid, NeedsBigProcessLock::Yes)                     \
     S(getsockname, NeedsBigProcessLock::Yes)                \
     S(getsockopt, NeedsBigProcessLock::No)                  \
     S(gettid, NeedsBigProcessLock::No)                      \
-    S(getuid, NeedsBigProcessLock::Yes)                     \
+    S(getuid, NeedsBigProcessLock::No)                      \
     S(inode_watcher_add_watch, NeedsBigProcessLock::Yes)    \
     S(inode_watcher_remove_watch, NeedsBigProcessLock::Yes) \
     S(ioctl, NeedsBigProcessLock::Yes)                      \
     S(join_thread, NeedsBigProcessLock::Yes)                \
+    S(jail_create, NeedsBigProcessLock::No)                 \
+    S(jail_attach, NeedsBigProcessLock::No)                 \
     S(kill, NeedsBigProcessLock::Yes)                       \
     S(kill_thread, NeedsBigProcessLock::Yes)                \
     S(killpg, NeedsBigProcessLock::Yes)                     \
@@ -114,20 +118,21 @@ enum class NeedsBigProcessLock {
     S(madvise, NeedsBigProcessLock::Yes)                    \
     S(map_time_page, NeedsBigProcessLock::Yes)              \
     S(mkdir, NeedsBigProcessLock::No)                       \
-    S(mknod, NeedsBigProcessLock::Yes)                      \
+    S(mknod, NeedsBigProcessLock::No)                       \
     S(mmap, NeedsBigProcessLock::Yes)                       \
     S(mount, NeedsBigProcessLock::Yes)                      \
     S(mprotect, NeedsBigProcessLock::Yes)                   \
     S(mremap, NeedsBigProcessLock::Yes)                     \
     S(msync, NeedsBigProcessLock::Yes)                      \
-    S(msyscall, NeedsBigProcessLock::Yes)                   \
+    S(msyscall, NeedsBigProcessLock::No)                    \
     S(munmap, NeedsBigProcessLock::Yes)                     \
     S(open, NeedsBigProcessLock::Yes)                       \
     S(perf_event, NeedsBigProcessLock::Yes)                 \
     S(perf_register_string, NeedsBigProcessLock::Yes)       \
-    S(pipe, NeedsBigProcessLock::Yes)                       \
+    S(pipe, NeedsBigProcessLock::No)                        \
     S(pledge, NeedsBigProcessLock::Yes)                     \
     S(poll, NeedsBigProcessLock::Yes)                       \
+    S(posix_fallocate, NeedsBigProcessLock::No)             \
     S(prctl, NeedsBigProcessLock::Yes)                      \
     S(profiling_disable, NeedsBigProcessLock::Yes)          \
     S(profiling_enable, NeedsBigProcessLock::Yes)           \
@@ -143,36 +148,37 @@ enum class NeedsBigProcessLock {
     S(recvmsg, NeedsBigProcessLock::Yes)                    \
     S(rename, NeedsBigProcessLock::No)                      \
     S(rmdir, NeedsBigProcessLock::No)                       \
-    S(sched_getparam, NeedsBigProcessLock::No)              \
-    S(sched_setparam, NeedsBigProcessLock::No)              \
+    S(scheduler_get_parameters, NeedsBigProcessLock::No)    \
+    S(scheduler_set_parameters, NeedsBigProcessLock::No)    \
     S(sendfd, NeedsBigProcessLock::No)                      \
     S(sendmsg, NeedsBigProcessLock::Yes)                    \
     S(set_coredump_metadata, NeedsBigProcessLock::No)       \
     S(set_mmap_name, NeedsBigProcessLock::Yes)              \
     S(set_process_name, NeedsBigProcessLock::Yes)           \
     S(set_thread_name, NeedsBigProcessLock::Yes)            \
-    S(setegid, NeedsBigProcessLock::Yes)                    \
-    S(seteuid, NeedsBigProcessLock::Yes)                    \
-    S(setgid, NeedsBigProcessLock::Yes)                     \
-    S(setgroups, NeedsBigProcessLock::Yes)                  \
+    S(setegid, NeedsBigProcessLock::No)                     \
+    S(seteuid, NeedsBigProcessLock::No)                     \
+    S(setgid, NeedsBigProcessLock::No)                      \
+    S(setgroups, NeedsBigProcessLock::No)                   \
     S(sethostname, NeedsBigProcessLock::No)                 \
     S(setkeymap, NeedsBigProcessLock::No)                   \
     S(setpgid, NeedsBigProcessLock::Yes)                    \
-    S(setresgid, NeedsBigProcessLock::Yes)                  \
-    S(setresuid, NeedsBigProcessLock::Yes)                  \
-    S(setreuid, NeedsBigProcessLock::Yes)                   \
+    S(setresgid, NeedsBigProcessLock::No)                   \
+    S(setresuid, NeedsBigProcessLock::No)                   \
+    S(setreuid, NeedsBigProcessLock::No)                    \
     S(setsid, NeedsBigProcessLock::Yes)                     \
     S(setsockopt, NeedsBigProcessLock::No)                  \
-    S(setuid, NeedsBigProcessLock::Yes)                     \
+    S(setuid, NeedsBigProcessLock::No)                      \
     S(shutdown, NeedsBigProcessLock::No)                    \
     S(sigaction, NeedsBigProcessLock::Yes)                  \
     S(sigaltstack, NeedsBigProcessLock::Yes)                \
     S(sigpending, NeedsBigProcessLock::Yes)                 \
     S(sigprocmask, NeedsBigProcessLock::Yes)                \
     S(sigreturn, NeedsBigProcessLock::Yes)                  \
+    S(sigsuspend, NeedsBigProcessLock::Yes)                 \
     S(sigtimedwait, NeedsBigProcessLock::Yes)               \
-    S(socket, NeedsBigProcessLock::Yes)                     \
-    S(socketpair, NeedsBigProcessLock::Yes)                 \
+    S(socket, NeedsBigProcessLock::No)                      \
+    S(socketpair, NeedsBigProcessLock::No)                  \
     S(stat, NeedsBigProcessLock::No)                        \
     S(statvfs, NeedsBigProcessLock::No)                     \
     S(symlink, NeedsBigProcessLock::No)                     \
@@ -183,8 +189,9 @@ enum class NeedsBigProcessLock {
     S(umount, NeedsBigProcessLock::Yes)                     \
     S(uname, NeedsBigProcessLock::No)                       \
     S(unlink, NeedsBigProcessLock::No)                      \
-    S(unveil, NeedsBigProcessLock::Yes)                     \
-    S(utime, NeedsBigProcessLock::Yes)                      \
+    S(unveil, NeedsBigProcessLock::No)                      \
+    S(utime, NeedsBigProcessLock::No)                       \
+    S(utimensat, NeedsBigProcessLock::No)                   \
     S(waitid, NeedsBigProcessLock::Yes)                     \
     S(write, NeedsBigProcessLock::Yes)                      \
     S(writev, NeedsBigProcessLock::Yes)                     \
@@ -200,7 +207,7 @@ enum Function {
         __Count
 };
 
-#ifdef __serenity__
+#ifdef AK_OS_SERENITY
 struct StringArgument {
     char const* characters;
     size_t length { 0 };
@@ -254,6 +261,11 @@ struct SC_clock_nanosleep_params {
     int flags;
     const struct timespec* requested_sleep;
     struct timespec* remaining_sleep;
+};
+
+struct SC_clock_getres_params {
+    int clock_id;
+    struct timespec* result;
 };
 
 struct SC_accept4_params {
@@ -319,6 +331,15 @@ struct SC_setkeymap_params {
     StringArgument map_name;
 };
 
+struct SC_jail_create_params {
+    u64 index;
+    StringArgument name;
+};
+
+struct SC_jail_attach_params {
+    u64 index;
+};
+
 struct SC_getkeymap_params {
     u32* map;
     u32* shift_map;
@@ -338,7 +359,7 @@ struct SC_create_thread_params {
     // ... ok, if you say so posix. Guess we get to lie to people about guard page size
     unsigned int guard_page_size = 0;          // Rounded up to PAGE_SIZE
     unsigned int reported_guard_page_size = 0; // The lie we tell callers
-    unsigned int stack_size = 4 * MiB;         // Default PTHREAD_STACK_MIN
+    unsigned int stack_size = 1 * MiB;         // Default PTHREAD_STACK_MIN
     void* stack_location;                      // nullptr means any, o.w. process virtual address
 #    if ARCH(X86_64)
     FlatPtr rdi;
@@ -416,6 +437,13 @@ struct SC_unveil_params {
     StringArgument permissions;
 };
 
+struct SC_utimensat_params {
+    int dirfd;
+    StringArgument path;
+    struct timespec const* times;
+    int flag;
+};
+
 struct SC_waitid_params {
     int idtype;
     int id;
@@ -464,10 +492,21 @@ struct SC_chmod_params {
     int follow_symlinks;
 };
 
+enum class SchedulerParametersMode : bool {
+    Process,
+    Thread,
+};
+
+struct SC_scheduler_parameters_params {
+    pid_t pid_or_tid;
+    SchedulerParametersMode mode;
+    struct sched_param parameters;
+};
+
 void initialize();
 int sync();
 
-#    if ARCH(I386) || ARCH(X86_64)
+#    if ARCH(I386) || ARCH(X86_64) || ARCH(AARCH64)
 inline uintptr_t invoke(Function function)
 {
     uintptr_t result;
@@ -476,11 +515,19 @@ inline uintptr_t invoke(Function function)
                  : "=a"(result)
                  : "a"(function)
                  : "memory");
-#        else
+#        elif ARCH(X86_64)
     asm volatile("syscall"
                  : "=a"(result)
                  : "a"(function)
                  : "rcx", "r11", "memory");
+#        elif ARCH(AARCH64)
+    register uintptr_t x0 asm("x0");
+    register uintptr_t x8 asm("x8") = function;
+    asm volatile("svc #0"
+                 : "=r"(x0)
+                 : "r"(x8)
+                 : "memory");
+    result = x0;
 #        endif
     return result;
 }
@@ -494,11 +541,20 @@ inline uintptr_t invoke(Function function, T1 arg1)
                  : "=a"(result)
                  : "a"(function), "d"((uintptr_t)arg1)
                  : "memory");
-#        else
+#        elif ARCH(X86_64)
     asm volatile("syscall"
                  : "=a"(result)
                  : "a"(function), "d"((uintptr_t)arg1)
                  : "rcx", "r11", "memory");
+#        else
+    register uintptr_t x0 asm("x0");
+    register uintptr_t x1 asm("x1") = arg1;
+    register uintptr_t x8 asm("x8") = function;
+    asm volatile("svc #0"
+                 : "=r"(x0)
+                 : "r"(x1), "r"(x8)
+                 : "memory");
+    result = x0;
 #        endif
     return result;
 }
@@ -512,11 +568,21 @@ inline uintptr_t invoke(Function function, T1 arg1, T2 arg2)
                  : "=a"(result)
                  : "a"(function), "d"((uintptr_t)arg1), "c"((uintptr_t)arg2)
                  : "memory");
-#        else
+#        elif ARCH(X86_64)
     asm volatile("syscall"
                  : "=a"(result)
                  : "a"(function), "d"((uintptr_t)arg1), "D"((uintptr_t)arg2)
                  : "rcx", "r11", "memory");
+#        else
+    register uintptr_t x0 asm("x0");
+    register uintptr_t x1 asm("x1") = arg1;
+    register uintptr_t x2 asm("x2") = arg2;
+    register uintptr_t x8 asm("x8") = function;
+    asm volatile("svc #0"
+                 : "=r"(x0)
+                 : "r"(x1), "r"(x2), "r"(x8)
+                 : "memory");
+    result = x0;
 #        endif
     return result;
 }
@@ -530,11 +596,22 @@ inline uintptr_t invoke(Function function, T1 arg1, T2 arg2, T3 arg3)
                  : "=a"(result)
                  : "a"(function), "d"((uintptr_t)arg1), "c"((uintptr_t)arg2), "b"((uintptr_t)arg3)
                  : "memory");
-#        else
+#        elif ARCH(X86_64)
     asm volatile("syscall"
                  : "=a"(result)
                  : "a"(function), "d"((uintptr_t)arg1), "D"((uintptr_t)arg2), "b"((uintptr_t)arg3)
                  : "rcx", "r11", "memory");
+#        else
+    register uintptr_t x0 asm("x0");
+    register uintptr_t x1 asm("x1") = arg1;
+    register uintptr_t x2 asm("x2") = arg2;
+    register uintptr_t x3 asm("x3") = arg3;
+    register uintptr_t x8 asm("x8") = function;
+    asm volatile("svc #0"
+                 : "=r"(x0)
+                 : "r"(x1), "r"(x2), "r"(x3), "r"(x8)
+                 : "memory");
+    result = x0;
 #        endif
     return result;
 }
@@ -548,11 +625,23 @@ inline uintptr_t invoke(Function function, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
                  : "=a"(result)
                  : "a"(function), "d"((uintptr_t)arg1), "c"((uintptr_t)arg2), "b"((uintptr_t)arg3), "S"((uintptr_t)arg4)
                  : "memory");
-#        else
+#        elif ARCH(X86_64)
     asm volatile("syscall"
                  : "=a"(result)
                  : "a"(function), "d"((uintptr_t)arg1), "D"((uintptr_t)arg2), "b"((uintptr_t)arg3), "S"((uintptr_t)arg4)
                  : "memory");
+#        else
+    register uintptr_t x0 asm("x0");
+    register uintptr_t x1 asm("x1") = arg1;
+    register uintptr_t x2 asm("x2") = arg2;
+    register uintptr_t x3 asm("x3") = arg3;
+    register uintptr_t x4 asm("x4") = arg4;
+    register uintptr_t x8 asm("x8") = function;
+    asm volatile("svc #0"
+                 : "=r"(x0)
+                 : "r"(x1), "r"(x2), "r"(x3), "r"(x4), "r"(x8)
+                 : "memory");
+    result = x0;
 #        endif
     return result;
 }

@@ -1,6 +1,8 @@
 #import <HTML/DOMStringMap.idl>
 #import <DOM/EventHandler.idl>
 
+// https://html.spec.whatwg.org/multipage/semantics.html#htmlelement
+[Exposed=Window]
 interface HTMLElement : Element {
 
     [Reflect] attribute DOMString title;
@@ -15,6 +17,8 @@ interface HTMLElement : Element {
     // FIXME: Support the optional FocusOptions parameter.
     undefined focus();
 
+    undefined blur();
+
     [LegacyNullToEmptyString] attribute DOMString innerText;
 
     readonly attribute long offsetTop;
@@ -28,4 +32,7 @@ HTMLElement includes HTMLOrSVGElement;
 
 interface mixin HTMLOrSVGElement {
     [SameObject] readonly attribute DOMStringMap dataset;
+
+    [CEReactions, Reflect] attribute boolean autofocus;
+    [CEReactions] attribute long tabIndex;
 };

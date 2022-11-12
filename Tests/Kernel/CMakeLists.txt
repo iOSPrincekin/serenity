@@ -25,15 +25,22 @@ set(TEST_SOURCES
 foreach(source IN LISTS TEST_SOURCES)
     get_filename_component(test_name "${source}" NAME_WE)
     add_executable("${test_name}" "${source}")
-    target_link_libraries("${test_name}" LibCore)
+    target_link_libraries("${test_name}" PRIVATE LibCore)
+    serenity_set_implicit_links("${test_name}")
     install(TARGETS "${test_name}" RUNTIME DESTINATION usr/Tests/Kernel/Legacy)
 endforeach()
+
+target_link_libraries(fuzz-syscalls PRIVATE LibSystem)
 
 serenity_test("crash.cpp" Kernel MAIN_ALREADY_DEFINED)
 
 set(LIBTEST_BASED_SOURCES
     TestEFault.cpp
+    TestEmptyPrivateInodeVMObject.cpp
+    TestEmptySharedInodeVMObject.cpp
     TestInvalidUIDSet.cpp
+    TestSharedInodeVMObject.cpp
+    TestPrivateInodeVMObject.cpp
     TestKernelAlarm.cpp
     TestKernelFilePermissions.cpp
     TestKernelPledge.cpp
@@ -43,17 +50,10 @@ set(LIBTEST_BASED_SOURCES
     TestProcFS.cpp
     TestProcFSWrite.cpp
     TestSigAltStack.cpp
+    TestSigHandler.cpp
     TestSigWait.cpp
 )
 
 foreach(libtest_source IN LISTS LIBTEST_BASED_SOURCES)
     serenity_test("${libtest_source}" Kernel)
 endforeach()
-
-target_link_libraries(elf-execve-mmap-race LibPthread)
-target_link_libraries(kill-pidtid-confusion LibPthread)
-target_link_libraries(nanosleep-race-outbuf-munmap LibPthread)
-target_link_libraries(null-deref-close-during-select LibPthread)
-target_link_libraries(null-deref-crash-during-pthread_join LibPthread)
-target_link_libraries(uaf-close-while-blocked-in-read LibPthread)
-target_link_libraries(pthread-cond-timedwait-example LibPthread)

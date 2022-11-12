@@ -4,28 +4,28 @@ CLion can integrate with CMake to provide code comprehension features.
 
 After opening the `serenity` repository in CLion as a new project, the "`Open Project Wizard`" window will open, from here set the following fields:
 
-(Assuming you use `Ninja` as the build system and configured the CMake build directory to `Build/i686`)
+(Assuming you use `Ninja` as the build system and configured the CMake build directory to `Build/x86_64`)
 
 `Build type`: `Default`
 
-> _CMake will complain with any other build type, make sure to use `Default` so that `CMAKE_BUILD_TYPE` is empty in the `Build/i686/CMakeCache.txt` file._
+> _CMake will complain with any other build type, make sure to use `Default` so that `CMAKE_BUILD_TYPE` is empty in the `Build/x86_64/CMakeCache.txt` file._
 
 `CMake Options`:
 ```
 -GNinja
--DCMAKE_TOOLCHAIN_FILE=$CMakeProjectDir$/Build/i686/CMakeToolchain.txt
+-DCMAKE_TOOLCHAIN_FILE=$CMakeProjectDir$/Build/x86_64/CMakeToolchain.txt
 -DCMAKE_PREFIX_PATH=$CMakeProjectDir$/Build/lagom-install
--DSERENITY_ARCH=i686
+-DSERENITY_ARCH=x86_64
 ```
 
 > CLion will complain that the toolchain file doesn't exist yet, if you haven't `cmake` for the SuperBuild step before. The SuperBuild configure step creates the Toolchain file.
-> To re-create the file after blasting your build directory, run `cmake -GNinja -S Meta/CMake/Superbuild -B Build/superbuild-i686` from the top level in a terminal, or simply run `./Meta/serenity.sh run`
+> To re-create the file after blasting your build directory, run `cmake -GNinja -S Meta/CMake/Superbuild -B Build/superbuild-x86_64` from the top level in a terminal, or simply run `./Meta/serenity.sh run`
 
-`Build Directory`: `Build/i686`
+`Build Directory`: `Build/x86_64`
 
 > _If you have not built the Toolchain at this point, please do so: `./Toolchain/BuildIt.sh`_
 
-> _If you have not built host tools from Lagom at this point, please do so: `./Meta/serenity.sh build` or `ninja -C Build/superbuild-i686` after running `cmake -GNinja -S Meta/CMake/Superbuild -B Build/superbuild-i686`_
+> _If you have not built host tools from Lagom at this point, please do so: `./Meta/serenity.sh build` or `ninja -C Build/superbuild-x86_64` after running `cmake -GNinja -S Meta/CMake/Superbuild -B Build/superbuild-x86_64`_
 
 If you already have the project open, you can go to `File -> Settings -> Build, Execution, Deployment -> CMake` to find these options.
 
@@ -34,7 +34,7 @@ If you already have the project open, you can go to `File -> Settings -> Build, 
 Source files are copied to the `Build` directory during the build, if you do not exclude them from CLion indexing they will show up
 in search results. This is often confusing, unintuitive, and can result in you losing changes you have made to files. To exclude
 these files navigate to the `Project` tool window, right-click the `Build` folder and select `Mark Directory as | Excluded`. If you
-want exclude Toolchain files as well, follow the same procedure with the following paths:
+want to exclude Toolchain files as well, follow the same procedure with the following paths:
 - `Toolchain/Local`
 - `Toolchain/Tarballs`
 - `Toolchain/Build`
@@ -78,6 +78,13 @@ Then press the `+` button to add a new configuration, select `CMake Application`
 Finally, to quickly switch between the two different contexts, simply click the `Kernel | Default` / `Userland | Default` button to switch.
 
 ## Notes for WSL Users
+
+### Toolchain
+
+If the serenity directory is on the WSL filesystem you need to configure the CLion toolchain to be WSL.
+To set that up go to `File->Settings->Build, Execution, Deployment->Toolchains` and click on the `+` icon, then select WSL. In `Toolset` select the distribution you have the serenity directory on.
+
+### Terminal
 
 It is possible to set the embedded terminal in CLion to the one that your WSL distribution provides.
 This way you can build and run serenity without leaving the IDE.

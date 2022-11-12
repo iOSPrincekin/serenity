@@ -1,5 +1,7 @@
 /*
  * Copyright (c) 2022, Luke Wilde <lukew@serenityos.org>
+ * Copyright (c) 2022, Linus Groh <linusg@serenityos.org>
+ * Copyright (c) 2022, networkException <networkexception@serenityos.org>
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
@@ -7,10 +9,20 @@
 #include <AK/CharacterTypes.h>
 #include <AK/GenericLexer.h>
 #include <AK/StringBuilder.h>
-#include <LibWeb/Fetch/AbstractOperations.h>
+#include <LibWeb/Fetch/Infrastructure/HTTP.h>
 #include <LibWeb/MimeSniff/MimeType.h>
 
 namespace Web::MimeSniff {
+
+// https://mimesniff.spec.whatwg.org/#javascript-mime-type-essence-match
+bool is_javascript_mime_type_essence_match(String const& string)
+{
+    // NOTE: The mime type parser automatically lowercases the essence.
+    auto type = MimeType::from_string(string);
+    if (!type.has_value())
+        return false;
+    return type->is_javascript();
+}
 
 static bool contains_only_http_quoted_string_token_code_points(StringView string)
 {
@@ -42,7 +54,7 @@ static bool contains_only_http_token_code_points(StringView string)
     // https://mimesniff.spec.whatwg.org/#http-token-code-point
     // An HTTP token code point is U+0021 (!), U+0023 (#), U+0024 ($), U+0025 (%), U+0026 (&), U+0027 ('), U+002A (*),
     // U+002B (+), U+002D (-), U+002E (.), U+005E (^), U+005F (_), U+0060 (`), U+007C (|), U+007E (~), or an ASCII alphanumeric.
-    constexpr auto is_certain_non_ascii_alphanumeric = is_any_of("!#$%&'*+-.^_`|~");
+    constexpr auto is_certain_non_ascii_alphanumeric = is_any_of("!#$%&'*+-.^_`|~"sv);
     for (char ch : string) {
         if (!is_certain_non_ascii_alphanumeric(ch) && !is_ascii_alphanumeric(ch))
             return false;
@@ -53,13 +65,8 @@ static bool contains_only_http_token_code_points(StringView string)
 // https://mimesniff.spec.whatwg.org/#parse-a-mime-type
 Optional<MimeType> MimeType::from_string(StringView string)
 {
-    // https://fetch.spec.whatwg.org/#http-whitespace
-    // HTTP whitespace is U+000A LF, U+000D CR, or an HTTP tab or space.
-    // An HTTP tab or space is U+0009 TAB or U+0020 SPACE.
-    constexpr char const* http_whitespace = "\n\r\t ";
-
     // 1. Remove any leading and trailing HTTP whitespace from input.
-    auto trimmed_string = string.trim(http_whitespace, TrimMode::Both);
+    auto trimmed_string = string.trim(Fetch::Infrastructure::HTTP_WHITESPACE, TrimMode::Both);
 
     // 2. Let position be a position variable for input, initially pointing at the start of input.
     GenericLexer lexer(trimmed_string);
@@ -82,7 +89,7 @@ Optional<MimeType> MimeType::from_string(StringView string)
     auto subtype = lexer.consume_until(';');
 
     // 8. Remove any trailing HTTP whitespace from subtype.
-    subtype = subtype.trim(http_whitespace, TrimMode::Right);
+    subtype = subtype.trim(Fetch::Infrastructure::HTTP_WHITESPACE, TrimMode::Right);
 
     // 9. If subtype is the empty string or does not solely contain HTTP token code points, then return failure.
     if (subtype.is_empty() || !contains_only_http_token_code_points(subtype))
@@ -97,7 +104,7 @@ Optional<MimeType> MimeType::from_string(StringView string)
         lexer.ignore(1);
 
         // 2. Collect a sequence of code points that are HTTP whitespace from input given position.
-        lexer.ignore_while(is_any_of(http_whitespace));
+        lexer.ignore_while(is_any_of(Fetch::Infrastructure::HTTP_WHITESPACE));
 
         // 3. Let parameterName be the result of collecting a sequence of code points that are not U+003B (;) or U+003D (=) from input, given position.
         auto parameter_name = lexer.consume_until([](char ch) {
@@ -129,7 +136,7 @@ Optional<MimeType> MimeType::from_string(StringView string)
         // 8. If the code point at position within input is U+0022 ("), then:
         if (lexer.peek() == '"') {
             // 1. Set parameterValue to the result of collecting an HTTP quoted string from input, given position and the extract-value flag.
-            parameter_value = collect_an_http_quoted_string(lexer, Fetch::HttpQuotedStringExtractValue::Yes);
+            parameter_value = Fetch::Infrastructure::collect_an_http_quoted_string(lexer, Fetch::Infrastructure::HttpQuotedStringExtractValue::Yes);
 
             // 2. Collect a sequence of code points that are not U+003B (;) from input, given position.
             // NOTE: This uses the predicate version as the ignore_until(char) version will also ignore the ';'.
@@ -144,7 +151,7 @@ Optional<MimeType> MimeType::from_string(StringView string)
             parameter_value = lexer.consume_until(';');
 
             // 2. Remove any trailing HTTP whitespace from parameterValue.
-            parameter_value = parameter_value.trim(http_whitespace, TrimMode::Right);
+            parameter_value = parameter_value.trim(Fetch::Infrastructure::HTTP_WHITESPACE, TrimMode::Right);
 
             // 3. If parameterValue is the empty string, then continue.
             if (parameter_value.is_empty())
@@ -177,6 +184,45 @@ String MimeType::essence() const
     return String::formatted("{}/{}", m_type, m_subtype);
 }
 
+// https://mimesniff.spec.whatwg.org/#serialize-a-mime-type
+String MimeType::serialized() const
+{
+    // 1. Let serialization be the concatenation of mimeType’s type, U+002F (/), and mimeType’s subtype.
+    StringBuilder serialization;
+    serialization.append(m_type);
+    serialization.append('/');
+    serialization.append(m_subtype);
+
+    // 2. For each name → value of mimeType’s parameters:
+    for (auto [name, value] : m_parameters) {
+        // 1. Append U+003B (;) to serialization.
+        serialization.append(';');
+
+        // 2. Append name to serialization.
+        serialization.append(name);
+
+        // 3. Append U+003D (=) to serialization.
+        serialization.append('=');
+
+        // 4. If value does not solely contain HTTP token code points or value is the empty string, then:
+        if (!contains_only_http_token_code_points(value) || value.is_empty()) {
+            // 1. Precede each occurence of U+0022 (") or U+005C (\) in value with U+005C (\).
+            value = value.replace("\\"sv, "\\\\"sv, ReplaceMode::All);
+            value = value.replace("\""sv, "\\\""sv, ReplaceMode::All);
+
+            // 2. Prepend U+0022 (") to value.
+            // 3. Append U+0022 (") to value.
+            value = String::formatted("\"{}\"", value);
+        }
+
+        // 5. Append value to serialization.
+        serialization.append(value);
+    }
+
+    // 3. Return serialization.
+    return serialization.to_string();
+}
+
 void MimeType::set_parameter(String const& name, String const& value)
 {
     // https://mimesniff.spec.whatwg.org/#parameters
@@ -184,6 +230,28 @@ void MimeType::set_parameter(String const& name, String const& value)
     VERIFY(contains_only_http_quoted_string_token_code_points(name));
     VERIFY(contains_only_http_quoted_string_token_code_points(value));
     m_parameters.set(name, value);
+}
+
+// https://mimesniff.spec.whatwg.org/#javascript-mime-type
+bool MimeType::is_javascript() const
+{
+    return essence().is_one_of(
+        "application/ecmascript"sv,
+        "application/javascript"sv,
+        "application/x-ecmascript"sv,
+        "application/x-javascript"sv,
+        "text/ecmascript"sv,
+        "text/javascript"sv,
+        "text/javascript1.0"sv,
+        "text/javascript1.1"sv,
+        "text/javascript1.2"sv,
+        "text/javascript1.3"sv,
+        "text/javascript1.4"sv,
+        "text/javascript1.5"sv,
+        "text/jscript"sv,
+        "text/livescript"sv,
+        "text/x-ecmascript"sv,
+        "text/x-javascript"sv);
 }
 
 }

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2020, Till Mayer <till.mayer@web.de>
- * Copyright (c) 2021, Sam Atkins <atkinssj@serenityos.org>
+ * Copyright (c) 2021-2022, Sam Atkins <atkinssj@serenityos.org>
  * Copyright (c) 2022, the SerenityOS developers.
  *
  * SPDX-License-Identifier: BSD-2-Clause
@@ -9,9 +9,8 @@
 #pragma once
 
 #include <AK/Array.h>
+#include <LibCards/CardGame.h>
 #include <LibCards/CardStack.h>
-#include <LibGUI/Frame.h>
-#include <LibGUI/Painter.h>
 
 using Cards::Card;
 using Cards::CardStack;
@@ -29,7 +28,7 @@ enum class GameOverReason {
     NewGame,
 };
 
-class Game final : public GUI::Frame {
+class Game final : public Cards::CardGame {
     C_OBJECT(Game)
 public:
     static constexpr int width = 640;
@@ -71,7 +70,7 @@ private:
         void draw(GUI::Painter& painter)
         {
             VERIFY(!m_animation_card.is_null());
-            m_animation_card->draw(painter);
+            m_animation_card->paint(painter);
             m_dirty = false;
         }
 
@@ -160,7 +159,6 @@ private:
         }
     }
 
-    void mark_intersecting_stacks_dirty(Card& intersecting_card);
     void score_move(CardStack& from, CardStack& to, bool inverse = false);
     void score_flip(bool inverse = false);
     void remember_move_for_undo(CardStack& from, CardStack& to, NonnullRefPtrVector<Card> moved_cards);
@@ -176,12 +174,6 @@ private:
     void create_new_animation_card();
     void set_background_fill_enabled(bool);
     void check_for_game_over();
-    void dump_layout() const;
-
-    ALWAYS_INLINE CardStack& stack(StackLocation location)
-    {
-        return m_stacks[location];
-    }
 
     virtual void paint_event(GUI::PaintEvent&) override;
     virtual void mousedown_event(GUI::MouseEvent&) override;
@@ -194,10 +186,7 @@ private:
     Mode m_mode { Mode::SingleCardDraw };
 
     LastMove m_last_move;
-    NonnullRefPtrVector<Card> m_focused_cards;
     NonnullRefPtrVector<Card> m_new_deck;
-    NonnullRefPtrVector<CardStack> m_stacks;
-    CardStack* m_focused_stack { nullptr };
     Gfx::IntPoint m_mouse_down_location;
 
     bool m_mouse_down { false };

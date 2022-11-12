@@ -18,6 +18,8 @@ public:
     virtual GUI::Widget* get_properties_widget() override;
     virtual Variant<Gfx::StandardCursor, NonnullRefPtr<Gfx::Bitmap>> cursor() override;
 
+    virtual bool is_overriding_alt() override { return true; }
+
 protected:
     virtual void draw_point(Gfx::Bitmap& bitmap, Gfx::Color const& color, Gfx::IntPoint const& point) override;
     virtual void draw_line(Gfx::Bitmap& bitmap, Gfx::Color const& color, Gfx::IntPoint const& start, Gfx::IntPoint const& end) override;
@@ -29,6 +31,8 @@ protected:
     virtual void on_keyup(GUI::KeyEvent&) override;
 
 private:
+    virtual StringView tool_name() const override { return "Clone Tool"sv; }
+
     RefPtr<GUI::Widget> m_properties_widget;
 
     Optional<Gfx::IntPoint> m_sample_location;

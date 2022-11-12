@@ -5,6 +5,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/RefPtr.h>
 #include <AK/StringView.h>
 #include <Kernel/FileSystem/Custody.h>
 #include <Kernel/FileSystem/VirtualFileSystem.h>
@@ -26,7 +27,7 @@ static void update_intermediate_node_permissions(UnveilNode& root_node, UnveilAc
 
 ErrorOr<FlatPtr> Process::sys$unveil(Userspace<Syscall::SC_unveil_params const*> user_params)
 {
-    VERIFY_PROCESS_BIG_LOCK_ACQUIRED(this)
+    VERIFY_NO_PROCESS_BIG_LOCK(this);
     auto params = TRY(copy_typed_from_user(user_params));
 
     if (!params.path.characters && !params.permissions.characters) {
@@ -81,7 +82,7 @@ ErrorOr<FlatPtr> Process::sys$unveil(Userspace<Syscall::SC_unveil_params const*>
     // If this case is encountered, the parent node of the path is returned and the custody of that inode is used instead.
     RefPtr<Custody> parent_custody; // Parent inode in case of ENOENT
     OwnPtr<KString> new_unveiled_path;
-    auto custody_or_error = VirtualFileSystem::the().resolve_path_without_veil(path->view(), VirtualFileSystem::the().root_custody(), &parent_custody);
+    auto custody_or_error = VirtualFileSystem::the().resolve_path_without_veil(credentials(), path->view(), VirtualFileSystem::the().root_custody(), &parent_custody);
     if (!custody_or_error.is_error()) {
         new_unveiled_path = TRY(custody_or_error.value()->try_serialize_absolute_path());
     } else if (custody_or_error.error().code() == ENOENT && parent_custody && (new_permissions & UnveilAccess::CreateOrRemove)) {
@@ -95,6 +96,11 @@ ErrorOr<FlatPtr> Process::sys$unveil(Userspace<Syscall::SC_unveil_params const*>
     auto path_parts = KLexicalPath::parts(new_unveiled_path->view());
     auto it = path_parts.begin();
     return m_unveil_data.with([&](auto& unveil_data) -> ErrorOr<FlatPtr> {
+        // NOTE: We have to check again, since the veil may have been locked by another thread
+        //       while we were parsing the arguments.
+        if (unveil_data.state == VeilState::Locked)
+            return EPERM;
+
         auto& matching_node = unveil_data.paths.traverse_until_last_accessible_node(it, path_parts.end());
         if (it.is_end()) {
             // If the path has already been explicitly unveiled, do not allow elevating its permissions.

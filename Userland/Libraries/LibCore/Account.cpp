@@ -10,6 +10,7 @@
 #include <AK/Random.h>
 #include <AK/ScopeGuard.h>
 #include <LibCore/Account.h>
+#include <LibCore/Directory.h>
 #include <LibCore/System.h>
 #include <LibCore/UmaskScope.h>
 #include <errno.h>
@@ -32,7 +33,7 @@ static String get_salt()
     fill_with_random(random_data, sizeof(random_data));
 
     StringBuilder builder;
-    builder.append("$5$");
+    builder.append("$5$"sv);
     builder.append(encode_base64(ReadonlyBytes(random_data, sizeof(random_data))));
 
     return builder.build();
@@ -40,7 +41,7 @@ static String get_salt()
 
 static Vector<gid_t> get_extra_gids(passwd const& pwd)
 {
-    StringView username { pwd.pw_name };
+    StringView username { pwd.pw_name, strlen(pwd.pw_name) };
     Vector<gid_t> extra_gids;
     setgrent();
     for (auto* group = getgrent(); group; group = getgrent()) {
@@ -73,14 +74,14 @@ ErrorOr<Account> Account::self([[maybe_unused]] Read options)
 
     auto pwd = TRY(Core::System::getpwuid(getuid()));
     if (!pwd.has_value())
-        return Error::from_string_literal("No such user"sv);
+        return Error::from_string_literal("No such user");
 
     spwd spwd = {};
 #ifndef AK_OS_BSD_GENERIC
     if (options != Read::PasswdOnly) {
-        auto maybe_spwd = TRY(Core::System::getspnam(pwd->pw_name));
+        auto maybe_spwd = TRY(Core::System::getspnam({ pwd->pw_name, strlen(pwd->pw_name) }));
         if (!maybe_spwd.has_value())
-            return Error::from_string_literal("No shadow entry for user"sv);
+            return Error::from_string_literal("No shadow entry for user");
         spwd = maybe_spwd.release_value();
     }
 #endif
@@ -88,18 +89,18 @@ ErrorOr<Account> Account::self([[maybe_unused]] Read options)
     return Account(*pwd, spwd, extra_gids);
 }
 
-ErrorOr<Account> Account::from_name(char const* username, [[maybe_unused]] Read options)
+ErrorOr<Account> Account::from_name(StringView username, [[maybe_unused]] Read options)
 {
     auto pwd = TRY(Core::System::getpwnam(username));
     if (!pwd.has_value())
-        return Error::from_string_literal("No such user"sv);
+        return Error::from_string_literal("No such user");
 
     spwd spwd = {};
 #ifndef AK_OS_BSD_GENERIC
     if (options != Read::PasswdOnly) {
-        auto maybe_spwd = TRY(Core::System::getspnam(pwd->pw_name));
+        auto maybe_spwd = TRY(Core::System::getspnam({ pwd->pw_name, strlen(pwd->pw_name) }));
         if (!maybe_spwd.has_value())
-            return Error::from_string_literal("No shadow entry for user"sv);
+            return Error::from_string_literal("No shadow entry for user");
         spwd = maybe_spwd.release_value();
     }
 #endif
@@ -110,14 +111,14 @@ ErrorOr<Account> Account::from_uid(uid_t uid, [[maybe_unused]] Read options)
 {
     auto pwd = TRY(Core::System::getpwuid(uid));
     if (!pwd.has_value())
-        return Error::from_string_literal("No such user"sv);
+        return Error::from_string_literal("No such user");
 
     spwd spwd = {};
 #ifndef AK_OS_BSD_GENERIC
     if (options != Read::PasswdOnly) {
-        auto maybe_spwd = TRY(Core::System::getspnam(pwd->pw_name));
+        auto maybe_spwd = TRY(Core::System::getspnam({ pwd->pw_name, strlen(pwd->pw_name) }));
         if (!maybe_spwd.has_value())
-            return Error::from_string_literal("No shadow entry for user"sv);
+            return Error::from_string_literal("No shadow entry for user");
         spwd = maybe_spwd.release_value();
     }
 #endif
@@ -139,18 +140,13 @@ bool Account::authenticate(SecretString const& password) const
     return hash != nullptr && AK::timing_safe_compare(hash, m_password_hash.characters(), m_password_hash.length());
 }
 
-bool Account::login() const
+ErrorOr<void> Account::login() const
 {
-    if (setgroups(m_extra_gids.size(), m_extra_gids.data()) < 0)
-        return false;
+    TRY(Core::System::setgroups(m_extra_gids));
+    TRY(Core::System::setgid(m_gid));
+    TRY(Core::System::setuid(m_uid));
 
-    if (setgid(m_gid) < 0)
-        return false;
-
-    if (setuid(m_uid) < 0)
-        return false;
-
-    return true;
+    return {};
 }
 
 void Account::set_password(SecretString const& password)
@@ -270,18 +266,22 @@ ErrorOr<void> Account::sync()
     auto new_shadow_file_content = TRY(generate_shadow_file());
 #endif
 
+    // FIXME: mkstemp taking Span<char> makes this code entirely un-AKable.
+    //        Make this code less char-pointery.
     char new_passwd_name[] = "/etc/passwd.XXXXXX";
+    size_t new_passwd_name_length = strlen(new_passwd_name);
 #ifndef AK_OS_BSD_GENERIC
     char new_shadow_name[] = "/etc/shadow.XXXXXX";
+    size_t new_shadow_name_length = strlen(new_shadow_name);
 #endif
 
     {
-        auto new_passwd_fd = TRY(Core::System::mkstemp(new_passwd_name));
+        auto new_passwd_fd = TRY(Core::System::mkstemp({ new_passwd_name, new_passwd_name_length }));
         ScopeGuard new_passwd_fd_guard = [new_passwd_fd] { close(new_passwd_fd); };
         TRY(Core::System::fchmod(new_passwd_fd, 0644));
 
 #ifndef AK_OS_BSD_GENERIC
-        auto new_shadow_fd = TRY(Core::System::mkstemp(new_shadow_name));
+        auto new_shadow_fd = TRY(Core::System::mkstemp({ new_shadow_name, new_shadow_name_length }));
         ScopeGuard new_shadow_fd_guard = [new_shadow_fd] { close(new_shadow_fd); };
         TRY(Core::System::fchmod(new_shadow_fd, 0600));
 #endif
@@ -295,9 +295,9 @@ ErrorOr<void> Account::sync()
 #endif
     }
 
-    TRY(Core::System::rename(new_passwd_name, "/etc/passwd"));
+    TRY(Core::System::rename({ new_passwd_name, new_passwd_name_length }, "/etc/passwd"sv));
 #ifndef AK_OS_BSD_GENERIC
-    TRY(Core::System::rename(new_shadow_name, "/etc/shadow"));
+    TRY(Core::System::rename({ new_shadow_name, new_shadow_name_length }, "/etc/shadow"sv));
 #endif
 
     return {};

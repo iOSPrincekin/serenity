@@ -23,8 +23,9 @@ class SpreadsheetWidget final
 public:
     virtual ~SpreadsheetWidget() override = default;
 
-    void save(StringView filename);
+    void save(Core::File&);
     void load_file(Core::File&);
+    void import_sheets(Core::File&);
     bool request_close();
     void add_sheet();
     void add_sheet(NonnullRefPtr<Sheet>&&);
@@ -49,6 +50,7 @@ public:
 
     void undo();
     void redo();
+    void change_cell_static_color_format(Spreadsheet::FormatType);
     auto& undo_stack() { return m_undo_stack; }
 
 private:
@@ -83,12 +85,18 @@ private:
     RefPtr<GUI::Action> m_save_as_action;
     RefPtr<GUI::Action> m_quit_action;
 
+    RefPtr<GUI::Action> m_import_action;
+
     RefPtr<GUI::Action> m_cut_action;
     RefPtr<GUI::Action> m_copy_action;
     RefPtr<GUI::Action> m_paste_action;
+    RefPtr<GUI::Action> m_insert_emoji_action;
     RefPtr<GUI::Action> m_undo_action;
     RefPtr<GUI::Action> m_redo_action;
+    RefPtr<GUI::Action> m_change_background_color_action;
+    RefPtr<GUI::Action> m_change_foreground_color_action;
 
+    RefPtr<GUI::Action> m_search_action;
     RefPtr<GUI::Action> m_functions_help_action;
     RefPtr<GUI::Action> m_about_action;
 

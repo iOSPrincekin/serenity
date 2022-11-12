@@ -12,6 +12,7 @@
 #include <AK/URL.h>
 #include <LibCore/ElapsedTimer.h>
 #include <LibWeb/Forward.h>
+#include <LibWeb/Page/Page.h>
 
 namespace Web {
 
@@ -32,10 +33,13 @@ public:
     void set_method(String const& method) { m_method = method; }
 
     ByteBuffer const& body() const { return m_body; }
-    void set_body(ByteBuffer const& body) { m_body = body; }
+    void set_body(ByteBuffer body) { m_body = move(body); }
 
     void start_timer() { m_load_timer.start(); };
     Time load_time() const { return m_load_timer.elapsed_time(); }
+
+    Optional<Page&>& page() { return m_page; };
+    void set_page(Page& page) { m_page = page; }
 
     unsigned hash() const
     {
@@ -49,7 +53,7 @@ public:
     {
         if (m_headers.size() != other.m_headers.size())
             return false;
-        for (auto& it : m_headers) {
+        for (auto const& it : m_headers) {
             auto jt = other.m_headers.find(it.key);
             if (jt == other.m_headers.end())
                 return false;
@@ -62,14 +66,15 @@ public:
     void set_header(String const& name, String const& value) { m_headers.set(name, value); }
     String header(String const& name) const { return m_headers.get(name).value_or({}); }
 
-    HashMap<String, String> const& headers() const { return m_headers; }
+    HashMap<String, String, CaseInsensitiveStringTraits> const& headers() const { return m_headers; }
 
 private:
     AK::URL m_url;
     String m_method { "GET" };
-    HashMap<String, String> m_headers;
+    HashMap<String, String, CaseInsensitiveStringTraits> m_headers;
     ByteBuffer m_body;
     Core::ElapsedTimer m_load_timer;
+    Optional<Page&> m_page;
 };
 
 }

@@ -21,6 +21,7 @@
 #include <LibGUI/Label.h>
 #include <LibGUI/MessageBox.h>
 #include <LibGUI/Model.h>
+#include <LibGUI/Process.h>
 #include <LibGUI/Widget.h>
 #include <LibGUI/Window.h>
 #include <LibGfx/Font/FontDatabase.h>
@@ -61,13 +62,13 @@ private:
 
         Core::DirIterator iterator("/res/keymaps/", Core::DirIterator::Flags::SkipDots);
         if (iterator.has_error()) {
-            GUI::MessageBox::show(nullptr, String::formatted("Error on reading mapping file list: {}", iterator.error_string()), "Keyboard settings", GUI::MessageBox::Type::Error);
+            GUI::MessageBox::show(nullptr, String::formatted("Error on reading mapping file list: {}", iterator.error_string()), "Keyboard settings"sv, GUI::MessageBox::Type::Error);
             GUI::Application::the()->quit(-1);
         }
 
         while (iterator.has_next()) {
             auto name = iterator.next_path();
-            auto basename = name.replace(".json", "");
+            auto basename = name.replace(".json"sv, ""sv, ReplaceMode::FirstOnly);
             if (!selected_keymaps.find(basename).is_end())
                 continue;
             m_character_map_files.append(basename);
@@ -153,14 +154,14 @@ KeyboardSettingsWidget::KeyboardSettingsWidget()
 {
     load_from_gml(keyboard_widget_gml);
 
-    auto proc_keymap = Core::File::construct("/proc/keymap");
+    auto proc_keymap = Core::File::construct("/sys/kernel/keymap");
     if (!proc_keymap->open(Core::OpenMode::ReadOnly))
         VERIFY_NOT_REACHED();
 
     auto json = JsonValue::from_string(proc_keymap->read_all()).release_value_but_fixme_should_propagate_errors();
     auto const& keymap_object = json.as_object();
-    VERIFY(keymap_object.has("keymap"));
-    m_initial_active_keymap = keymap_object.get("keymap").to_string();
+    VERIFY(keymap_object.has("keymap"sv));
+    m_initial_active_keymap = keymap_object.get("keymap"sv).to_string();
     dbgln("KeyboardSettings thinks the current keymap is: {}", m_initial_active_keymap);
 
     auto mapper_config(Core::ConfigFile::open("/etc/Keyboard.ini").release_value_but_fixme_should_propagate_errors());
@@ -246,7 +247,7 @@ KeyboardSettingsWidget::KeyboardSettingsWidget()
     };
 
     m_num_lock_checkbox = find_descendant_of_type_named<GUI::CheckBox>("num_lock_checkbox");
-    m_num_lock_checkbox->set_checked(Config::read_bool("KeyboardSettings", "StartupEnable", "NumLock", true));
+    m_num_lock_checkbox->set_checked(Config::read_bool("KeyboardSettings"sv, "StartupEnable"sv, "NumLock"sv, true));
     m_num_lock_checkbox->on_checked = [&](auto) {
         set_modified(true);
     };
@@ -276,17 +277,11 @@ void KeyboardSettingsWidget::apply_settings()
         m_initial_keymap_list.append(keymap);
     }
     m_initial_active_keymap = m_keymaps_list_model.active_keymap();
-    Config::write_bool("KeyboardSettings", "StartupEnable", "NumLock", m_num_lock_checkbox->is_checked());
+    Config::write_bool("KeyboardSettings"sv, "StartupEnable"sv, "NumLock"sv, m_num_lock_checkbox->is_checked());
 }
 
 void KeyboardSettingsWidget::set_keymaps(Vector<String> const& keymaps, String const& active_keymap)
 {
-    pid_t child_pid;
-
     auto keymaps_string = String::join(',', keymaps);
-    char const* argv[] = { "/bin/keymap", "-s", keymaps_string.characters(), "-m", active_keymap.characters(), nullptr };
-    if ((errno = posix_spawn(&child_pid, "/bin/keymap", nullptr, nullptr, const_cast<char**>(argv), environ))) {
-        perror("posix_spawn");
-        exit(1);
-    }
+    GUI::Process::spawn_or_show_error(window(), "/bin/keymap"sv, Array { "-s", keymaps_string.characters(), "-m", active_keymap.characters() });
 }

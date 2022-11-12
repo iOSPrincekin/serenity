@@ -49,7 +49,7 @@ public:
                     if (lexer.next_is('"'))
                         m_filename = lexer.consume_quoted_string();
                     else
-                        m_filename = lexer.consume_until(is_any_of("()<>@,;:\\\"/[]?= "));
+                        m_filename = lexer.consume_until(is_any_of("()<>@,;:\\\"/[]?= "sv));
                 } else {
                     m_might_be_wrong = true;
                 }
@@ -67,7 +67,7 @@ public:
                     if (lexer.next_is('"'))
                         m_filename = lexer.consume_quoted_string();
                     else
-                        m_filename = lexer.consume_until(is_any_of("()<>@,;:\\\"/[]?= "));
+                        m_filename = lexer.consume_until(is_any_of("()<>@,;:\\\"/[]?= "sv));
                 } else {
                     m_might_be_wrong = true;
                 }
@@ -132,7 +132,8 @@ private:
 
         if (!m_buffer.is_empty()) {
             auto size = OutputFileStream::write(m_buffer);
-            m_buffer = m_buffer.slice(size, m_buffer.size() - size);
+            // FIXME: Propagate errors.
+            m_buffer = MUST(m_buffer.slice(size, m_buffer.size() - size));
         }
 
         if (!m_buffer.is_empty())
@@ -147,12 +148,13 @@ private:
 
 ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
-    char const* url_str = nullptr;
+    StringView url_str;
     bool save_at_provided_name = false;
     bool should_follow_url = false;
     char const* data = nullptr;
     StringView proxy_spec;
     String method = "GET";
+    StringView method_override;
     HashMap<String, String, CaseInsensitiveStringTraits> request_headers;
 
     Core::ArgsParser args_parser;
@@ -161,15 +163,16 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
         "and thus supports at least http, https, and gemini.");
     args_parser.add_option(save_at_provided_name, "Write to a file named as the remote file", nullptr, 'O');
     args_parser.add_option(data, "(HTTP only) Send the provided data via an HTTP POST request", "data", 'd', "data");
+    args_parser.add_option(method_override, "(HTTP only) HTTP method to use for the request (eg, GET, POST, etc)", "method", 'm', "method");
     args_parser.add_option(should_follow_url, "(HTTP only) Follow the Location header if a 3xx status is encountered", "follow", 'l');
     args_parser.add_option(Core::ArgsParser::Option {
-        .requires_argument = true,
+        .argument_mode = Core::ArgsParser::OptionArgumentMode::Required,
         .help_string = "Add a header entry to the request",
         .long_name = "header",
         .short_name = 'H',
         .value_name = "header-value",
         .accept_value = [&](auto* s) {
-            StringView header { s };
+            StringView header { s, strlen(s) };
             auto split = header.find(':');
             if (!split.has_value())
                 return false;
@@ -180,7 +183,9 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     args_parser.add_positional_argument(url_str, "URL to download from", "url");
     args_parser.parse(arguments);
 
-    if (data) {
+    if (!method_override.is_empty()) {
+        method = method_override;
+    } else if (data) {
         method = "POST";
         // FIXME: Content-Type?
     }
@@ -299,6 +304,9 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
                 }
             } else {
                 following_url = false;
+
+                if (status_code_value >= 400)
+                    warnln("Request returned error {}", status_code_value);
             }
         };
         request->on_finish = [&](bool success, auto) {
@@ -315,13 +323,12 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
         request->stream_into(output_stream);
     };
 
-    request = protocol_client->start_request(method, url, request_headers, data ? StringView { data }.bytes() : ReadonlyBytes {}, proxy_data);
+    request = protocol_client->start_request(method, url, request_headers, data ? StringView { data, strlen(data) }.bytes() : ReadonlyBytes {}, proxy_data);
     setup_request();
 
     dbgln("started request with id {}", request->id());
 
     auto rc = loop.exec();
-    // FIXME: This shouldn't be needed.
-    fclose(stdout);
+    fflush(stdout);
     return rc;
 }

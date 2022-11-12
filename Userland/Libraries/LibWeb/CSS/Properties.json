@@ -1,9 +1,42 @@
 {
+  "align-content": {
+    "inherited": false,
+    "initial": "stretch",
+    "valid-types": [
+      "align-content"
+    ]
+  },
   "align-items": {
     "inherited": false,
     "initial": "stretch",
     "valid-types": [
       "align-items"
+    ]
+  },
+  "align-self": {
+    "inherited": false,
+    "initial": "auto",
+    "valid-types": [
+      "align-self"
+    ]
+  },
+  "appearance": {
+    "inherited": false,
+    "initial": "auto",
+    "valid-types": [
+      "appearance"
+    ]
+  },
+  "backdrop-filter": {
+    "affects-layout": false,
+    "affects-stacking-context": true,
+    "inherited": false,
+    "initial": "none",
+    "valid-types": [
+      "filter-value-list"
+    ],
+    "valid-identifiers": [
+      "none"
     ]
   },
   "background": {
@@ -461,6 +494,9 @@
     "valid-identifiers": [
       "auto"
     ],
+    "valid-types": [
+      "rect"
+    ],
     "quirks": [
       "unitless-length"
     ]
@@ -474,6 +510,20 @@
     ],
     "quirks": [
       "hashless-hex-color"
+    ]
+  },
+  "column-gap": {
+    "inherited": false,
+    "initial": "auto",
+    "valid-types": [
+      "length [0,∞]",
+      "percentage [0,∞]"
+    ],
+    "valid-identifiers": [
+      "auto"
+    ],
+    "quirks": [
+      "unitless-length"
     ]
   },
   "content": {
@@ -511,6 +561,7 @@
     "valid-identifiers": [
       "block",
       "flex",
+      "grid",
       "inline",
       "inline-block",
       "inline-flex",
@@ -579,14 +630,14 @@
     "inherited": false,
     "initial": "0",
     "valid-types": [
-      "number"
+      "number [0,∞]"
     ]
   },
   "flex-shrink": {
     "inherited": false,
     "initial": "1",
     "valid-types": [
-      "number"
+      "number [0,∞]"
     ]
   },
   "order": {
@@ -674,6 +725,166 @@
       "bolder",
       "lighter",
       "normal"
+    ]
+  },
+  "gap": {
+    "inherited": false,
+    "initial": "auto",
+    "valid-types": [
+      "length [0,∞]",
+      "percentage [0,∞]"
+    ],
+    "max-values": 2,
+    "valid-identifiers": [
+      "auto"
+    ],
+    "quirks": [
+      "unitless-length"
+    ],
+    "longhands": [
+      "row-gap",
+      "column-gap"
+    ]
+  },
+  "grid-column": {
+    "inherited": false,
+    "initial": "auto",
+    "valid-identifiers": [
+      "auto"
+    ],
+    "valid-types": [
+      "string"
+    ],
+    "longhands": [
+      "grid-column-end",
+      "grid-column-start"
+    ]
+  },
+  "grid-column-end": {
+    "inherited": false,
+    "initial": "auto",
+    "valid-identifiers": [
+      "auto"
+    ],
+    "valid-types": [
+      "string"
+    ]
+  },
+  "grid-column-gap": {
+    "inherited": false,
+    "initial": "auto",
+    "valid-types": [
+      "length [0,∞]",
+      "percentage [0,∞]"
+    ],
+    "valid-identifiers": [
+      "auto"
+    ],
+    "quirks": [
+      "unitless-length"
+    ]
+  },
+  "grid-column-start": {
+    "inherited": false,
+    "initial": "auto",
+    "valid-identifiers": [
+      "auto"
+    ],
+    "valid-types": [
+      "string"
+    ]
+  },
+  "grid-gap": {
+    "inherited": false,
+    "initial": "auto",
+    "valid-types": [
+      "length [0,∞]",
+      "percentage [0,∞]"
+    ],
+    "max-values": 2,
+    "valid-identifiers": [
+      "auto"
+    ],
+    "quirks": [
+      "unitless-length"
+    ],
+    "longhands": [
+      "grid-row-gap",
+      "grid-column-gap"
+    ]
+  },
+  "grid-row": {
+    "inherited": false,
+    "initial": "auto",
+    "valid-identifiers": [
+      "auto"
+    ],
+    "valid-types": [
+      "string"
+    ],
+    "longhands": [
+      "grid-row-end",
+      "grid-row-start"
+    ]
+  },
+  "grid-row-end": {
+    "inherited": false,
+    "initial": "auto",
+    "valid-identifiers": [
+      "auto"
+    ],
+    "valid-types": [
+      "string"
+    ]
+  },
+  "grid-row-gap": {
+    "inherited": false,
+    "initial": "auto",
+    "valid-types": [
+      "length [0,∞]",
+      "percentage [0,∞]"
+    ],
+    "valid-identifiers": [
+      "auto"
+    ],
+    "quirks": [
+      "unitless-length"
+    ]
+  },
+  "grid-row-start": {
+    "inherited": false,
+    "initial": "auto",
+    "valid-identifiers": [
+      "auto"
+    ],
+    "valid-types": [
+      "string"
+    ]
+  },
+  "grid-template-columns": {
+    "inherited": false,
+    "initial": "auto",
+    "max-values": 4,
+    "valid-identifiers": [
+      "auto"
+    ],
+    "valid-types": [
+      "length",
+      "percentage",
+      "string"
+    ]
+  },
+  "grid-template-rows": {
+    "inherited": false,
+    "initial": "auto",
+    "max-values": 4,
+    "valid-identifiers": [
+      "auto"
+    ],
+    "valid-types": [
+      "length",
+      "percentage",
+      "string"
     ]
   },
   "height": {
@@ -1085,6 +1296,20 @@
       "unitless-length"
     ]
   },
+  "row-gap": {
+    "inherited": false,
+    "initial": "auto",
+    "valid-types": [
+      "length [0,∞]",
+      "percentage [0,∞]"
+    ],
+    "valid-identifiers": [
+      "auto"
+    ],
+    "quirks": [
+      "unitless-length"
+    ]
+  },
   "stroke": {
     "affects-layout": false,
     "inherited": true,
@@ -1211,7 +1436,8 @@
   },
   "transform": {
     "inherited": false,
-    "initial": "none"
+    "initial": "none",
+    "affects-stacking-context": true
   },
   "transform-origin": {
     "affects-layout": false,

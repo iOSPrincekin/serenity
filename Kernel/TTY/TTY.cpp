@@ -8,8 +8,8 @@
 #include <AK/ScopeGuard.h>
 #include <AK/StringView.h>
 #include <Kernel/API/POSIX/errno.h>
-#include <Kernel/Arch/x86/InterruptDisabler.h>
 #include <Kernel/Debug.h>
+#include <Kernel/InterruptDisabler.h>
 #include <Kernel/Process.h>
 #include <Kernel/TTY/TTY.h>
 #include <LibC/signal_numbers.h>
@@ -359,11 +359,12 @@ void TTY::generate_signal(int signal)
         flush_input();
     dbgln_if(TTY_DEBUG, "Send signal {} to everyone in pgrp {}", signal, pgid().value());
     InterruptDisabler disabler; // FIXME: Iterate over a set of process handles instead?
-    Process::for_each_in_pgrp(pgid(), [&](auto& process) {
+    MUST(Process::current().for_each_in_pgrp_in_same_jail(pgid(), [&](auto& process) -> ErrorOr<void> {
         dbgln_if(TTY_DEBUG, "Send signal {} to {}", signal, process);
         // FIXME: Should this error be propagated somehow?
         [[maybe_unused]] auto rc = process.send_signal(signal, nullptr);
-    });
+        return {};
+    }));
 }
 
 void TTY::flush_input()
@@ -398,18 +399,18 @@ ErrorOr<void> TTY::set_termios(termios const& t)
     };
 
     constexpr FlagDescription unimplemented_iflags[] = {
-        { IGNBRK, "IGNBRK" },
-        { BRKINT, "BRKINT" },
-        { IGNPAR, "IGNPAR" },
-        { PARMRK, "PARMRK" },
-        { INPCK, "INPCK" },
-        { IGNCR, "IGNCR" },
-        { IUCLC, "IUCLC" },
-        { IXON, "IXON" },
-        { IXANY, "IXANY" },
-        { IXOFF, "IXOFF" },
-        { IMAXBEL, "IMAXBEL" },
-        { IUTF8, "IUTF8" }
+        { IGNBRK, "IGNBRK"sv },
+        { BRKINT, "BRKINT"sv },
+        { IGNPAR, "IGNPAR"sv },
+        { PARMRK, "PARMRK"sv },
+        { INPCK, "INPCK"sv },
+        { IGNCR, "IGNCR"sv },
+        { IUCLC, "IUCLC"sv },
+        { IXON, "IXON"sv },
+        { IXANY, "IXANY"sv },
+        { IXOFF, "IXOFF"sv },
+        { IMAXBEL, "IMAXBEL"sv },
+        { IUTF8, "IUTF8"sv }
     };
     for (auto flag : unimplemented_iflags) {
         if (m_termios.c_iflag & flag.value) {
@@ -419,11 +420,11 @@ ErrorOr<void> TTY::set_termios(termios const& t)
     }
 
     constexpr FlagDescription unimplemented_oflags[] = {
-        { OLCUC, "OLCUC" },
-        { ONOCR, "ONOCR" },
-        { ONLRET, "ONLRET" },
-        { OFILL, "OFILL" },
-        { OFDEL, "OFDEL" }
+        { OLCUC, "OLCUC"sv },
+        { ONOCR, "ONOCR"sv },
+        { ONLRET, "ONLRET"sv },
+        { OFILL, "OFILL"sv },
+        { OFDEL, "OFDEL"sv }
     };
     for (auto flag : unimplemented_oflags) {
         if (m_termios.c_oflag & flag.value) {
@@ -438,12 +439,12 @@ ErrorOr<void> TTY::set_termios(termios const& t)
     }
 
     constexpr FlagDescription unimplemented_cflags[] = {
-        { CSTOPB, "CSTOPB" },
-        { CREAD, "CREAD" },
-        { PARENB, "PARENB" },
-        { PARODD, "PARODD" },
-        { HUPCL, "HUPCL" },
-        { CLOCAL, "CLOCAL" }
+        { CSTOPB, "CSTOPB"sv },
+        { CREAD, "CREAD"sv },
+        { PARENB, "PARENB"sv },
+        { PARODD, "PARODD"sv },
+        { HUPCL, "HUPCL"sv },
+        { CLOCAL, "CLOCAL"sv }
     };
     for (auto flag : unimplemented_cflags) {
         if (m_termios.c_cflag & flag.value) {
@@ -453,8 +454,8 @@ ErrorOr<void> TTY::set_termios(termios const& t)
     }
 
     constexpr FlagDescription unimplemented_lflags[] = {
-        { TOSTOP, "TOSTOP" },
-        { IEXTEN, "IEXTEN" }
+        { TOSTOP, "TOSTOP"sv },
+        { IEXTEN, "IEXTEN"sv }
     };
     for (auto flag : unimplemented_lflags) {
         if (m_termios.c_lflag & flag.value) {
@@ -493,7 +494,7 @@ ErrorOr<void> TTY::ioctl(OpenFileDescription&, unsigned request, Userspace<void*
         if (!process_group)
             return EINVAL;
 
-        auto process = Process::from_pid(ProcessID(pgid.value()));
+        auto process = Process::from_pid_in_same_jail(ProcessID(pgid.value()));
         SessionID new_sid = process ? process->sid() : Process::get_sid_from_pgid(pgid);
         if (!new_sid || new_sid != current_process.sid())
             return EPERM;
@@ -502,7 +503,7 @@ ErrorOr<void> TTY::ioctl(OpenFileDescription&, unsigned request, Userspace<void*
         m_pg = process_group;
 
         if (process) {
-            if (auto parent = Process::from_pid(process->ppid())) {
+            if (auto parent = Process::from_pid_ignoring_jails(process->ppid())) {
                 m_original_process_parent = *parent;
                 return {};
             }

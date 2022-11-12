@@ -83,9 +83,9 @@ static Vector<OpenFile> get_open_files_by_pid(pid_t pid)
     json.as_array().for_each([pid, &files](JsonValue const& object) {
         OpenFile open_file;
         open_file.pid = pid;
-        open_file.fd = object.as_object().get("fd").to_int();
+        open_file.fd = object.as_object().get("fd"sv).to_int();
 
-        String name = object.as_object().get("absolute_path").to_string();
+        String name = object.as_object().get("absolute_path"sv).to_string();
         VERIFY(parse_name(name, open_file));
         open_file.full_name = name;
 
@@ -105,6 +105,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 
     TRY(Core::System::unveil("/proc", "r"));
     // needed by ProcessStatisticsReader::get_all()
+    TRY(Core::System::unveil("/sys/kernel/processes", "r"));
     TRY(Core::System::unveil("/etc/passwd", "r"));
     TRY(Core::System::unveil(nullptr, nullptr));
 

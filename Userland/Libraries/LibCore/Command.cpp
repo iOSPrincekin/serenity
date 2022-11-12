@@ -16,13 +16,13 @@
 namespace Core {
 
 // Only supported in serenity mode because we use `posix_spawn_file_actions_addchdir`
-#ifdef __serenity__
+#ifdef AK_OS_SERENITY
 
 ErrorOr<CommandResult> command(String const& command_string, Optional<LexicalPath> chdir)
 {
     auto parts = command_string.split(' ');
     if (parts.is_empty())
-        return Error::from_string_literal("empty command"sv);
+        return Error::from_string_literal("empty command");
     auto program = parts[0];
     parts.remove(0);
     return command(program, parts, chdir);

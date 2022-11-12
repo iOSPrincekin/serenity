@@ -31,6 +31,11 @@ void VirtualScreenBackend::set_head_buffer(int index)
     m_first_buffer_active = index == 0;
 }
 
+ErrorOr<void> VirtualScreenBackend::set_safe_head_mode_setting()
+{
+    return {};
+}
+
 ErrorOr<void> VirtualScreenBackend::set_head_mode_setting(GraphicsHeadModeSetting mode_setting)
 {
     m_height = mode_setting.vertical_active;
@@ -39,7 +44,7 @@ ErrorOr<void> VirtualScreenBackend::set_head_mode_setting(GraphicsHeadModeSettin
         mode_setting.horizontal_stride = static_cast<int>(mode_setting.horizontal_active * sizeof(Gfx::ARGB32));
     m_pitch = mode_setting.horizontal_stride;
     if (static_cast<int>(mode_setting.horizontal_active * sizeof(Gfx::ARGB32)) != mode_setting.horizontal_stride)
-        return Error::from_string_literal("Unsupported pitch"sv);
+        return Error::from_string_literal("Unsupported pitch");
 
     m_width = mode_setting.horizontal_active;
     return {};

@@ -17,22 +17,23 @@ namespace Web::HTML {
 class HTMLSelectElement final
     : public HTMLElement
     , public FormAssociatedElement {
+    WEB_PLATFORM_OBJECT(HTMLSelectElement, HTMLElement);
     FORM_ASSOCIATED_ELEMENT(HTMLElement, HTMLSelectElement)
 
 public:
-    using WrapperType = Bindings::HTMLSelectElementWrapper;
-
-    HTMLSelectElement(DOM::Document&, DOM::QualifiedName);
     virtual ~HTMLSelectElement() override;
 
-    RefPtr<HTMLOptionsCollection> const& options();
+    JS::GCPtr<HTMLOptionsCollection> const& options();
 
-    DOM::ExceptionOr<void> add(HTMLOptionOrOptGroupElement element, Optional<HTMLElementOrElementIndex> before = {});
+    size_t length();
+    DOM::Element* item(size_t index);
+    DOM::Element* named_item(FlyString const& name);
+    WebIDL::ExceptionOr<void> add(HTMLOptionOrOptGroupElement element, Optional<HTMLElementOrElementIndex> before = {});
 
     int selected_index() const;
     void set_selected_index(int);
 
-    NonnullRefPtrVector<HTMLOptionElement> list_of_options() const;
+    Vector<JS::Handle<HTMLOptionElement>> list_of_options() const;
 
     // ^EventTarget
     // https://html.spec.whatwg.org/multipage/interaction.html#the-tabindex-attribute:the-select-element
@@ -55,8 +56,17 @@ public:
     // https://html.spec.whatwg.org/multipage/forms.html#category-label
     virtual bool is_labelable() const override { return true; }
 
+    String const& type() const;
+
 private:
-    RefPtr<HTMLOptionsCollection> m_options;
+    HTMLSelectElement(DOM::Document&, DOM::QualifiedName);
+
+    virtual void visit_edges(Cell::Visitor&) override;
+
+    // ^DOM::Element
+    virtual i32 default_tab_index_value() const override;
+
+    JS::GCPtr<HTMLOptionsCollection> m_options;
 };
 
 }

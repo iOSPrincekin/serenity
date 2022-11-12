@@ -1,12 +1,12 @@
 /*
- * Copyright (c) 2020, Andreas Kling <kling@serenityos.org>
+ * Copyright (c) 2020-2022, Andreas Kling <kling@serenityos.org>
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
 #pragma once
 
-#include <AK/NonnullRefPtrVector.h>
+#include <LibJS/Heap/Cell.h>
 #include <LibWeb/DOM/Node.h>
 #include <LibWeb/HTML/Parser/HTMLTokenizer.h>
 #include <LibWeb/HTML/Parser/ListOfActiveFormattingElements.h>
@@ -39,22 +39,24 @@ namespace Web::HTML {
     __ENUMERATE_INSERTION_MODE(AfterAfterBody)  \
     __ENUMERATE_INSERTION_MODE(AfterAfterFrameset)
 
-class HTMLParser : public RefCounted<HTMLParser> {
+class HTMLParser final : public JS::Cell {
+    JS_CELL(HTMLParser, JS::Cell);
+
     friend class HTMLTokenizer;
 
 public:
     ~HTMLParser();
 
-    static NonnullRefPtr<HTMLParser> create_for_scripting(DOM::Document&);
-    static NonnullRefPtr<HTMLParser> create_with_uncertain_encoding(DOM::Document&, ByteBuffer const& input);
-    static NonnullRefPtr<HTMLParser> create(DOM::Document&, StringView input, String const& encoding);
+    static JS::NonnullGCPtr<HTMLParser> create_for_scripting(DOM::Document&);
+    static JS::NonnullGCPtr<HTMLParser> create_with_uncertain_encoding(DOM::Document&, ByteBuffer const& input);
+    static JS::NonnullGCPtr<HTMLParser> create(DOM::Document&, StringView input, String const& encoding);
 
     void run();
     void run(const AK::URL&);
 
     DOM::Document& document();
 
-    static NonnullRefPtrVector<DOM::Node> parse_html_fragment(DOM::Element& context_element, StringView);
+    static Vector<JS::Handle<DOM::Node>> parse_html_fragment(DOM::Element& context_element, StringView);
     static String serialize_html_fragment(DOM::Node const& node);
 
     enum class InsertionMode {
@@ -69,13 +71,19 @@ public:
 
     HTMLTokenizer& tokenizer() { return m_tokenizer; }
 
+    // https://html.spec.whatwg.org/multipage/parsing.html#abort-a-parser
+    void abort();
+
     bool aborted() const { return m_aborted; }
+    bool stopped() const { return m_stop_parsing; }
 
     size_t script_nesting_level() const { return m_script_nesting_level; }
 
 private:
     HTMLParser(DOM::Document&, StringView input, String const& encoding);
     HTMLParser(DOM::Document&);
+
+    virtual void visit_edges(Cell::Visitor&) override;
 
     char const* insertion_mode_name() const;
 
@@ -111,19 +119,19 @@ private:
 
     void generate_implied_end_tags(FlyString const& exception = {});
     void generate_all_implied_end_tags_thoroughly();
-    NonnullRefPtr<DOM::Element> create_element_for(HTMLToken const&, FlyString const& namespace_, DOM::Node const& intended_parent);
+    JS::NonnullGCPtr<DOM::Element> create_element_for(HTMLToken const&, FlyString const& namespace_, DOM::Node const& intended_parent);
 
     struct AdjustedInsertionLocation {
-        RefPtr<DOM::Node> parent;
-        RefPtr<DOM::Node> insert_before_sibling;
+        JS::GCPtr<DOM::Node> parent;
+        JS::GCPtr<DOM::Node> insert_before_sibling;
     };
 
-    AdjustedInsertionLocation find_appropriate_place_for_inserting_node(RefPtr<DOM::Element> override_target = nullptr);
+    AdjustedInsertionLocation find_appropriate_place_for_inserting_node(JS::GCPtr<DOM::Element> override_target = nullptr);
 
     DOM::Text* find_character_insertion_node();
     void flush_character_insertions();
-    NonnullRefPtr<DOM::Element> insert_foreign_element(HTMLToken const&, FlyString const&);
-    NonnullRefPtr<DOM::Element> insert_html_element(HTMLToken const&);
+    JS::NonnullGCPtr<DOM::Element> insert_foreign_element(HTMLToken const&, FlyString const&);
+    JS::NonnullGCPtr<DOM::Element> insert_html_element(HTMLToken const&);
     DOM::Element& current_node();
     DOM::Element& adjusted_current_node();
     DOM::Element& node_before_current_node();
@@ -166,21 +174,27 @@ private:
     bool m_foster_parenting { false };
     bool m_frameset_ok { true };
     bool m_parsing_fragment { false };
+
+    // https://html.spec.whatwg.org/multipage/parsing.html#scripting-flag
+    // The scripting flag is set to "enabled" if scripting was enabled for the Document with which the parser is associated when the parser was created, and "disabled" otherwise.
     bool m_scripting_enabled { true };
+
     bool m_invoked_via_document_write { false };
     bool m_aborted { false };
     bool m_parser_pause_flag { false };
     bool m_stop_parsing { false };
     size_t m_script_nesting_level { 0 };
 
-    NonnullRefPtr<DOM::Document> m_document;
-    RefPtr<HTMLHeadElement> m_head_element;
-    RefPtr<HTMLFormElement> m_form_element;
-    RefPtr<DOM::Element> m_context_element;
+    JS::Realm& realm();
+
+    JS::GCPtr<DOM::Document> m_document;
+    JS::GCPtr<HTMLHeadElement> m_head_element;
+    JS::GCPtr<HTMLFormElement> m_form_element;
+    JS::GCPtr<DOM::Element> m_context_element;
 
     Vector<HTMLToken> m_pending_table_character_tokens;
 
-    RefPtr<DOM::Text> m_character_insertion_node;
+    JS::GCPtr<DOM::Text> m_character_insertion_node;
     StringBuilder m_character_insertion_builder;
 };
 

@@ -33,18 +33,28 @@ void EllipseTool::draw_using(GUI::Painter& painter, Gfx::IntPoint const& start_p
         ellipse_intersecting_rect = Gfx::IntRect::from_two_points(start_position, end_position);
     }
 
+    Gfx::AntiAliasingPainter aa_painter { painter };
+
     switch (m_fill_mode) {
     case FillMode::Outline:
-        painter.draw_ellipse_intersecting(ellipse_intersecting_rect, m_editor->color_for(m_drawing_button), thickness);
+        if (m_antialias_enabled) {
+            aa_painter.draw_ellipse(ellipse_intersecting_rect, m_editor->color_for(m_drawing_button), thickness);
+        } else {
+            // For some reason for non-AA draw_ellipse() the ellipse is outside of the rect (unlike all other ellipse drawing functions).
+            // Scale the ellipse rect by sqrt(2) to get an ellipse arc that appears as if it was inside of the rect.
+            // Ie. reduce the size by a factor of 1 - sqrt(1/2)
+            auto shrink_width = ellipse_intersecting_rect.width() * (1 - AK::Sqrt1_2<float>);
+            auto shrink_height = ellipse_intersecting_rect.height() * (1 - AK::Sqrt1_2<float>);
+            ellipse_intersecting_rect.shrink(shrink_width, shrink_height);
+            painter.draw_ellipse_intersecting(ellipse_intersecting_rect, m_editor->color_for(m_drawing_button), thickness);
+        }
         break;
     case FillMode::Fill:
-        painter.fill_ellipse(ellipse_intersecting_rect, m_editor->color_for(m_drawing_button));
+        if (m_antialias_enabled)
+            aa_painter.fill_ellipse(ellipse_intersecting_rect, m_editor->color_for(m_drawing_button));
+        else
+            painter.fill_ellipse(ellipse_intersecting_rect, m_editor->color_for(m_drawing_button));
         break;
-    case FillMode::FillAntiAliased: {
-        Gfx::AntiAliasingPainter aa_painter { painter };
-        aa_painter.draw_ellipse(ellipse_intersecting_rect, m_editor->color_for(m_drawing_button));
-        break;
-    }
     default:
         VERIFY_NOT_REACHED();
     }
@@ -74,12 +84,12 @@ void EllipseTool::on_mouseup(Layer* layer, MouseEvent& event)
         return;
 
     if (event.layer_event().button() == m_drawing_button) {
-        GUI::Painter painter(layer->currently_edited_bitmap());
+        GUI::Painter painter(layer->get_scratch_edited_bitmap());
         draw_using(painter, m_ellipse_start_position, m_ellipse_end_position, m_thickness);
         m_drawing_button = GUI::MouseButton::None;
-        layer->did_modify_bitmap();
+        layer->did_modify_bitmap(layer->get_scratch_edited_bitmap().rect());
         m_editor->update();
-        m_editor->did_complete_action();
+        m_editor->did_complete_action(tool_name());
     }
 }
 
@@ -107,6 +117,7 @@ void EllipseTool::on_second_paint(Layer const* layer, GUI::PaintEvent& event)
 
     GUI::Painter painter(*m_editor);
     painter.add_clip_rect(event.rect());
+    painter.translate(editor_layer_location(*layer));
     auto preview_start = m_editor->content_to_frame_position(m_ellipse_start_position).to_type<int>();
     auto preview_end = m_editor->content_to_frame_position(m_ellipse_end_position).to_type<int>();
     draw_using(painter, preview_start, preview_end, AK::max(m_thickness * m_editor->scale(), 1));
@@ -158,23 +169,15 @@ GUI::Widget* EllipseTool::get_properties_widget()
         auto& aa_enable_checkbox = mode_radio_container.add<GUI::CheckBox>("Anti-alias");
 
         aa_enable_checkbox.on_checked = [&](bool checked) {
-            if (fill_mode_radio.is_checked())
-                m_fill_mode = checked ? FillMode::FillAntiAliased : FillMode::Fill;
+            m_antialias_enabled = checked;
         };
         outline_mode_radio.on_checked = [&](bool checked) {
-            if (checked) {
+            if (checked)
                 m_fill_mode = FillMode::Outline;
-                aa_enable_checkbox.set_enabled(false);
-                m_last_aa_checkbox_state = aa_enable_checkbox.is_checked();
-                aa_enable_checkbox.set_checked(false);
-            }
         };
         fill_mode_radio.on_checked = [&](bool checked) {
-            if (checked) {
+            if (checked)
                 m_fill_mode = FillMode::Fill;
-                aa_enable_checkbox.set_checked(m_last_aa_checkbox_state);
-                aa_enable_checkbox.set_enabled(true);
-            }
         };
 
         aa_enable_checkbox.set_checked(false);

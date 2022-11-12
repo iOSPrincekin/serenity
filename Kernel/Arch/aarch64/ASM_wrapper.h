@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <Kernel/Arch/aarch64/Processor.h>
 #include <Kernel/Arch/aarch64/Registers.h>
 
 namespace Kernel::Aarch64::Asm {
@@ -21,6 +22,11 @@ inline void set_ttbr1_el1(FlatPtr ttbr1_el1)
 inline void set_ttbr0_el1(FlatPtr ttbr0_el1)
 {
     asm("msr ttbr0_el1, %[value]" ::[value] "r"(ttbr0_el1));
+}
+
+inline void set_sp_el1(FlatPtr sp_el1)
+{
+    asm("msr sp_el1, %[value]" ::[value] "r"(sp_el1));
 }
 
 inline void flush()
@@ -86,6 +92,15 @@ inline void enter_el1_from_el2()
                  "    eret\n"
                  "entered_el1:" ::
                      : "x0");
+}
+
+}
+
+namespace Kernel {
+
+inline bool are_interrupts_enabled()
+{
+    return Processor::are_interrupts_enabled();
 }
 
 }

@@ -17,6 +17,7 @@
 #include <AK/Memory.h>
 #include <AK/ScopeGuard.h>
 #include <LibCore/Timer.h>
+#include <LibGfx/AntiAliasingPainter.h>
 #include <LibGfx/Font/Font.h>
 #include <LibGfx/Painter.h>
 #include <LibGfx/StylePainter.h>
@@ -32,11 +33,11 @@ Compositor& Compositor::the()
 
 static WallpaperMode mode_to_enum(String const& name)
 {
-    if (name == "tile")
+    if (name == "Tile")
         return WallpaperMode::Tile;
-    if (name == "stretch")
+    if (name == "Stretch")
         return WallpaperMode::Stretch;
-    if (name == "center")
+    if (name == "Center")
         return WallpaperMode::Center;
     return WallpaperMode::Center;
 }
@@ -120,6 +121,8 @@ void CompositorScreenData::init_bitmaps(Compositor& compositor, Screen& screen)
     m_temp_bitmap = Gfx::Bitmap::try_create(Gfx::BitmapFormat::BGRx8888, size, screen.scale_factor()).release_value_but_fixme_should_propagate_errors();
     m_temp_painter = make<Gfx::Painter>(*m_temp_bitmap);
     m_temp_painter->translate(-screen.rect().location());
+
+    clear_wallpaper_bitmap();
 }
 
 void Compositor::init_bitmaps()
@@ -138,7 +141,7 @@ void Compositor::did_construct_window_manager(Badge<WindowManager>)
 
     m_current_window_stack = &wm.current_window_stack();
 
-    m_wallpaper_mode = mode_to_enum(wm.config()->read_entry("Background", "Mode", "center"));
+    m_wallpaper_mode = mode_to_enum(wm.config()->read_entry("Background", "Mode", "Center"));
     m_custom_background_color = Color::from_string(wm.config()->read_entry("Background", "Color", ""));
 
     invalidate_screen();
@@ -302,25 +305,23 @@ void Compositor::compose()
         check_restore_cursor_back(cursor_screen, cursor_rect);
 
     auto paint_wallpaper = [&](Screen& screen, Gfx::Painter& painter, Gfx::IntRect const& rect, Gfx::IntRect const& screen_rect) {
-        // FIXME: If the wallpaper is opaque and covers the whole rect, no need to fill with color!
-        painter.fill_rect(rect, background_color);
         if (m_wallpaper) {
             if (m_wallpaper_mode == WallpaperMode::Center) {
                 Gfx::IntPoint offset { (screen.width() - m_wallpaper->width()) / 2, (screen.height() - m_wallpaper->height()) / 2 };
+
+                // FIXME: If the wallpaper is opaque and covers the whole rect, no need to fill with color!
+                painter.fill_rect(rect, background_color);
                 painter.blit_offset(rect.location(), *m_wallpaper, rect.translated(-screen_rect.location()), offset);
             } else if (m_wallpaper_mode == WallpaperMode::Tile) {
                 painter.draw_tiled_bitmap(rect, *m_wallpaper);
             } else if (m_wallpaper_mode == WallpaperMode::Stretch) {
-                float hscale = (float)m_wallpaper->width() / (float)screen.width();
-                float vscale = (float)m_wallpaper->height() / (float)screen.height();
-
-                // TODO: this may look ugly, we should scale to a backing bitmap and then blit
-                auto relative_rect = rect.translated(-screen_rect.location());
-                auto src_rect = Gfx::FloatRect { relative_rect.x() * hscale, relative_rect.y() * vscale, relative_rect.width() * hscale, relative_rect.height() * vscale };
-                painter.draw_scaled_bitmap(rect, *m_wallpaper, src_rect);
+                VERIFY(screen.compositor_screen_data().m_wallpaper_bitmap);
+                painter.blit(rect.location(), *screen.compositor_screen_data().m_wallpaper_bitmap, rect);
             } else {
                 VERIFY_NOT_REACHED();
             }
+        } else {
+            painter.fill_rect(rect, background_color);
         }
     };
 
@@ -424,6 +425,9 @@ void Compositor::compose()
             case ResizeDirection::DownLeft:
                 backing_rect.set_right_without_resize(window_rect.right());
                 backing_rect.set_top(window_rect.top());
+                break;
+            default:
+                VERIFY_NOT_REACHED();
                 break;
             }
 
@@ -723,13 +727,6 @@ void Compositor::flush(Screen& screen)
         // now so that they can be sent to the device.
         screen.flush_display(screen_data.m_buffers_are_flipped ? 1 : 0);
     }
-
-    // Note: We write all contents from the internal buffer of WindowServer Screen
-    // to the actual framebuffer with the write() syscall, but after we flush the screen
-    // to ensure we are in a "clean state"...
-    // FIXME: This write is completely inefficient and needs to be done in chunks
-    // only when appropriate...
-    screen.write_all_display_contents();
 }
 
 void Compositor::invalidate_screen()
@@ -749,7 +746,7 @@ void Compositor::invalidate_screen(Gfx::IntRect const& screen_rect)
     start_compose_async_timer();
 }
 
-void Compositor::invalidate_screen(Gfx::DisjointRectSet const& rects)
+void Compositor::invalidate_screen(Gfx::DisjointIntRectSet const& rects)
 {
     m_dirty_screen_rects.add(rects.intersected(Screen::bounding_rect()));
 
@@ -794,8 +791,10 @@ bool Compositor::set_background_color(String const& background_color)
     wm.config()->write_entry("Background", "Color", background_color);
     bool succeeded = !wm.config()->sync().is_error();
 
-    if (succeeded)
+    if (succeeded) {
+        update_wallpaper_bitmap();
         Compositor::invalidate_screen();
+    }
 
     return succeeded;
 }
@@ -808,6 +807,7 @@ bool Compositor::set_wallpaper_mode(String const& mode)
 
     if (succeeded) {
         m_wallpaper_mode = mode_to_enum(mode);
+        update_wallpaper_bitmap();
         Compositor::invalidate_screen();
     }
 
@@ -820,9 +820,43 @@ bool Compositor::set_wallpaper(RefPtr<Gfx::Bitmap> bitmap)
         m_wallpaper = nullptr;
     else
         m_wallpaper = bitmap;
+    update_wallpaper_bitmap();
     invalidate_screen();
 
     return true;
+}
+
+void Compositor::update_wallpaper_bitmap()
+{
+    Screen::for_each([&](Screen& screen) {
+        auto& screen_data = screen.compositor_screen_data();
+        if (m_wallpaper_mode != WallpaperMode::Stretch || !m_wallpaper) {
+            screen_data.clear_wallpaper_bitmap();
+            return IterationDecision::Continue;
+        }
+        if (!screen_data.m_wallpaper_bitmap)
+            screen_data.init_wallpaper_bitmap(screen);
+
+        auto rect = screen_data.m_wallpaper_bitmap->rect();
+        auto& painter = *screen_data.m_wallpaper_painter;
+
+        painter.draw_scaled_bitmap(rect, *m_wallpaper, m_wallpaper->rect());
+
+        return IterationDecision::Continue;
+    });
+}
+
+void CompositorScreenData::init_wallpaper_bitmap(Screen& screen)
+{
+    m_wallpaper_bitmap = Gfx::Bitmap::try_create(Gfx::BitmapFormat::BGRx8888, screen.size(), screen.scale_factor()).release_value_but_fixme_should_propagate_errors();
+    m_wallpaper_painter = make<Gfx::Painter>(*m_wallpaper_bitmap);
+    m_wallpaper_painter->translate(-screen.rect().location());
+}
+
+void CompositorScreenData::clear_wallpaper_bitmap()
+{
+    m_wallpaper_painter = nullptr;
+    m_wallpaper_bitmap = nullptr;
 }
 
 void CompositorScreenData::flip_buffers(Screen& screen)
@@ -842,6 +876,7 @@ void Compositor::screen_resolution_changed()
     init_bitmaps();
     invalidate_occlusions();
     overlay_rects_changed();
+    update_wallpaper_bitmap();
     compose();
 }
 
@@ -849,12 +884,21 @@ Gfx::IntRect Compositor::current_cursor_rect() const
 {
     auto& wm = WindowManager::the();
     auto& current_cursor = m_current_cursor ? *m_current_cursor : wm.active_cursor();
-    return { ScreenInput::the().cursor_location().translated(-current_cursor.params().hotspot()), current_cursor.size() };
+    Gfx::IntRect cursor_rect { ScreenInput::the().cursor_location().translated(-current_cursor.params().hotspot()), current_cursor.size() };
+    if (wm.is_cursor_highlight_enabled()) {
+        auto highlight_diameter = wm.cursor_highlight_radius() * 2;
+        auto inflate_w = highlight_diameter - cursor_rect.width();
+        auto inflate_h = highlight_diameter - cursor_rect.height();
+        cursor_rect.inflate(inflate_w, inflate_h);
+        // Ensures cursor stays in the same location when highlighting is enabled.
+        cursor_rect.translate_by(-(inflate_w % 2), -(inflate_h % 2));
+    }
+    return cursor_rect;
 }
 
 void Compositor::invalidate_cursor(bool compose_immediately)
 {
-    if (m_invalidated_cursor)
+    if (m_invalidated_cursor && !compose_immediately)
         return;
     m_invalidated_cursor = true;
     m_invalidated_any = true;
@@ -956,10 +1000,17 @@ void CompositorScreenData::draw_cursor(Screen& screen, Gfx::IntRect const& curso
     auto& compositor = Compositor::the();
     auto& current_cursor = compositor.m_current_cursor ? *compositor.m_current_cursor : wm.active_cursor();
     auto screen_rect = screen.rect();
-    m_cursor_back_painter->blit({ 0, 0 }, *m_back_bitmap, current_cursor.rect().translated(cursor_rect.location()).intersected(screen_rect).translated(-screen_rect.location()));
+    m_cursor_back_painter->blit({ 0, 0 }, *m_back_bitmap, cursor_rect.intersected(screen_rect).translated(-screen_rect.location()));
     auto cursor_src_rect = current_cursor.source_rect(compositor.m_current_cursor_frame);
-    m_back_painter->blit(cursor_rect.location(), current_cursor.bitmap(screen.scale_factor()), cursor_src_rect);
-    m_flush_special_rects.add(Gfx::IntRect(cursor_rect.location(), cursor_src_rect.size()).intersected(screen.rect()));
+    auto cursor_blit_pos = current_cursor.rect().centered_within(cursor_rect).location();
+
+    if (wm.is_cursor_highlight_enabled()) {
+        Gfx::AntiAliasingPainter aa_back_painter { *m_back_painter };
+        aa_back_painter.fill_ellipse(cursor_rect, wm.cursor_highlight_color());
+    }
+    m_back_painter->blit(cursor_blit_pos, current_cursor.bitmap(screen.scale_factor()), cursor_src_rect);
+
+    m_flush_special_rects.add(Gfx::IntRect(cursor_rect.location(), cursor_rect.size()).intersected(screen.rect()));
     m_have_flush_rects = true;
     m_last_cursor_rect = cursor_rect;
     VERIFY(compositor.m_current_cursor_screen == &screen);
@@ -1159,7 +1210,7 @@ void Compositor::recompute_occlusions()
         m_opaque_wallpaper_rects.clear();
     }
     if (!fullscreen_window || (fullscreen_window && !fullscreen_window->is_opaque())) {
-        Gfx::DisjointRectSet remaining_visible_screen_rects;
+        Gfx::DisjointIntRectSet remaining_visible_screen_rects;
         remaining_visible_screen_rects.add_many(Screen::rects());
         bool have_transparent = false;
         wm.for_each_visible_window_from_front_to_back([&](Window& w) {
@@ -1213,8 +1264,8 @@ void Compositor::recompute_occlusions()
 
             auto render_rect_on_screen = w.frame().render_rect().translated(transition_offset);
             auto visible_window_rects = remaining_visible_screen_rects.intersected(w.rect().translated(transition_offset));
-            Gfx::DisjointRectSet opaque_covering;
-            Gfx::DisjointRectSet transparent_covering;
+            Gfx::DisjointIntRectSet opaque_covering;
+            Gfx::DisjointIntRectSet transparent_covering;
             bool found_this_window = false;
             wm.for_each_visible_window_from_back_to_front([&](Window& w2) {
                 if (!found_this_window) {
@@ -1361,7 +1412,7 @@ void Compositor::recompute_occlusions()
                 }
 
                 // Figure out the affected transparency rects underneath. First figure out if any transparency is visible at all
-                Gfx::DisjointRectSet transparent_underneath;
+                Gfx::DisjointIntRectSet transparent_underneath;
                 wm.for_each_visible_window_from_back_to_front([&](Window& w2) {
                     if (&w == &w2)
                         return IterationDecision::Break;
@@ -1466,7 +1517,7 @@ void Compositor::unregister_animation(Badge<Animation>, Animation& animation)
     VERIFY(was_removed);
 }
 
-void Compositor::update_animations(Screen& screen, Gfx::DisjointRectSet& flush_rects)
+void Compositor::update_animations(Screen& screen, Gfx::DisjointIntRectSet& flush_rects)
 {
     auto& painter = *screen.compositor_screen_data().m_back_painter;
     // Iterating over the animations using remove_all_matching we can iterate
@@ -1646,7 +1697,7 @@ void Compositor::switch_to_window_stack(WindowStack& new_window_stack, bool show
     VERIFY(!m_window_stack_transition_animation);
     m_window_stack_transition_animation = Animation::create();
     m_window_stack_transition_animation->set_duration(250);
-    m_window_stack_transition_animation->on_update = [this, delta_x, delta_y](float progress, Gfx::Painter&, Screen&, Gfx::DisjointRectSet&) {
+    m_window_stack_transition_animation->on_update = [this, delta_x, delta_y](float progress, Gfx::Painter&, Screen&, Gfx::DisjointIntRectSet&) {
         VERIFY(m_transitioning_to_window_stack);
         VERIFY(m_current_window_stack);
 

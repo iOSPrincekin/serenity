@@ -14,7 +14,7 @@
 #include <LibCore/MimeData.h>
 #include <LibGUI/Action.h>
 #include <LibGUI/Application.h>
-#include <LibGUI/ConnectionToWindowMangerServer.h>
+#include <LibGUI/ConnectionToWindowManagerServer.h>
 #include <LibGUI/ConnectionToWindowServer.h>
 #include <LibGUI/Desktop.h>
 #include <LibGUI/Event.h>
@@ -69,8 +69,11 @@ Window::Window(Core::Object* parent)
     : Core::Object(parent)
     , m_menubar(Menubar::construct())
 {
+    if (parent)
+        set_window_mode(WindowMode::Passive);
+
     all_windows->set(this);
-    m_rect_when_windowless = { -5000, -5000, 140, 140 };
+    m_rect_when_windowless = { -5000, -5000, 0, 0 };
     m_title_when_windowless = "GUI::Window";
 
     register_property(
@@ -90,6 +93,7 @@ Window::Window(Core::Object* parent)
     REGISTER_RECT_PROPERTY("rect", rect, set_rect);
     REGISTER_SIZE_PROPERTY("base_size", base_size, set_base_size);
     REGISTER_SIZE_PROPERTY("size_increment", size_increment, set_size_increment);
+    REGISTER_BOOL_PROPERTY("obey_widget_min_size", is_obeying_widget_min_size, set_obey_widget_min_size);
 }
 
 Window::~Window()
@@ -124,7 +128,7 @@ void Window::show()
 
     Gfx::IntRect launch_origin_rect;
     if (auto* launch_origin_rect_string = getenv("__libgui_launch_origin_rect")) {
-        auto parts = StringView(launch_origin_rect_string).split_view(',');
+        auto parts = StringView { launch_origin_rect_string, strlen(launch_origin_rect_string) }.split_view(',');
         if (parts.size() == 4) {
             launch_origin_rect = Gfx::IntRect {
                 parts[0].to_int().value_or(0),
@@ -136,19 +140,19 @@ void Window::show()
         unsetenv("__libgui_launch_origin_rect");
     }
 
+    update_min_size();
+
     ConnectionToWindowServer::the().async_create_window(
         m_window_id,
         m_rect_when_windowless,
         !m_moved_by_client,
         m_has_alpha_channel,
-        m_modal,
         m_minimizable,
         m_closeable,
         m_resizable,
         m_fullscreen,
         m_frameless,
         m_forced_shadow,
-        m_accessory,
         m_opacity_when_windowless,
         m_alpha_hit_threshold,
         m_base_size,
@@ -156,10 +160,12 @@ void Window::show()
         m_minimum_size_when_windowless,
         m_resize_aspect_ratio,
         (i32)m_window_type,
+        (i32)m_window_mode,
         m_title_when_windowless,
         parent_window ? parent_window->window_id() : 0,
         launch_origin_rect);
     m_visible = true;
+    m_visible_for_timer_purposes = true;
 
     apply_icon();
 
@@ -204,6 +210,8 @@ void Window::hide()
     //       All our windows will be automatically garbage-collected by WindowServer anyway.
     if (GUI::Application::in_teardown())
         return;
+
+    m_rect_when_windowless = rect();
 
     auto destroyed_window_ids = ConnectionToWindowServer::the().destroy_window(m_window_id);
     server_did_destroy();
@@ -286,7 +294,8 @@ Gfx::IntSize Window::minimum_size() const
 
 void Window::set_minimum_size(Gfx::IntSize const& size)
 {
-    m_minimum_size_modified = true;
+    VERIFY(size.width() >= 0 && size.height() >= 0);
+    VERIFY(!is_obeying_widget_min_size());
     m_minimum_size_when_windowless = size;
 
     if (is_visible())
@@ -308,20 +317,18 @@ void Window::center_within(Window const& other)
 void Window::set_window_type(WindowType window_type)
 {
     m_window_type = window_type;
+}
 
-    if (!m_minimum_size_modified) {
-        // Apply minimum size defaults.
-        if (m_window_type == WindowType::Normal || m_window_type == WindowType::ToolWindow)
-            m_minimum_size_when_windowless = { 50, 50 };
-        else
-            m_minimum_size_when_windowless = { 1, 1 };
-    }
+void Window::set_window_mode(WindowMode mode)
+{
+    VERIFY(!is_visible());
+    m_window_mode = mode;
 }
 
 void Window::make_window_manager(unsigned event_mask)
 {
-    GUI::ConnectionToWindowMangerServer::the().async_set_event_mask(event_mask);
-    GUI::ConnectionToWindowMangerServer::the().async_set_manager_window(m_window_id);
+    GUI::ConnectionToWindowManagerServer::the().async_set_event_mask(event_mask);
+    GUI::ConnectionToWindowManagerServer::the().async_set_manager_window(m_window_id);
 }
 
 bool Window::are_cursors_the_same(AK::Variant<Gfx::StandardCursor, NonnullRefPtr<Gfx::Bitmap>> const& left, AK::Variant<Gfx::StandardCursor, NonnullRefPtr<Gfx::Bitmap>> const& right) const
@@ -472,7 +479,7 @@ void Window::handle_resize_event(ResizeEvent& event)
         m_pending_paint_event_rects.clear_with_capacity();
         m_pending_paint_event_rects.append({ {}, new_size });
     }
-    m_rect_when_windowless = { {}, new_size };
+    m_rect_when_windowless.set_size(new_size);
     if (m_main_widget)
         m_main_widget->set_relative_rect({ {}, new_size });
 }
@@ -723,10 +730,9 @@ void Window::set_main_widget(Widget* widget)
     if (m_main_widget) {
         add_child(*widget);
         auto new_window_rect = rect();
-        if (m_main_widget->min_width() >= 0)
-            new_window_rect.set_width(max(new_window_rect.width(), m_main_widget->min_width()));
-        if (m_main_widget->min_height() >= 0)
-            new_window_rect.set_height(max(new_window_rect.height(), m_main_widget->min_height()));
+        auto new_widget_min_size = m_main_widget->effective_min_size();
+        new_window_rect.set_width(max(new_window_rect.width(), MUST(new_widget_min_size.width().shrink_value())));
+        new_window_rect.set_height(max(new_window_rect.height(), MUST(new_widget_min_size.height().shrink_value())));
         set_rect(new_window_rect);
         m_main_widget->set_relative_rect({ {}, new_window_rect.size() });
         m_main_widget->set_window(this);
@@ -893,12 +899,6 @@ OwnPtr<WindowBackingStore> Window::create_backing_store(Gfx::IntSize const& size
     return make<WindowBackingStore>(bitmap_or_error.release_value());
 }
 
-void Window::set_modal(bool modal)
-{
-    VERIFY(!is_visible());
-    m_modal = modal;
-}
-
 void Window::wm_event(WMEvent&)
 {
 }
@@ -938,9 +938,9 @@ void Window::apply_icon()
     ConnectionToWindowServer::the().async_set_window_icon_bitmap(m_window_id, m_icon->to_shareable_bitmap());
 }
 
-void Window::start_interactive_resize()
+void Window::start_interactive_resize(ResizeDirection resize_direction)
 {
-    ConnectionToWindowServer::the().async_start_window_resize(m_window_id);
+    ConnectionToWindowServer::the().async_start_window_resize(m_window_id, (i32)resize_direction);
 }
 
 Vector<Widget&> Window::focusable_widgets(FocusSource source) const
@@ -1019,6 +1019,14 @@ void Window::set_forced_shadow(bool shadow)
     ConnectionToWindowServer::the().async_set_forced_shadow(m_window_id, shadow);
 }
 
+void Window::set_obey_widget_min_size(bool obey_widget_min_size)
+{
+    if (m_obey_widget_min_size != obey_widget_min_size) {
+        m_obey_widget_min_size = obey_widget_min_size;
+        schedule_relayout();
+    }
+}
+
 void Window::set_maximized(bool maximized)
 {
     m_maximized = maximized;
@@ -1028,14 +1036,39 @@ void Window::set_maximized(bool maximized)
     ConnectionToWindowServer::the().async_set_maximized(m_window_id, maximized);
 }
 
+void Window::set_minimized(bool minimized)
+{
+    if (!is_minimizable())
+        return;
+
+    m_minimized = minimized;
+    if (!is_visible())
+        return;
+
+    ConnectionToWindowServer::the().async_set_minimized(m_window_id, minimized);
+}
+
+void Window::update_min_size()
+{
+    if (main_widget()) {
+        main_widget()->do_layout();
+        if (m_obey_widget_min_size) {
+            auto min_size = main_widget()->effective_min_size();
+            Gfx::IntSize size = { MUST(min_size.width().shrink_value()), MUST(min_size.height().shrink_value()) };
+            m_minimum_size_when_windowless = size;
+            if (is_visible())
+                ConnectionToWindowServer::the().async_set_window_minimum_size(m_window_id, size);
+        }
+    }
+}
+
 void Window::schedule_relayout()
 {
-    if (m_layout_pending)
+    if (m_layout_pending || !is_visible())
         return;
     m_layout_pending = true;
     deferred_invoke([this] {
-        if (main_widget())
-            main_widget()->do_layout();
+        update_min_size();
         update();
         m_layout_pending = false;
     });
@@ -1090,9 +1123,14 @@ void Window::notify_state_changed(Badge<ConnectionToWindowServer>, bool minimize
     }
 }
 
-Action* Window::action_for_key_event(KeyEvent const& event)
+void Window::notify_input_preempted(Badge<ConnectionToWindowServer>, InputPreemptor preemptor)
 {
-    Shortcut shortcut(event.modifiers(), (KeyCode)event.key());
+    if (on_input_preemption)
+        on_input_preemption(preemptor);
+}
+
+Action* Window::action_for_shortcut(Shortcut const& shortcut)
+{
     Action* found_action = nullptr;
     for_each_child_of_type<Action>([&](auto& action) {
         if (action.shortcut() == shortcut || action.alternate_shortcut() == shortcut) {
@@ -1158,10 +1196,17 @@ void Window::update_cursor()
 {
     auto new_cursor = m_cursor;
 
-    if (m_hovered_widget) {
-        auto override_cursor = m_hovered_widget->override_cursor();
-        if (override_cursor.has<NonnullRefPtr<Gfx::Bitmap>>() || override_cursor.get<Gfx::StandardCursor>() != Gfx::StandardCursor::None)
-            new_cursor = move(override_cursor);
+    auto is_usable_cursor = [](auto& cursor) {
+        return cursor.template has<NonnullRefPtr<Gfx::Bitmap>>() || cursor.template get<Gfx::StandardCursor>() != Gfx::StandardCursor::None;
+    };
+
+    // NOTE: If there's an automatic cursor tracking widget, we retain its cursor until tracking stops.
+    if (auto widget = m_automatic_cursor_tracking_widget) {
+        if (is_usable_cursor(widget->override_cursor()))
+            new_cursor = widget->override_cursor();
+    } else if (auto widget = m_hovered_widget) {
+        if (is_usable_cursor(widget->override_cursor()))
+            new_cursor = widget->override_cursor();
     }
 
     if (are_cursors_the_same(m_effective_cursor, new_cursor))
@@ -1215,6 +1260,8 @@ Menu& Window::add_menu(String name)
 
 void Window::flash_menubar_menu_for(MenuItem const& menu_item)
 {
+    if (!Desktop::the().system_effects().flash_menus())
+        return;
     auto menu_id = menu_item.menu_id();
     if (menu_id < 0)
         return;
@@ -1244,6 +1291,13 @@ void Window::flush_pending_paints_immediately()
         return;
     MultiPaintEvent paint_event(move(m_pending_paint_event_rects), size());
     handle_multi_paint_event(paint_event);
+}
+
+void Window::set_always_on_top(bool always_on_top)
+{
+    if (!m_window_id)
+        return;
+    ConnectionToWindowServer::the().set_always_on_top(m_window_id, always_on_top);
 }
 
 }

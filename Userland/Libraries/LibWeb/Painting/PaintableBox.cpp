@@ -4,15 +4,17 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/GenericShorthands.h>
 #include <LibUnicode/CharacterTypes.h>
 #include <LibWeb/DOM/Document.h>
 #include <LibWeb/HTML/HTMLHtmlElement.h>
 #include <LibWeb/Layout/BlockContainer.h>
 #include <LibWeb/Layout/InitialContainingBlock.h>
 #include <LibWeb/Painting/BackgroundPainting.h>
+#include <LibWeb/Painting/FilterPainting.h>
 #include <LibWeb/Painting/PaintableBox.h>
-#include <LibWeb/Painting/ShadowPainting.h>
 #include <LibWeb/Painting/StackingContext.h>
+#include <LibWeb/Platform/FontPlugin.h>
 
 namespace Web::Painting {
 
@@ -33,6 +35,13 @@ PaintableBox::~PaintableBox()
 void PaintableBox::invalidate_stacking_context()
 {
     m_stacking_context = nullptr;
+}
+
+bool PaintableBox::is_out_of_view(PaintContext& context) const
+{
+    return !enclosing_int_rect(absolute_paint_rect())
+                .translated(context.painter().translation())
+                .intersects(context.painter().clip_rect());
 }
 
 PaintableWithLines::PaintableWithLines(Layout::BlockContainer const& layout_box)
@@ -62,6 +71,12 @@ Gfx::FloatPoint PaintableBox::effective_offset() const
 {
     Gfx::FloatPoint offset;
     if (m_containing_line_box_fragment.has_value()) {
+
+        // FIXME: This is a hack to deal with situations where the layout tree has been garbage collected.
+        //        We could avoid this by making the paintable tree garbage collected as well.
+        if (!containing_block() || !containing_block()->paint_box())
+            return offset;
+
         auto const& fragment = containing_block()->paint_box()->line_boxes()[m_containing_line_box_fragment->line_box_index].fragments()[m_containing_line_box_fragment->fragment_index];
         offset = fragment.offset();
     } else {
@@ -89,6 +104,28 @@ Gfx::FloatRect PaintableBox::absolute_rect() const
     return *m_absolute_rect;
 }
 
+Gfx::FloatRect PaintableBox::compute_absolute_paint_rect() const
+{
+    // FIXME: This likely incomplete:
+    auto rect = absolute_border_box_rect();
+    auto resolved_box_shadow_data = resolve_box_shadow_data();
+    for (auto const& shadow : resolved_box_shadow_data) {
+        if (shadow.placement == ShadowPlacement::Inner)
+            continue;
+        auto inflate = shadow.spread_distance + shadow.blur_radius;
+        auto shadow_rect = rect.inflated(inflate, inflate, inflate, inflate).translated(shadow.offset_x, shadow.offset_y);
+        rect = rect.united(shadow_rect);
+    }
+    return rect;
+}
+
+Gfx::FloatRect PaintableBox::absolute_paint_rect() const
+{
+    if (!m_absolute_paint_rect.has_value())
+        m_absolute_paint_rect = compute_absolute_paint_rect();
+    return *m_absolute_paint_rect;
+}
+
 void PaintableBox::set_containing_line_box_fragment(Optional<Layout::LineBoxFragmentCoordinate> fragment_coordinate)
 {
     m_containing_line_box_fragment = fragment_coordinate;
@@ -112,7 +149,16 @@ void PaintableBox::paint(PaintContext& context, PaintPhase phase) const
     if (!is_visible())
         return;
 
+    auto clip_rect = computed_values().clip();
+    auto should_clip_rect = clip_rect.is_rect() && layout_box().is_absolutely_positioned();
+
     if (phase == PaintPhase::Background) {
+        if (should_clip_rect) {
+            context.painter().save();
+            auto border_box = absolute_border_box_rect();
+            context.painter().add_clip_rect(clip_rect.to_rect().resolved(Paintable::layout_node(), border_box).to_rounded<int>());
+        }
+        paint_backdrop_filter(context);
         paint_background(context);
         paint_box_shadow(context);
     }
@@ -120,6 +166,9 @@ void PaintableBox::paint(PaintContext& context, PaintPhase phase) const
     if (phase == PaintPhase::Border) {
         paint_border(context);
     }
+
+    if (phase == PaintPhase::Overlay && should_clip_rect)
+        context.painter().restore();
 
     if (phase == PaintPhase::Overlay && layout_box().dom_node() && layout_box().document().inspected_node() == layout_box().dom_node()) {
         auto content_rect = absolute_rect();
@@ -144,7 +193,7 @@ void PaintableBox::paint(PaintContext& context, PaintPhase phase) const
         paint_inspector_rect(border_rect, Color::Green);
         paint_inspector_rect(content_rect, Color::Magenta);
 
-        auto& font = Gfx::FontDatabase::default_font();
+        auto& font = Platform::FontPlugin::the().default_font();
 
         StringBuilder builder;
         if (layout_box().dom_node())
@@ -178,7 +227,14 @@ void PaintableBox::paint_border(PaintContext& context) const
         .bottom = computed_values().border_bottom(),
         .left = computed_values().border_left(),
     };
-    paint_all_borders(context, absolute_border_box_rect(), normalized_border_radius_data(), borders_data);
+    paint_all_borders(context, absolute_border_box_rect(), normalized_border_radii_data(), borders_data);
+}
+
+void PaintableBox::paint_backdrop_filter(PaintContext& context) const
+{
+    auto& backdrop_filter = computed_values().backdrop_filter();
+    if (!backdrop_filter.is_none())
+        Painting::apply_backdrop_filter(context, layout_node(), absolute_border_box_rect(), normalized_border_radii_data(), backdrop_filter);
 }
 
 void PaintableBox::paint_background(PaintContext& context) const
@@ -210,14 +266,14 @@ void PaintableBox::paint_background(PaintContext& context) const
     if (computed_values().border_top().width || computed_values().border_right().width || computed_values().border_bottom().width || computed_values().border_left().width)
         background_rect = absolute_border_box_rect();
 
-    Painting::paint_background(context, layout_box(), background_rect, background_color, background_layers, normalized_border_radius_data());
+    Painting::paint_background(context, layout_box(), background_rect, background_color, computed_values().image_rendering(), background_layers, normalized_border_radii_data());
 }
 
-void PaintableBox::paint_box_shadow(PaintContext& context) const
+Vector<ShadowData> PaintableBox::resolve_box_shadow_data() const
 {
     auto box_shadow_data = computed_values().box_shadow();
     if (box_shadow_data.is_empty())
-        return;
+        return {};
 
     Vector<ShadowData> resolved_box_shadow_data;
     resolved_box_shadow_data.ensure_capacity(box_shadow_data.size());
@@ -230,32 +286,86 @@ void PaintableBox::paint_box_shadow(PaintContext& context) const
             static_cast<int>(layer.spread_distance.to_px(layout_box())),
             layer.placement == CSS::ShadowPlacement::Outer ? ShadowPlacement::Outer : ShadowPlacement::Inner);
     }
-    Painting::paint_box_shadow(context, enclosing_int_rect(absolute_border_box_rect()), resolved_box_shadow_data);
+
+    return resolved_box_shadow_data;
 }
 
-BorderRadiusData PaintableBox::normalized_border_radius_data() const
+void PaintableBox::paint_box_shadow(PaintContext& context) const
 {
-    return Painting::normalized_border_radius_data(layout_box(), absolute_border_box_rect(),
+    auto resolved_box_shadow_data = resolve_box_shadow_data();
+    if (resolved_box_shadow_data.is_empty())
+        return;
+    Painting::paint_box_shadow(context, absolute_border_box_rect().to_rounded<int>(), normalized_border_radii_data(), resolved_box_shadow_data);
+}
+
+BorderRadiiData PaintableBox::normalized_border_radii_data(ShrinkRadiiForBorders shrink) const
+{
+    auto border_radius_data = Painting::normalized_border_radii_data(layout_box(), absolute_border_box_rect(),
         computed_values().border_top_left_radius(),
         computed_values().border_top_right_radius(),
         computed_values().border_bottom_right_radius(),
         computed_values().border_bottom_left_radius());
+    if (shrink == ShrinkRadiiForBorders::Yes)
+        border_radius_data.shrink(computed_values().border_top().width, computed_values().border_right().width, computed_values().border_bottom().width, computed_values().border_left().width);
+    return border_radius_data;
 }
 
-void PaintableBox::before_children_paint(PaintContext& context, PaintPhase) const
+void PaintableBox::before_children_paint(PaintContext& context, PaintPhase phase, ShouldClipOverflow should_clip_overflow) const
 {
+    if (!AK::first_is_one_of(phase, PaintPhase::Background, PaintPhase::Border, PaintPhase::Foreground))
+        return;
+
+    if (should_clip_overflow == ShouldClipOverflow::No)
+        return;
+
     // FIXME: Support more overflow variations.
-    if (computed_values().overflow_x() == CSS::Overflow::Hidden && computed_values().overflow_y() == CSS::Overflow::Hidden) {
-        context.painter().save();
-        context.painter().add_clip_rect(enclosing_int_rect(absolute_border_box_rect()));
+    auto clip_rect = absolute_padding_box_rect().to_rounded<int>();
+    auto overflow_x = computed_values().overflow_x();
+    auto overflow_y = computed_values().overflow_y();
+
+    auto clip_overflow = [&] {
+        if (!m_clipping_overflow) {
+            context.painter().save();
+            context.painter().add_clip_rect(clip_rect);
+            m_clipping_overflow = true;
+        }
+    };
+
+    if (overflow_x == CSS::Overflow::Hidden && overflow_y == CSS::Overflow::Hidden) {
+        clip_overflow();
+    }
+    if (overflow_y == CSS::Overflow::Hidden || overflow_x == CSS::Overflow::Hidden) {
+        auto border_radii_data = normalized_border_radii_data(ShrinkRadiiForBorders::Yes);
+        if (border_radii_data.has_any_radius()) {
+            auto corner_clipper = BorderRadiusCornerClipper::create(clip_rect, border_radii_data, CornerClip::Outside, BorderRadiusCornerClipper::UseCachedBitmap::No);
+            if (corner_clipper.is_error()) {
+                dbgln("Failed to create overflow border-radius corner clipper: {}", corner_clipper.error());
+                return;
+            }
+            clip_overflow();
+            m_overflow_corner_radius_clipper = corner_clipper.release_value();
+            m_overflow_corner_radius_clipper->sample_under_corners(context.painter());
+        }
     }
 }
 
-void PaintableBox::after_children_paint(PaintContext& context, PaintPhase) const
+void PaintableBox::after_children_paint(PaintContext& context, PaintPhase phase, ShouldClipOverflow should_clip_overflow) const
 {
+    if (!AK::first_is_one_of(phase, PaintPhase::Background, PaintPhase::Border, PaintPhase::Foreground))
+        return;
+
+    if (should_clip_overflow == ShouldClipOverflow::No)
+        return;
+
     // FIXME: Support more overflow variations.
-    if (computed_values().overflow_x() == CSS::Overflow::Hidden && computed_values().overflow_y() == CSS::Overflow::Hidden)
+    if (m_clipping_overflow) {
         context.painter().restore();
+        m_clipping_overflow = false;
+    }
+    if (m_overflow_corner_radius_clipper.has_value()) {
+        m_overflow_corner_radius_clipper->blit_corner_clipping(context.painter());
+        m_overflow_corner_radius_clipper = {};
+    }
 }
 
 static void paint_cursor_if_needed(PaintContext& context, Layout::TextNode const& text_node, Layout::LineBoxFragment const& fragment)
@@ -415,13 +525,24 @@ void PaintableWithLines::paint(PaintContext& context, PaintPhase phase) const
         return;
 
     bool should_clip_overflow = computed_values().overflow_x() != CSS::Overflow::Visible && computed_values().overflow_y() != CSS::Overflow::Visible;
+    Optional<BorderRadiusCornerClipper> corner_clipper;
 
     if (should_clip_overflow) {
         context.painter().save();
         // FIXME: Handle overflow-x and overflow-y being different values.
-        context.painter().add_clip_rect(enclosing_int_rect(absolute_padding_box_rect()));
+        auto clip_box = absolute_padding_box_rect().to_rounded<int>();
+        context.painter().add_clip_rect(clip_box);
         auto scroll_offset = static_cast<Layout::BlockContainer const&>(layout_box()).scroll_offset();
         context.painter().translate(-scroll_offset.to_type<int>());
+
+        auto border_radii = normalized_border_radii_data(ShrinkRadiiForBorders::Yes);
+        if (border_radii.has_any_radius()) {
+            auto clipper = BorderRadiusCornerClipper::create(clip_box, border_radii);
+            if (!clipper.is_error()) {
+                corner_clipper = clipper.release_value();
+                corner_clipper->sample_under_corners(context.painter());
+            }
+        }
     }
 
     // Text shadows
@@ -469,6 +590,8 @@ void PaintableWithLines::paint(PaintContext& context, PaintPhase phase) const
 
     if (should_clip_overflow) {
         context.painter().restore();
+        if (corner_clipper.has_value())
+            corner_clipper->blit_corner_clipping(context.painter());
     }
 
     // FIXME: Merge this loop with the above somehow..
@@ -526,9 +649,18 @@ Optional<HitTestResult> PaintableBox::hit_test(Gfx::FloatPoint const& position, 
         return stacking_context()->hit_test(position, type);
     }
 
-    if (absolute_border_box_rect().contains(position.x(), position.y()))
-        return HitTestResult { *this };
-    return {};
+    if (!absolute_border_box_rect().contains(position.x(), position.y()))
+        return {};
+
+    for (auto* child = first_child(); child; child = child->next_sibling()) {
+        auto result = child->hit_test(position, type);
+        if (!result.has_value())
+            continue;
+        if (!result->paintable->visible_for_hit_testing())
+            continue;
+        return result;
+    }
+    return HitTestResult { *this };
 }
 
 Optional<HitTestResult> PaintableWithLines::hit_test(Gfx::FloatPoint const& position, HitTestType type) const
@@ -541,6 +673,10 @@ Optional<HitTestResult> PaintableWithLines::hit_test(Gfx::FloatPoint const& posi
         for (auto& fragment : line_box.fragments()) {
             if (is<Layout::Box>(fragment.layout_node()) && static_cast<Layout::Box const&>(fragment.layout_node()).paint_box()->stacking_context())
                 continue;
+            if (!fragment.layout_node().containing_block()) {
+                dbgln("FIXME: PaintableWithLines::hit_test(): Missing containing block on {}", fragment.layout_node().debug_description());
+                continue;
+            }
             auto fragment_absolute_rect = fragment.absolute_rect();
             if (fragment_absolute_rect.contains(position)) {
                 if (is<Layout::BlockContainer>(fragment.layout_node()) && fragment.layout_node().paintable())

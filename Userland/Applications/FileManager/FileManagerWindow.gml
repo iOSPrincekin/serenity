@@ -9,6 +9,8 @@
 
         @GUI::Toolbar {
             name: "main_toolbar"
+            collapsible: true
+            grouped: true
         }
 
         @GUI::Toolbar {
@@ -42,11 +44,10 @@
 
     @GUI::HorizontalSplitter {
         name: "splitter"
-        first_resizee_minimum_size: 80
 
         @GUI::TreeView {
             name: "tree_view"
-            fixed_width: 175
+            preferred_width: 175
         }
     }
 

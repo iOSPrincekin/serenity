@@ -27,11 +27,21 @@
 
 namespace IPC {
 
+// NOTE: This is an abstraction to allow using IPC::Connection without a Core::EventLoop.
+// FIXME: It's not particularly nice, think of something nicer.
+struct DeferredInvoker {
+    virtual ~DeferredInvoker() = default;
+    virtual void schedule(Function<void()>) = 0;
+};
+
 class ConnectionBase : public Core::Object {
     C_OBJECT_ABSTRACT(ConnectionBase);
 
 public:
     virtual ~ConnectionBase() override = default;
+
+    void set_fd_passing_socket(NonnullOwnPtr<Core::Stream::LocalSocket>);
+    void set_deferred_invoker(NonnullOwnPtr<DeferredInvoker>);
 
     bool is_open() const { return m_socket->is_open(); }
     ErrorOr<void> post_message(Message const&);
@@ -39,14 +49,16 @@ public:
     void shutdown();
     virtual void die() { }
 
+    Core::Stream::LocalSocket& socket() { return *m_socket; }
+    Core::Stream::LocalSocket& fd_passing_socket();
+
 protected:
     explicit ConnectionBase(IPC::Stub&, NonnullOwnPtr<Core::Stream::LocalSocket>, u32 local_endpoint_magic);
-
-    Core::Stream::LocalSocket& socket() { return *m_socket; }
 
     virtual void may_have_become_unresponsive() { }
     virtual void did_become_responsive() { }
     virtual void try_parse_messages(Vector<u8> const& bytes, size_t& index) = 0;
+    virtual void shutdown_with_error(Error const&);
 
     OwnPtr<IPC::Message> wait_for_specific_endpoint_message_impl(u32 endpoint_magic, int message_id);
     void wait_for_socket_to_become_readable();
@@ -59,12 +71,16 @@ protected:
     IPC::Stub& m_local_stub;
 
     NonnullOwnPtr<Core::Stream::LocalSocket> m_socket;
+    OwnPtr<Core::Stream::LocalSocket> m_fd_passing_socket;
+
     RefPtr<Core::Timer> m_responsiveness_timer;
 
     NonnullOwnPtrVector<Message> m_unprocessed_messages;
     ByteBuffer m_unprocessed_bytes;
 
     u32 m_local_endpoint_magic { 0 };
+
+    NonnullOwnPtr<DeferredInvoker> m_deferred_invoker;
 };
 
 template<typename LocalEndpoint, typename PeerEndpoint>
@@ -122,9 +138,9 @@ protected:
                 break;
             index += sizeof(message_size);
             auto remaining_bytes = ReadonlyBytes { bytes.data() + index, message_size };
-            if (auto message = LocalEndpoint::decode_message(remaining_bytes, *m_socket)) {
+            if (auto message = LocalEndpoint::decode_message(remaining_bytes, fd_passing_socket())) {
                 m_unprocessed_messages.append(message.release_nonnull());
-            } else if (auto message = PeerEndpoint::decode_message(remaining_bytes, *m_socket)) {
+            } else if (auto message = PeerEndpoint::decode_message(remaining_bytes, fd_passing_socket())) {
                 m_unprocessed_messages.append(message.release_nonnull());
             } else {
                 dbgln("Failed to parse a message");

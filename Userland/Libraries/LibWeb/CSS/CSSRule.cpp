@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2021, the SerenityOS developers.
  * Copyright (c) 2022, Sam Atkins <atkinssj@serenityos.org>
+ * Copyright (c) 2022, Andreas Kling <kling@serenityos.org>
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
@@ -9,6 +10,18 @@
 #include <LibWeb/CSS/CSSStyleSheet.h>
 
 namespace Web::CSS {
+
+CSSRule::CSSRule(JS::Realm& realm)
+    : PlatformObject(realm)
+{
+}
+
+void CSSRule::visit_edges(Cell::Visitor& visitor)
+{
+    Base::visit_edges(visitor);
+    visitor.visit(m_parent_style_sheet.ptr());
+    visitor.visit(m_parent_rule.ptr());
+}
 
 // https://www.w3.org/TR/cssom/#dom-cssrule-csstext
 String CSSRule::css_text() const
@@ -25,18 +38,12 @@ void CSSRule::set_css_text(StringView)
 
 void CSSRule::set_parent_rule(CSSRule* parent_rule)
 {
-    if (parent_rule)
-        m_parent_rule = parent_rule->make_weak_ptr();
-    else
-        m_parent_rule = nullptr;
+    m_parent_rule = parent_rule;
 }
 
 void CSSRule::set_parent_style_sheet(CSSStyleSheet* parent_style_sheet)
 {
-    if (parent_style_sheet)
-        m_parent_style_sheet = parent_style_sheet->make_weak_ptr();
-    else
-        m_parent_style_sheet = nullptr;
+    m_parent_style_sheet = parent_style_sheet;
 }
 
 }

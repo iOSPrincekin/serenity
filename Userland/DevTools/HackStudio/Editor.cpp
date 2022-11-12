@@ -42,11 +42,19 @@
 
 namespace HackStudio {
 
+enum class TooltipRole {
+    Documentation,
+    ParametersHint,
+};
+
+static RefPtr<GUI::Window> s_tooltip_window;
+static RefPtr<WebView::OutOfProcessWebView> s_tooltip_page_view;
+static Optional<TooltipRole> m_tooltip_role;
+
 ErrorOr<NonnullRefPtr<Editor>> Editor::try_create()
 {
     NonnullRefPtr<Editor> editor = TRY(adopt_nonnull_ref_or_enomem(new (nothrow) Editor()));
-    TRY(editor->initialize_documentation_tooltip());
-    TRY(editor->initialize_parameters_hint_tooltip());
+    TRY(initialize_tooltip_window());
     return editor;
 }
 
@@ -61,7 +69,7 @@ Editor::Editor()
         if (success) {
             set_execution_position(cursor().line());
         } else {
-            GUI::MessageBox::show(window(), "Failed to set execution position", "Error", GUI::MessageBox::Type::Error);
+            GUI::MessageBox::show(window(), "Failed to set execution position"sv, "Error"sv, GUI::MessageBox::Type::Error);
         }
     });
 
@@ -72,21 +80,15 @@ Editor::Editor()
     set_gutter_visible(true);
 }
 
-ErrorOr<void> Editor::initialize_documentation_tooltip()
+ErrorOr<void> Editor::initialize_tooltip_window()
 {
-    m_documentation_tooltip_window = GUI::Window::construct();
-    m_documentation_tooltip_window->set_rect(0, 0, 500, 400);
-    m_documentation_tooltip_window->set_window_type(GUI::WindowType::Tooltip);
-    m_documentation_page_view = TRY(m_documentation_tooltip_window->try_set_main_widget<WebView::OutOfProcessWebView>());
-    return {};
-}
-
-ErrorOr<void> Editor::initialize_parameters_hint_tooltip()
-{
-    m_parameters_hint_tooltip_window = GUI::Window::construct();
-    m_parameters_hint_tooltip_window->set_rect(0, 0, 280, 35);
-    m_parameters_hint_tooltip_window->set_window_type(GUI::WindowType::Tooltip);
-    m_parameter_hint_page_view = TRY(m_parameters_hint_tooltip_window->try_set_main_widget<WebView::OutOfProcessWebView>());
+    if (s_tooltip_window.is_null()) {
+        s_tooltip_window = GUI::Window::construct();
+        s_tooltip_window->set_window_type(GUI::WindowType::Tooltip);
+    }
+    if (s_tooltip_page_view.is_null()) {
+        s_tooltip_page_view = TRY(s_tooltip_window->try_set_main_widget<WebView::OutOfProcessWebView>());
+    }
     return {};
 }
 
@@ -161,13 +163,13 @@ void Editor::paint_event(GUI::PaintEvent& event)
                     if (line < first_visible_line || line > last_visible_line) {
                         continue;
                     }
-                    char const* sign = (line_offset < deletions) ? "!" : "+";
+                    auto sign = (line_offset < deletions) ? "!"sv : "+"sv;
                     painter.draw_text(gutter_icon_rect(line), sign, font(), Gfx::TextAlignment::Center);
                 }
                 if (additions < deletions) {
                     auto deletions_line = min(finish_line, line_count() - 1);
                     if (deletions_line <= last_visible_line) {
-                        painter.draw_text(gutter_icon_rect(deletions_line), "-", font(), Gfx::TextAlignment::Center);
+                        painter.draw_text(gutter_icon_rect(deletions_line), "-"sv, font(), Gfx::TextAlignment::Center);
                     }
                 }
             }
@@ -196,11 +198,14 @@ void Editor::show_documentation_tooltip_if_available(String const& hovered_token
     auto it = man_paths().find(hovered_token);
     if (it == man_paths().end()) {
         dbgln_if(EDITOR_DEBUG, "no man path for {}", hovered_token);
-        m_documentation_tooltip_window->hide();
+        if (m_tooltip_role == TooltipRole::Documentation) {
+            s_tooltip_window->hide();
+            m_tooltip_role.clear();
+        }
         return;
     }
 
-    if (m_documentation_tooltip_window->is_visible() && hovered_token == m_last_parsed_token) {
+    if (s_tooltip_window->is_visible() && m_tooltip_role == TooltipRole::Documentation && hovered_token == m_last_parsed_token) {
         return;
     }
 
@@ -218,17 +223,12 @@ void Editor::show_documentation_tooltip_if_available(String const& hovered_token
         return;
     }
 
-    StringBuilder html;
-    // FIXME: With the InProcessWebView we used to manipulate the document body directly,
-    // With OutOfProcessWebView this isn't possible (at the moment). The ideal solution
-    // is probably to tweak Markdown::Document::render_to_html() so we can inject styles
-    // into the rendered HTML easily.
-    html.append(man_document->render_to_html());
-    html.append("<style>body { background-color: #dac7b5; }</style>");
-    m_documentation_page_view->load_html(html.build(), {});
+    s_tooltip_page_view->load_html(man_document->render_to_html("<style>body { background-color: #dac7b5; }</style>"sv), {});
 
-    m_documentation_tooltip_window->move_to(screen_location.translated(4, 4));
-    m_documentation_tooltip_window->show();
+    s_tooltip_window->set_rect(0, 0, 500, 400);
+    s_tooltip_window->move_to(screen_location.translated(4, 4));
+    m_tooltip_role = TooltipRole::Documentation;
+    s_tooltip_window->show();
 
     m_last_parsed_token = hovered_token;
 }
@@ -241,8 +241,9 @@ void Editor::mousemove_event(GUI::MouseEvent& event)
         return;
 
     auto text_position = text_position_at(event.position());
-    if (!text_position.is_valid()) {
-        m_documentation_tooltip_window->hide();
+    if (!text_position.is_valid() && m_tooltip_role == TooltipRole::Documentation) {
+        s_tooltip_window->hide();
+        m_tooltip_role.clear();
         return;
     }
 
@@ -250,7 +251,7 @@ void Editor::mousemove_event(GUI::MouseEvent& event)
     if (!highlighter)
         return;
 
-    bool hide_tooltip = true;
+    bool hide_tooltip = (m_tooltip_role == TooltipRole::Documentation);
     bool is_over_clickable = false;
 
     auto ruler_line_rect = ruler_content_rect(text_position.line());
@@ -270,11 +271,8 @@ void Editor::mousemove_event(GUI::MouseEvent& event)
         }
 
         if (span.range.contains(text_position)) {
-            auto adjusted_range = span.range;
-            auto end_line_length = document().line(span.range.end().line()).length();
-            adjusted_range.end().set_column(min(end_line_length, adjusted_range.end().column() + 1));
-            auto hovered_span_text = document().text_in_range(adjusted_range);
-            dbgln_if(EDITOR_DEBUG, "Hovering: {} \"{}\"", adjusted_range, hovered_span_text);
+            auto hovered_span_text = document().text_in_range(span.range);
+            dbgln_if(EDITOR_DEBUG, "Hovering: {} \"{}\"", span.range, hovered_span_text);
 
             if (is_clickable) {
                 is_over_clickable = true;
@@ -293,15 +291,20 @@ void Editor::mousemove_event(GUI::MouseEvent& event)
     }
 
     m_previous_text_position = text_position;
-    if (hide_tooltip)
-        m_documentation_tooltip_window->hide();
+    if (hide_tooltip) {
+        s_tooltip_window->hide();
+        m_tooltip_role.clear();
+    }
 
     m_hovering_clickable = (is_over_clickable) && (event.modifiers() & Mod_Ctrl);
 }
 
 void Editor::mousedown_event(GUI::MouseEvent& event)
 {
-    m_parameters_hint_tooltip_window->hide();
+    if (m_tooltip_role == TooltipRole::ParametersHint) {
+        s_tooltip_window->hide();
+        m_tooltip_role.clear();
+    }
 
     auto highlighter = wrapper().editor().syntax_highlighter();
     if (!highlighter) {
@@ -355,7 +358,7 @@ void Editor::drop_event(GUI::DropEvent& event)
             return;
         window()->move_to_front();
         if (urls.size() > 1) {
-            GUI::MessageBox::show(window(), "HackStudio can only open one file at a time!", "One at a time please!", GUI::MessageBox::Type::Error);
+            GUI::MessageBox::show(window(), "HackStudio can only open one file at a time!"sv, "One at a time please!"sv, GUI::MessageBox::Type::Error);
             return;
         }
         set_current_editor_wrapper(static_cast<EditorWrapper*>(parent()));
@@ -433,13 +436,13 @@ void Editor::clear_execution_position()
 
 Gfx::Bitmap const& Editor::breakpoint_icon_bitmap()
 {
-    static auto bitmap = Gfx::Bitmap::try_load_from_file("/res/icons/16x16/breakpoint.png").release_value_but_fixme_should_propagate_errors();
+    static auto bitmap = Gfx::Bitmap::try_load_from_file("/res/icons/16x16/breakpoint.png"sv).release_value_but_fixme_should_propagate_errors();
     return *bitmap;
 }
 
 Gfx::Bitmap const& Editor::current_position_icon_bitmap()
 {
-    static auto bitmap = Gfx::Bitmap::try_load_from_file("/res/icons/16x16/go-forward.png").release_value_but_fixme_should_propagate_errors();
+    static auto bitmap = Gfx::Bitmap::try_load_from_file("/res/icons/16x16/go-forward.png"sv).release_value_but_fixme_should_propagate_errors();
     return *bitmap;
 }
 
@@ -497,7 +500,7 @@ Optional<Editor::AutoCompleteRequestData> Editor::get_autocomplete_request_data(
     return Editor::AutoCompleteRequestData { cursor() };
 }
 
-void Editor::LanguageServerAidedAutocompleteProvider::provide_completions(Function<void(Vector<Entry>)> callback)
+void Editor::LanguageServerAidedAutocompleteProvider::provide_completions(Function<void(Vector<CodeComprehension::AutocompleteResultEntry>)> callback)
 {
     auto& editor = static_cast<Editor&>(*m_editor).wrapper().editor();
     auto data = editor.get_autocomplete_request_data();
@@ -655,7 +658,7 @@ void Editor::set_language_client_for(CodeDocument const& document)
         m_language_client = get_language_client<LanguageClients::Shell::ConnectionToServer>(project().root_path());
 
     if (m_language_client) {
-        m_language_client->on_tokens_info_result = [this](Vector<GUI::AutocompleteProvider::TokenInfo> const& tokens_info) {
+        m_language_client->on_tokens_info_result = [this](Vector<CodeComprehension::TokenInfo> const& tokens_info) {
             on_tokens_info_result(tokens_info);
         };
     }
@@ -665,7 +668,10 @@ void Editor::keydown_event(GUI::KeyEvent& event)
 {
     TextEditor::keydown_event(event);
 
-    m_parameters_hint_tooltip_window->hide();
+    if (m_tooltip_role == TooltipRole::ParametersHint) {
+        s_tooltip_window->hide();
+        m_tooltip_role.clear();
+    }
 
     if (!event.shift() && !event.alt() && event.ctrl() && event.key() == KeyCode::Key_P) {
         handle_function_parameters_hint_request();
@@ -685,26 +691,28 @@ void Editor::handle_function_parameters_hint_request()
         StringBuilder html;
         for (size_t i = 0; i < params.size(); ++i) {
             if (i == argument_index)
-                html.append("<b>");
+                html.append("<b>"sv);
 
             html.appendff("{}", params[i]);
 
             if (i == argument_index)
-                html.append("</b>");
+                html.append("</b>"sv);
 
             if (i < params.size() - 1)
-                html.append(", ");
+                html.append(", "sv);
         }
-        html.append("<style>body { background-color: #dac7b5; }</style>");
+        html.append("<style>body { background-color: #dac7b5; }</style>"sv);
 
-        m_parameter_hint_page_view->load_html(html.build(), {});
+        s_tooltip_page_view->load_html(html.build(), {});
 
         auto cursor_rect = current_editor().cursor_content_rect().location().translated(screen_relative_rect().location());
 
-        Gfx::Rect content(cursor_rect.x(), cursor_rect.y(), m_parameter_hint_page_view->children_clip_rect().width(), m_parameter_hint_page_view->children_clip_rect().height());
-        m_parameters_hint_tooltip_window->move_to(cursor_rect.x(), cursor_rect.y() - m_parameters_hint_tooltip_window->height() - vertical_scrollbar().value());
+        Gfx::Rect content(cursor_rect.x(), cursor_rect.y(), s_tooltip_page_view->children_clip_rect().width(), s_tooltip_page_view->children_clip_rect().height());
 
-        m_parameters_hint_tooltip_window->show();
+        m_tooltip_role = TooltipRole::ParametersHint;
+        s_tooltip_window->set_rect(0, 0, 280, 35);
+        s_tooltip_window->move_to(cursor_rect.x(), cursor_rect.y() - s_tooltip_window->height() - vertical_scrollbar().value());
+        s_tooltip_window->show();
     };
 
     m_language_client->get_parameters_hint(
@@ -728,7 +736,7 @@ void Editor::on_token_info_timer_tick()
     m_language_client->get_tokens_info(code_document().file_path());
 }
 
-void Editor::on_tokens_info_result(Vector<GUI::AutocompleteProvider::TokenInfo> const& tokens_info)
+void Editor::on_tokens_info_result(Vector<CodeComprehension::TokenInfo> const& tokens_info)
 {
     auto highlighter = syntax_highlighter();
     if (highlighter && highlighter->is_cpp_semantic_highlighter()) {

@@ -28,10 +28,13 @@ public:
     virtual Variant<Gfx::StandardCursor, NonnullRefPtr<Gfx::Bitmap>> cursor() override { return Gfx::StandardCursor::Crosshair; }
 
 private:
+    virtual StringView tool_name() const override { return "Rectangle Tool"sv; }
+
     enum class FillMode {
         Outline,
         Fill,
         Gradient,
+        RoundedCorners
     };
 
     enum class DrawMode {
@@ -39,7 +42,7 @@ private:
         FromCorner,
     };
 
-    void draw_using(GUI::Painter&, Gfx::IntPoint const& start_position, Gfx::IntPoint const& end_position, int thickness);
+    void draw_using(GUI::Painter&, Gfx::IntPoint const& start_position, Gfx::IntPoint const& end_position, int thickness, int corner_radius);
 
     RefPtr<GUI::Widget> m_properties_widget;
     RefPtr<GUI::TextBox> m_aspect_w_textbox;
@@ -52,6 +55,8 @@ private:
     DrawMode m_draw_mode { DrawMode::FromCorner };
     int m_thickness { 1 };
     Optional<float> m_aspect_ratio;
+    bool m_antialias_enabled { false };
+    int m_corner_radius = { 8 };
 };
 
 }

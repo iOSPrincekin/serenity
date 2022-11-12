@@ -35,6 +35,7 @@ public:
         WindowInputLeft,
         WindowCloseRequest,
         WindowResized,
+        WindowMoved,
     };
 
     Event() = default;
@@ -48,7 +49,7 @@ public:
     bool is_key_event() const { return type() == KeyUp || type() == KeyDown; }
 };
 
-enum class MouseButton : u8 {
+enum MouseButton : u8 {
     None = 0,
     Primary = 1,
     Secondary = 2,
@@ -147,6 +148,20 @@ class ResizeEvent final : public Event {
 public:
     ResizeEvent(Gfx::IntRect const& rect)
         : Event(Event::WindowResized)
+        , m_rect(rect)
+    {
+    }
+
+    Gfx::IntRect const& rect() const { return m_rect; }
+
+private:
+    Gfx::IntRect m_rect;
+};
+
+class MoveEvent final : public Event {
+public:
+    MoveEvent(Gfx::IntRect const& rect)
+        : Event(Event::WindowMoved)
         , m_rect(rect)
     {
     }

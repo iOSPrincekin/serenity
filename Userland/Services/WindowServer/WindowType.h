@@ -18,8 +18,8 @@ enum class WindowType {
     Applet,
     Notification,
     Desktop,
-    ToolWindow,
     AppletArea,
+    Popup,
     _Count
 };
 

@@ -19,6 +19,13 @@ class Button : public AbstractButton {
     C_OBJECT(Button);
 
 public:
+    enum MenuPosition {
+        TopLeft,
+        TopRight,
+        BottomLeft,
+        BottomRight
+    };
+
     virtual ~Button() override;
 
     void set_icon(RefPtr<Gfx::Bitmap>);
@@ -30,17 +37,20 @@ public:
     Gfx::TextAlignment text_alignment() const { return m_text_alignment; }
 
     Function<void(unsigned modifiers)> on_click;
+    Function<void(unsigned modifiers)> on_middle_mouse_click;
     Function<void(ContextMenuEvent&)> on_context_menu_request;
 
     void set_button_style(Gfx::ButtonStyle style) { m_button_style = style; }
     Gfx::ButtonStyle button_style() const { return m_button_style; }
 
     virtual void click(unsigned modifiers = 0) override;
+    virtual void middle_mouse_click(unsigned modifiers = 0) override;
     virtual void context_menu_event(ContextMenuEvent&) override;
 
     Action* action() { return m_action; }
     Action const* action() const { return m_action; }
     void set_action(Action&);
+    void set_text_from_action();
 
     virtual bool is_uncheckable() const override;
 
@@ -56,6 +66,8 @@ public:
 
     void set_mimic_pressed(bool mimic_pressed);
     bool is_mimic_pressed() const { return m_mimic_pressed; };
+
+    virtual Optional<UISize> calculated_min_size() const override;
 
 protected:
     explicit Button(String text = {});
@@ -74,6 +86,18 @@ private:
     int m_icon_spacing { 4 };
     bool m_another_button_has_focus { false };
     bool m_mimic_pressed { false };
+};
+
+class DialogButton final : public Button {
+    C_OBJECT(DialogButton);
+
+public:
+    virtual ~DialogButton() override {};
+    explicit DialogButton(String text = {})
+        : Button(move(text))
+    {
+        set_fixed_width(80);
+    }
 };
 
 }

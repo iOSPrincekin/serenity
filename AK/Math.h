@@ -8,6 +8,7 @@
 
 #include <AK/BuiltinWrappers.h>
 #include <AK/Concepts.h>
+#include <AK/NumericLimits.h>
 #include <AK/StdLibExtraDetails.h>
 #include <AK/Types.h>
 
@@ -23,6 +24,10 @@ template<FloatingPoint T>
 constexpr T Pi = 3.141592653589793238462643383279502884L;
 template<FloatingPoint T>
 constexpr T E = 2.718281828459045235360287471352662498L;
+template<FloatingPoint T>
+constexpr T Sqrt2 = 1.414213562373095048801688724209698079L;
+template<FloatingPoint T>
+constexpr T Sqrt1_2 = 0.707106781186547524400844362104849039L;
 
 namespace Details {
 template<size_t>
@@ -48,6 +53,24 @@ constexpr size_t product_odd() { return value * product_odd<value - 2>(); }
             return __builtin_##function(args);    \
         if (IsSame<T, float>)                     \
             return __builtin_##function##f(args); \
+    }
+
+#define AARCH64_INSTRUCTION(instruction, arg) \
+    if constexpr (IsSame<T, long double>)     \
+        TODO();                               \
+    if constexpr (IsSame<T, double>) {        \
+        double res;                           \
+        asm(#instruction " %d0, %d1"          \
+            : "=w"(res)                       \
+            : "w"(arg));                      \
+        return res;                           \
+    }                                         \
+    if constexpr (IsSame<T, float>) {         \
+        float res;                            \
+        asm(#instruction " %s0, %s1"          \
+            : "=w"(res)                       \
+            : "w"(arg));                      \
+        return res;                           \
     }
 
 namespace Division {
@@ -105,6 +128,8 @@ constexpr T sqrt(T x)
         : "=t"(res)
         : "0"(x));
     return res;
+#elif ARCH(AARCH64)
+    AARCH64_INSTRUCTION(fsqrt, x);
 #else
     return __builtin_sqrt(x);
 #endif
@@ -113,6 +138,9 @@ constexpr T sqrt(T x)
 template<FloatingPoint T>
 constexpr T rsqrt(T x)
 {
+#if ARCH(AARCH64)
+    AARCH64_INSTRUCTION(frsqrte, x);
+#endif
     return (T)1. / sqrt(x);
 }
 
@@ -209,6 +237,8 @@ constexpr T fabs(T x)
         "fabs"
         : "+t"(x));
     return x;
+#elif ARCH(AARCH64)
+    AARCH64_INSTRUCTION(fabs, x);
 #else
     return __builtin_fabs(x);
 #endif
@@ -576,6 +606,69 @@ ALWAYS_INLINE I round_to(P value)
             : "st");
     }
     return static_cast<I>(ret);
+#elif ARCH(AARCH64)
+    if constexpr (IsSigned<I>) {
+        if constexpr (sizeof(I) <= sizeof(i32)) {
+            i32 res;
+            if constexpr (IsSame<P, float>) {
+                asm("fcvtns %w0, %s1"
+                    : "=r"(res)
+                    : "w"(value));
+            } else if constexpr (IsSame<P, double>) {
+                asm("fcvtns %w0, %d1"
+                    : "=r"(res)
+                    : "w"(value));
+            } else if constexpr (IsSame<P, long double>) {
+                TODO();
+            }
+            return static_cast<I>(res);
+        }
+        // either long or long long aka i64
+        i64 res;
+        if constexpr (IsSame<P, float>) {
+            asm("fcvtns %0, %s1"
+                : "=r"(res)
+                : "w"(value));
+        } else if constexpr (IsSame<P, double>) {
+            asm("fcvtns %0, %d1"
+                : "=r"(res)
+                : "w"(value));
+        } else if constexpr (IsSame<P, long double>) {
+            TODO();
+        }
+        return static_cast<I>(res);
+    }
+
+    if constexpr (sizeof(I) <= sizeof(u32)) {
+        u32 res;
+        if constexpr (IsSame<P, float>) {
+            asm("fcvtnu %w0, %s1"
+                : "=r"(res)
+                : "w"(value));
+        } else if constexpr (IsSame<P, double>) {
+            asm("fcvtnu %w0, %d1"
+                : "=r"(res)
+                : "w"(value));
+        } else if constexpr (IsSame<P, long double>) {
+            TODO();
+        }
+        return static_cast<I>(res);
+    }
+
+    // either unsigned long or unsigned long long aka u64
+    u64 res;
+    if constexpr (IsSame<P, float>) {
+        asm("fcvtnu %0, %s1"
+            : "=r"(res)
+            : "w"(value));
+    } else if constexpr (IsSame<P, double>) {
+        asm("fcvtnu %0, %d1"
+            : "=r"(res)
+            : "w"(value));
+    } else if constexpr (IsSame<P, long double>) {
+        TODO();
+    }
+    return static_cast<I>(res);
 #else
     if constexpr (IsSame<P, long double>)
         return static_cast<I>(__builtin_llrintl(value));
@@ -661,7 +754,25 @@ constexpr T pow(T x, T y)
     return exp2<T>(y * log2<T>(x));
 }
 
+template<FloatingPoint T>
+constexpr T ceil(T num)
+{
+    if (is_constant_evaluated()) {
+        if (num < NumericLimits<i64>::min() || num > NumericLimits<i64>::max())
+            return num;
+        return (static_cast<double>(static_cast<i64>(num)) == num)
+            ? static_cast<i64>(num)
+            : static_cast<i64>(num) + ((num > 0) ? 1 : 0);
+    }
+#if ARCH(AARCH64)
+    AARCH64_INSTRUCTION(frintp, num);
+#else
+    return __builtin_ceil(num);
+#endif
+}
+
 #undef CONSTEXPR_STATE
+#undef AARCH64_INSTRUCTION
 }
 
 using AK::round_to;

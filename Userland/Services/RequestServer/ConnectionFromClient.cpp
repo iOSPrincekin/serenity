@@ -42,7 +42,7 @@ Messages::RequestServer::StartRequestResponse ConnectionFromClient::start_reques
         dbgln("StartRequest: Invalid URL requested: '{}'", url);
         return { -1, Optional<IPC::File> {} };
     }
-    auto* protocol = Protocol::find_by_name(url.protocol());
+    auto* protocol = Protocol::find_by_name(url.scheme());
     if (!protocol) {
         dbgln("StartRequest: No protocol handler for URL: '{}'", url);
         return { -1, Optional<IPC::File> {} };
@@ -81,9 +81,8 @@ void ConnectionFromClient::did_receive_headers(Badge<Request>, Request& request)
 
 void ConnectionFromClient::did_finish_request(Badge<Request>, Request& request, bool success)
 {
-    VERIFY(request.total_size().has_value());
-
-    async_request_finished(request.id(), success, request.total_size().value());
+    if (request.total_size().has_value())
+        async_request_finished(request.id(), success, request.total_size().value());
 
     m_requests.remove(request.id());
 }

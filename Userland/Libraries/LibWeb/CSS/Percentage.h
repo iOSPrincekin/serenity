@@ -11,6 +11,7 @@
 #include <LibWeb/CSS/Angle.h>
 #include <LibWeb/CSS/Frequency.h>
 #include <LibWeb/CSS/Length.h>
+#include <LibWeb/CSS/Number.h>
 #include <LibWeb/CSS/Time.h>
 
 namespace Web::CSS {
@@ -36,11 +37,12 @@ public:
     }
 
     bool operator==(Percentage const& other) const { return m_value == other.m_value; }
-    bool operator!=(Percentage const& other) const { return !(*this == other); }
 
 private:
     float m_value;
 };
+
+bool calculated_style_value_contains_percentage(CalculatedStyleValue const&);
 
 template<typename T>
 class PercentageOr {
@@ -77,6 +79,22 @@ public:
     bool is_percentage() const { return m_value.template has<Percentage>(); }
     bool is_calculated() const { return m_value.template has<NonnullRefPtr<CalculatedStyleValue>>(); }
 
+    bool contains_percentage() const
+    {
+        return m_value.visit(
+            [&](T const& t) {
+                if (t.is_calculated())
+                    return calculated_style_value_contains_percentage(*t.calculated_style_value());
+                return false;
+            },
+            [&](Percentage const&) {
+                return true;
+            },
+            [&](NonnullRefPtr<CalculatedStyleValue> const& calculated) {
+                return calculated_style_value_contains_percentage(*calculated);
+            });
+    }
+
     Percentage const& percentage() const
     {
         VERIFY(is_percentage());
@@ -98,6 +116,8 @@ public:
     {
         return m_value.visit(
             [&](T const& t) {
+                if (t.is_calculated())
+                    return resolve_calculated(t.calculated_style_value(), layout_node, reference_value);
                 return t;
             },
             [&](Percentage const& percentage) {
@@ -126,7 +146,6 @@ public:
             return (m_value.template get<Percentage>() == other.m_value.template get<Percentage>());
         return (m_value.template get<T>() == other.m_value.template get<T>());
     }
-    bool operator!=(PercentageOr<T> const& other) const { return !(*this == other); }
 
 protected:
     bool is_t() const { return m_value.template has<T>(); }
@@ -182,6 +201,8 @@ class LengthPercentage : public PercentageOr<Length> {
 public:
     using PercentageOr<Length>::PercentageOr;
 
+    bool is_auto() const { return is_length() && length().is_auto(); }
+
     bool is_length() const { return is_t(); }
     Length const& length() const { return get_t(); }
     virtual Length resolve_calculated(NonnullRefPtr<CalculatedStyleValue> const&, Layout::Node const&, Length const& reference_value) const override;
@@ -194,6 +215,14 @@ public:
     bool is_time() const { return is_t(); }
     Time const& time() const { return get_t(); }
     virtual Time resolve_calculated(NonnullRefPtr<CalculatedStyleValue> const&, Layout::Node const&, Time const& reference_value) const override;
+};
+
+struct NumberPercentage : public PercentageOr<Number> {
+public:
+    using PercentageOr<Number>::PercentageOr;
+
+    bool is_number() const { return is_t(); }
+    Number const& number() const { return get_t(); }
 };
 
 }

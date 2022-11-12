@@ -7,24 +7,20 @@
 #include <AK/HashMap.h>
 #include <AK/String.h>
 #include <AK/WeakPtr.h>
-#ifdef __serenity__
-#    include <LibDl/dlfcn.h>
-#else
-#    include <dlfcn.h>
-#endif
 #include <LibGPU/Driver.h>
+#include <dlfcn.h>
 
 namespace GPU {
 
 // FIXME: Think of a better way to configure these paths. Maybe use ConfigServer?
 static HashMap<String, String> const s_driver_path_map
 {
-#if defined(__serenity__)
-    { "softgpu", "libsoftgpu.so" },
-#elif defined(__APPLE__)
-    { "softgpu", "./liblagom-softgpu.dylib" },
+#if defined(AK_OS_SERENITY)
+    { "softgpu", "libsoftgpu.so.serenity" },
+#elif defined(AK_OS_MACOS)
+    { "softgpu", "liblagom-softgpu.dylib" },
 #else
-    { "softgpu", "./liblagom-softgpu.so" },
+    { "softgpu", "liblagom-softgpu.so.0" },
 #endif
 };
 

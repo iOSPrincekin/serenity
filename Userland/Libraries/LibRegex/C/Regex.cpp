@@ -6,18 +6,16 @@
 
 #include <AK/String.h>
 #include <AK/StringBuilder.h>
+#include <AK/Variant.h>
 #include <LibRegex/Regex.h>
 #include <ctype.h>
+#include <regex.h>
 #include <stdio.h>
 #include <string.h>
 
-#ifdef __serenity__
-#    include <regex.h>
-#else
-#    include <LibC/regex.h>
+#ifndef AK_OS_SERENITY
+#    error "This file is intended for use on Serenity only to implement POSIX regex.h"
 #endif
-
-#include <AK/Variant.h>
 
 struct internal_regex_t {
     u8 cflags;
@@ -91,10 +89,11 @@ int regexec(regex_t const* reg, char const* string, size_t nmatch, regmatch_t pm
     }
 
     RegexResult result;
+    StringView string_view { string, strlen(string) };
     if (eflags & REG_SEARCH)
-        result = preg->re->visit([&](auto& re) { return re->search(string, PosixOptions {} | (PosixFlags)eflags); });
+        result = preg->re->visit([&](auto& re) { return re->search(string_view, PosixOptions {} | (PosixFlags)eflags); });
     else
-        result = preg->re->visit([&](auto& re) { return re->match(string, PosixOptions {} | (PosixFlags)eflags); });
+        result = preg->re->visit([&](auto& re) { return re->match(string_view, PosixOptions {} | (PosixFlags)eflags); });
 
     if (result.success) {
         auto capture_groups_count = preg->re->visit([](auto& re) { return re->parser_result.capture_groups_count; });

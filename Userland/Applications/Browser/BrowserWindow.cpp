@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2021, Andreas Kling <kling@serenityos.org>
- * Copyright (c) 2021, Jakob-Niklas See <git@nwex.de>
+ * Copyright (c) 2021, networkException <networkexception@serenityos.org>
  * Copyright (c) 2021, Sam Atkins <atkinssj@serenityos.org>
  * Copyright (c) 2022, the SerenityOS developers.
  *
@@ -14,11 +14,13 @@
 #include "CookieJar.h"
 #include "InspectorWidget.h"
 #include "Tab.h"
+#include <AK/LexicalPath.h>
 #include <Applications/Browser/BrowserWindowGML.h>
 #include <LibConfig/Client.h>
-#include <LibCore/Process.h>
+#include <LibCore/DateTime.h>
 #include <LibCore/StandardPaths.h>
 #include <LibCore/Stream.h>
+#include <LibCore/Version.h>
 #include <LibGUI/AboutDialog.h>
 #include <LibGUI/Application.h>
 #include <LibGUI/Clipboard.h>
@@ -27,17 +29,20 @@
 #include <LibGUI/Menu.h>
 #include <LibGUI/Menubar.h>
 #include <LibGUI/MessageBox.h>
+#include <LibGUI/Process.h>
 #include <LibGUI/SeparatorWidget.h>
 #include <LibGUI/Statusbar.h>
 #include <LibGUI/TabWidget.h>
 #include <LibGUI/ToolbarContainer.h>
 #include <LibGUI/Widget.h>
+#include <LibGfx/PNGWriter.h>
 #include <LibJS/Interpreter.h>
 #include <LibWeb/CSS/PreferredColorScheme.h>
 #include <LibWeb/Dump.h>
 #include <LibWeb/Layout/InitialContainingBlock.h>
 #include <LibWeb/Loader/ResourceLoader.h>
 #include <LibWebView/OutOfProcessWebView.h>
+#include <LibWebView/WebContentClient.h>
 
 namespace Browser {
 
@@ -45,7 +50,7 @@ static String bookmarks_file_path()
 {
     StringBuilder builder;
     builder.append(Core::StandardPaths::config_directory());
-    builder.append("/bookmarks.json");
+    builder.append("/bookmarks.json"sv);
     return builder.to_string();
 }
 
@@ -53,7 +58,7 @@ static String search_engines_file_path()
 {
     StringBuilder builder;
     builder.append(Core::StandardPaths::config_directory());
-    builder.append("/SearchEngines.json");
+    builder.append("/SearchEngines.json"sv);
     return builder.to_string();
 }
 
@@ -61,7 +66,7 @@ BrowserWindow::BrowserWindow(CookieJar& cookie_jar, URL url)
     : m_cookie_jar(cookie_jar)
     , m_window_actions(*this)
 {
-    auto app_icon = GUI::Icon::default_icon("app-browser");
+    auto app_icon = GUI::Icon::default_icon("app-browser"sv);
     m_bookmarks_bar = Browser::BookmarksBarWidget::construct(Browser::bookmarks_file_path(), true);
 
     resize(730, 560);
@@ -100,7 +105,11 @@ BrowserWindow::BrowserWindow(CookieJar& cookie_jar, URL url)
     };
 
     m_window_actions.on_create_new_tab = [this] {
-        create_new_tab(Browser::url_from_user_input(Browser::g_home_url), true);
+        create_new_tab(Browser::url_from_user_input(Browser::g_new_tab_url), true);
+    };
+
+    m_window_actions.on_create_new_window = [this] {
+        GUI::Process::spawn_or_show_error(this, "/bin/Browser"sv);
     };
 
     m_window_actions.on_next_tab = [this] {
@@ -111,8 +120,10 @@ BrowserWindow::BrowserWindow(CookieJar& cookie_jar, URL url)
         m_tab_widget->activate_previous_tab();
     };
 
-    for (int i = 0; i <= 7; ++i) {
+    for (size_t i = 0; i <= 7; ++i) {
         m_window_actions.on_tabs.append([this, i] {
+            if (i >= m_tab_widget->tab_count())
+                return;
             m_tab_widget->set_tab_index(i);
         });
     }
@@ -121,18 +132,27 @@ BrowserWindow::BrowserWindow(CookieJar& cookie_jar, URL url)
     });
 
     m_window_actions.on_about = [this] {
-        auto app_icon = GUI::Icon::default_icon("app-browser");
-        GUI::AboutDialog::show("Browser", app_icon.bitmap_for_size(32), this);
+        auto app_icon = GUI::Icon::default_icon("app-browser"sv);
+        GUI::AboutDialog::show("Browser"sv, Core::Version::read_long_version_string(), app_icon.bitmap_for_size(32), this);
     };
 
     m_window_actions.on_show_bookmarks_bar = [](auto& action) {
         Browser::BookmarksBarWidget::the().set_visible(action.is_checked());
-        Config::write_bool("Browser", "Preferences", "ShowBookmarksBar", action.is_checked());
+        Config::write_bool("Browser"sv, "Preferences"sv, "ShowBookmarksBar"sv, action.is_checked());
     };
 
-    bool show_bookmarks_bar = Config::read_bool("Browser", "Preferences", "ShowBookmarksBar", true);
+    bool show_bookmarks_bar = Config::read_bool("Browser"sv, "Preferences"sv, "ShowBookmarksBar"sv, true);
     m_window_actions.show_bookmarks_bar_action().set_checked(show_bookmarks_bar);
     Browser::BookmarksBarWidget::the().set_visible(show_bookmarks_bar);
+
+    m_window_actions.on_vertical_tabs = [this](auto& action) {
+        m_tab_widget->set_tab_position(action.is_checked() ? GUI::TabWidget::TabPosition::Left : GUI::TabWidget::TabPosition::Top);
+        Config::write_bool("Browser"sv, "Preferences"sv, "VerticalTabs"sv, action.is_checked());
+    };
+
+    bool vertical_tabs = Config::read_bool("Browser"sv, "Preferences"sv, "VerticalTabs"sv, false);
+    m_window_actions.vertical_tabs_action().set_checked(vertical_tabs);
+    m_tab_widget->set_tab_position(vertical_tabs ? GUI::TabWidget::TabPosition::Left : GUI::TabWidget::TabPosition::Top);
 
     build_menus();
 
@@ -143,6 +163,7 @@ void BrowserWindow::build_menus()
 {
     auto& file_menu = add_menu("&File");
     file_menu.add_action(WindowActions::the().create_new_tab_action());
+    file_menu.add_action(WindowActions::the().create_new_window_action());
 
     auto close_tab_action = GUI::CommonActions::make_close_tab_action([this](auto&) {
         active_tab().on_tab_close_request(active_tab());
@@ -157,6 +178,7 @@ void BrowserWindow::build_menus()
 
     auto& view_menu = add_menu("&View");
     view_menu.add_action(WindowActions::the().show_bookmarks_bar_action());
+    view_menu.add_action(WindowActions::the().vertical_tabs_action());
     view_menu.add_separator();
     view_menu.add_action(GUI::CommonActions::make_fullscreen_action(
         [this](auto&) {
@@ -222,6 +244,22 @@ void BrowserWindow::build_menus()
         this);
     m_inspect_dom_node_action->set_status_tip("Open inspector for this element");
 
+    m_take_visible_screenshot_action = GUI::Action::create(
+        "Take &Visible Screenshot"sv, g_icon_bag.filetype_image, [this](auto&) {
+            if (auto result = take_screenshot(ScreenshotType::Visible); result.is_error())
+                GUI::MessageBox::show_error(this, String::formatted("{}", result.error()));
+        },
+        this);
+    m_take_visible_screenshot_action->set_status_tip("Save a screenshot of the visible portion of the current tab to the Downloads directory"sv);
+
+    m_take_full_screenshot_action = GUI::Action::create(
+        "Take &Full Screenshot"sv, g_icon_bag.filetype_image, [this](auto&) {
+            if (auto result = take_screenshot(ScreenshotType::Full); result.is_error())
+                GUI::MessageBox::show_error(this, String::formatted("{}", result.error()));
+        },
+        this);
+    m_take_full_screenshot_action->set_status_tip("Save a screenshot of the entirety of the current tab to the Downloads directory"sv);
+
     auto& inspect_menu = add_menu("&Inspect");
     inspect_menu.add_action(*m_view_source_action);
     inspect_menu.add_action(*m_inspect_dom_tree_action);
@@ -246,13 +284,13 @@ void BrowserWindow::build_menus()
 
     m_change_homepage_action = GUI::Action::create(
         "Set Homepage URL...", g_icon_bag.go_home, [this](auto&) {
-            auto homepage_url = Config::read_string("Browser", "Preferences", "Home", "about:blank");
-            if (GUI::InputBox::show(this, homepage_url, "Enter URL", "Change homepage URL") == GUI::InputBox::ExecResult::OK) {
+            auto homepage_url = Config::read_string("Browser"sv, "Preferences"sv, "Home"sv, "about:blank"sv);
+            if (GUI::InputBox::show(this, homepage_url, "Enter URL"sv, "Change homepage URL"sv) == GUI::InputBox::ExecResult::OK) {
                 if (URL(homepage_url).is_valid()) {
-                    Config::write_string("Browser", "Preferences", "Home", homepage_url);
+                    Config::write_string("Browser"sv, "Preferences"sv, "Home"sv, homepage_url);
                     Browser::g_home_url = homepage_url;
                 } else {
-                    GUI::MessageBox::show_error(this, "The URL you have entered is not valid");
+                    GUI::MessageBox::show_error(this, "The URL you have entered is not valid"sv);
                 }
             }
         },
@@ -268,13 +306,13 @@ void BrowserWindow::build_menus()
     auto& color_scheme_menu = settings_menu.add_submenu("&Color Scheme");
     color_scheme_menu.set_icon(g_icon_bag.color_chooser);
     {
-        auto current_setting = Web::CSS::preferred_color_scheme_from_string(Config::read_string("Browser", "Preferences", "ColorScheme", "auto"));
+        auto current_setting = Web::CSS::preferred_color_scheme_from_string(Config::read_string("Browser"sv, "Preferences"sv, "ColorScheme"sv, "auto"sv));
         m_color_scheme_actions.set_exclusive(true);
 
         auto add_color_scheme_action = [&](auto& name, Web::CSS::PreferredColorScheme preference_value) {
             auto action = GUI::Action::create_checkable(
                 name, [=, this](auto&) {
-                    Config::write_string("Browser", "Preferences", "ColorScheme", Web::CSS::preferred_color_scheme_to_string(preference_value));
+                    Config::write_string("Browser"sv, "Preferences"sv, "ColorScheme"sv, Web::CSS::preferred_color_scheme_to_string(preference_value));
                     active_tab().view().set_preferred_color_scheme(preference_value);
                 },
                 this);
@@ -290,9 +328,9 @@ void BrowserWindow::build_menus()
     }
 
     settings_menu.add_separator();
-    auto open_settings_action = GUI::Action::create("&Settings", Gfx::Bitmap::try_load_from_file("/res/icons/16x16/settings.png").release_value_but_fixme_should_propagate_errors(),
-        [](auto&) {
-            Core::Process::spawn("/bin/BrowserSettings");
+    auto open_settings_action = GUI::Action::create("Browser &Settings", Gfx::Bitmap::try_load_from_file("/res/icons/16x16/settings.png"sv).release_value_but_fixme_should_propagate_errors(),
+        [this](auto&) {
+            GUI::Process::spawn_or_show_error(this, "/bin/BrowserSettings"sv);
         });
     settings_menu.add_action(move(open_settings_action));
 
@@ -373,7 +411,7 @@ void BrowserWindow::build_menus()
 
     auto custom_user_agent = GUI::Action::create_checkable("Custom...", [this](auto& action) {
         String user_agent;
-        if (GUI::InputBox::show(this, user_agent, "Enter User Agent:", "Custom User Agent") != GUI::InputBox::ExecResult::OK || user_agent.is_empty() || user_agent.is_null()) {
+        if (GUI::InputBox::show(this, user_agent, "Enter User Agent:"sv, "Custom User Agent"sv) != GUI::InputBox::ExecResult::OK || user_agent.is_empty() || user_agent.is_null()) {
             m_disable_user_agent_spoofing->activate();
             return;
         }
@@ -401,6 +439,7 @@ void BrowserWindow::build_menus()
     debug_menu.add_action(same_origin_policy_action);
 
     auto& help_menu = add_menu("&Help");
+    help_menu.add_action(GUI::CommonActions::make_command_palette_action(this));
     help_menu.add_action(WindowActions::the().about_action());
 }
 
@@ -414,7 +453,7 @@ ErrorOr<void> BrowserWindow::load_search_engines(GUI::Menu& settings_menu)
     m_disable_search_engine_action = GUI::Action::create_checkable(
         "Disable", [](auto&) {
             g_search_engine = {};
-            Config::write_string("Browser", "Preferences", "SearchEngine", g_search_engine);
+            Config::write_string("Browser"sv, "Preferences"sv, "SearchEngine"sv, g_search_engine);
         },
         this);
     search_engine_menu.add_action(*m_disable_search_engine_action);
@@ -432,13 +471,13 @@ ErrorOr<void> BrowserWindow::load_search_engines(GUI::Menu& settings_menu)
                 if (!json_item.is_object())
                     continue;
                 auto search_engine = json_item.as_object();
-                auto name = search_engine.get("title").to_string();
-                auto url_format = search_engine.get("url_format").to_string();
+                auto name = search_engine.get("title"sv).to_string();
+                auto url_format = search_engine.get("url_format"sv).to_string();
 
                 auto action = GUI::Action::create_checkable(
                     name, [&, url_format](auto&) {
                         g_search_engine = url_format;
-                        Config::write_string("Browser", "Preferences", "SearchEngine", g_search_engine);
+                        Config::write_string("Browser"sv, "Preferences"sv, "SearchEngine"sv, g_search_engine);
                     },
                     this);
                 search_engine_menu.add_action(action);
@@ -455,20 +494,20 @@ ErrorOr<void> BrowserWindow::load_search_engines(GUI::Menu& settings_menu)
 
     auto custom_search_engine_action = GUI::Action::create_checkable("Custom...", [&](auto& action) {
         String search_engine;
-        if (GUI::InputBox::show(this, search_engine, "Enter URL template:", "Custom Search Engine", "https://host/search?q={}") != GUI::InputBox::ExecResult::OK || search_engine.is_empty()) {
+        if (GUI::InputBox::show(this, search_engine, "Enter URL template:"sv, "Custom Search Engine"sv, "https://host/search?q={}"sv) != GUI::InputBox::ExecResult::OK || search_engine.is_empty()) {
             m_disable_search_engine_action->activate();
             return;
         }
 
         auto argument_count = search_engine.count("{}"sv);
         if (argument_count != 1) {
-            GUI::MessageBox::show(this, "Invalid format, must contain '{}' once!", "Error", GUI::MessageBox::Type::Error);
+            GUI::MessageBox::show(this, "Invalid format, must contain '{}' once!"sv, "Error"sv, GUI::MessageBox::Type::Error);
             m_disable_search_engine_action->activate();
             return;
         }
 
         g_search_engine = search_engine;
-        Config::write_string("Browser", "Preferences", "SearchEngine", g_search_engine);
+        Config::write_string("Browser"sv, "Preferences"sv, "SearchEngine"sv, g_search_engine);
         action.set_status_tip(search_engine);
     });
     search_engine_menu.add_action(custom_search_engine_action);
@@ -548,12 +587,76 @@ void BrowserWindow::create_new_tab(URL url, bool activate)
         m_cookie_jar.dump_cookies();
     };
 
+    new_tab.on_update_cookie = [this](auto const& url, auto cookie) {
+        m_cookie_jar.update_cookie(url, move(cookie));
+    };
+
     new_tab.on_get_cookies_entries = [this]() {
         return m_cookie_jar.get_all_cookies();
     };
 
     new_tab.on_get_local_storage_entries = [this]() {
         return active_tab().view().get_local_storage_entries();
+    };
+
+    new_tab.on_get_session_storage_entries = [this]() {
+        return active_tab().view().get_session_storage_entries();
+    };
+
+    new_tab.on_take_screenshot = [this]() {
+        return active_tab().view().take_screenshot();
+    };
+
+    new_tab.webdriver_endpoints().on_scroll_element_into_view = [this](i32 element_id) {
+        active_tab().view().scroll_element_into_view(element_id);
+    };
+
+    new_tab.webdriver_endpoints().on_is_element_selected = [this](i32 element_id) {
+        return active_tab().view().is_element_selected(element_id);
+    };
+
+    new_tab.webdriver_endpoints().on_get_element_attribute = [this](i32 element_id, String const& name) {
+        return active_tab().view().get_element_attribute(element_id, name);
+    };
+
+    new_tab.webdriver_endpoints().on_get_element_property = [this](i32 element_id, String const& name) {
+        return active_tab().view().get_element_property(element_id, name);
+    };
+
+    new_tab.webdriver_endpoints().on_get_active_documents_type = [this]() {
+        return active_tab().view().get_active_documents_type();
+    };
+
+    new_tab.webdriver_endpoints().on_get_computed_value_for_element = [this](i32 element_id, String const& property_name) {
+        return active_tab().view().get_computed_value_for_element(element_id, property_name);
+    };
+
+    new_tab.webdriver_endpoints().on_get_element_text = [this](i32 element_id) {
+        return active_tab().view().get_element_text(element_id);
+    };
+
+    new_tab.webdriver_endpoints().on_get_element_tag_name = [this](i32 element_id) {
+        return active_tab().view().get_element_tag_name(element_id);
+    };
+
+    new_tab.webdriver_endpoints().on_get_element_rect = [this](i32 element_id) {
+        return active_tab().view().get_element_rect(element_id);
+    };
+
+    new_tab.webdriver_endpoints().on_is_element_enabled = [this](i32 element_id) {
+        return active_tab().view().is_element_enabled(element_id);
+    };
+
+    new_tab.webdriver_endpoints().on_serialize_source = [this]() {
+        return active_tab().view().serialize_source();
+    };
+
+    new_tab.webdriver_endpoints().on_execute_script = [this](String const& body, Vector<String> const& json_arguments, Optional<u64> const& timeout, bool async) {
+        return active_tab().view().webdriver_execute_script(body, json_arguments, timeout, async);
+    };
+
+    new_tab.webdriver_endpoints().on_take_element_screenshot = [this](i32 element_id) {
+        return active_tab().view().take_element_screenshot(element_id);
     };
 
     new_tab.load(url);
@@ -590,7 +693,9 @@ void BrowserWindow::config_string_did_change(String const& domain, String const&
             Browser::g_search_engine = value;
         else if (key == "Home")
             Browser::g_home_url = value;
-    } else if (group.starts_with("Proxy:")) {
+        else if (key == "NewTab")
+            Browser::g_new_tab_url = value;
+    } else if (group.starts_with("Proxy:"sv)) {
         dbgln("Proxy mapping changed: {}/{} = {}", group, key, value);
         auto proxy_spec = group.substring_view(6);
         auto existing_proxy = Browser::g_proxies.find(proxy_spec);
@@ -619,6 +724,68 @@ void BrowserWindow::config_bool_did_change(String const& domain, String const& g
     }
 
     // NOTE: CloseDownloadWidgetOnFinish is read each time in DownloadWindow
+}
+
+void BrowserWindow::broadcast_window_position(Gfx::IntPoint const& position)
+{
+    tab_widget().for_each_child_of_type<Browser::Tab>([&](auto& tab) {
+        tab.window_position_changed(position);
+        return IterationDecision::Continue;
+    });
+}
+
+void BrowserWindow::broadcast_window_size(Gfx::IntSize const& size)
+{
+    tab_widget().for_each_child_of_type<Browser::Tab>([&](auto& tab) {
+        tab.window_size_changed(size);
+        return IterationDecision::Continue;
+    });
+}
+
+void BrowserWindow::event(Core::Event& event)
+{
+    switch (event.type()) {
+    case GUI::Event::Move:
+        broadcast_window_position(static_cast<GUI::MoveEvent&>(event).position());
+        break;
+    case GUI::Event::Resize:
+        broadcast_window_size(static_cast<GUI::ResizeEvent&>(event).size());
+        break;
+    default:
+        break;
+    }
+
+    Window::event(event);
+}
+
+ErrorOr<void> BrowserWindow::take_screenshot(ScreenshotType type)
+{
+    if (!active_tab().on_take_screenshot)
+        return {};
+
+    Gfx::ShareableBitmap bitmap;
+
+    switch (type) {
+    case ScreenshotType::Visible:
+        bitmap = active_tab().on_take_screenshot();
+        break;
+    case ScreenshotType::Full:
+        bitmap = active_tab().view().take_document_screenshot();
+        break;
+    }
+
+    if (!bitmap.is_valid())
+        return Error::from_string_view("Failed to take a screenshot of the current tab"sv);
+
+    LexicalPath path { Core::StandardPaths::downloads_directory() };
+    path = path.append(Core::DateTime::now().to_string("screenshot-%Y-%m-%d-%H-%M-%S.png"sv));
+
+    auto encoded = Gfx::PNGWriter::encode(*bitmap.bitmap());
+
+    auto screenshot_file = TRY(Core::Stream::File::open(path.string(), Core::Stream::OpenMode::Write));
+    TRY(screenshot_file->write(encoded));
+
+    return {};
 }
 
 }

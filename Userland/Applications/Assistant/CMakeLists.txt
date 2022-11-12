@@ -10,5 +10,4 @@ set(SOURCES
     )
 
 serenity_app(Assistant ICON app-run)
-target_link_libraries(Assistant LibCore LibDesktop LibGUI LibJS LibMain LibThreading)
-link_with_unicode_data(Assistant)
+target_link_libraries(Assistant PRIVATE LibCore LibDesktop LibGfx LibGUI LibJS LibMain LibThreading)

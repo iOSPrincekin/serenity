@@ -12,22 +12,22 @@
 #include <AK/StringBuilder.h>
 #include <AK/Types.h>
 
-#include <Kernel/Interrupts/APIC.h>
+#include <Kernel/Arch/x86/common/Interrupts/APIC.h>
+#include <Kernel/InterruptDisabler.h>
 #include <Kernel/Process.h>
 #include <Kernel/Scheduler.h>
 #include <Kernel/Sections.h>
 #include <Kernel/StdLib.h>
 #include <Kernel/Thread.h>
 
+#include <Kernel/Arch/Interrupts.h>
 #include <Kernel/Arch/Processor.h>
 #include <Kernel/Arch/SafeMem.h>
 #include <Kernel/Arch/ScopedCritical.h>
+#include <Kernel/Arch/TrapFrame.h>
 #include <Kernel/Arch/x86/CPUID.h>
-#include <Kernel/Arch/x86/InterruptDisabler.h>
-#include <Kernel/Arch/x86/Interrupts.h>
 #include <Kernel/Arch/x86/MSR.h>
 #include <Kernel/Arch/x86/ProcessorInfo.h>
-#include <Kernel/Arch/x86/TrapFrame.h>
 
 #include <Kernel/Memory/PageDirectory.h>
 #include <Kernel/Memory/ScopedAddressSpaceSwitcher.h>
@@ -551,10 +551,6 @@ UNMAP_AFTER_INIT void Processor::cpu_setup()
         write_cr4(read_cr4() | 0x800);
     }
 
-    if (has_feature(CPUFeature::TSC)) {
-        write_cr4(read_cr4() | 0x4);
-    }
-
     if (has_feature(CPUFeature::XSAVE)) {
         // Turn on CR4.OSXSAVE
         write_cr4(read_cr4() | 0x40000);
@@ -593,6 +589,12 @@ UNMAP_AFTER_INIT void Processor::cpu_setup()
     constexpr u64 rflags_mask = 0x257fd5u;
     MSR sfmask_msr(MSR_SFMASK);
     sfmask_msr.set(rflags_mask);
+
+    if (has_feature(CPUFeature::FSGSBASE)) {
+        // Turn off CR4.FSGSBASE to ensure the current Processor base kernel address is not leaked via
+        // the RDGSBASE instruction until we implement proper GS swapping at the userspace/kernel boundaries
+        write_cr4(read_cr4() & ~0x10000);
+    }
 #endif
 
     // Query OS-enabled CPUID features again, and set the flags if needed.
@@ -656,7 +658,7 @@ UNMAP_AFTER_INIT void Processor::initialize(u32 cpu)
 #endif
 
     if (cpu == 0)
-        idt_init();
+        initialize_interrupts();
     else
         flush_idt();
 
@@ -708,7 +710,7 @@ UNMAP_AFTER_INIT void Processor::detect_hypervisor_hyperv(CPUID const& hyperviso
     alignas(sizeof(u32)) char interface_signature_buffer[5];
     *reinterpret_cast<u32*>(interface_signature_buffer) = hypervisor_interface.eax();
     interface_signature_buffer[4] = '\0';
-    StringView hyperv_interface_signature(interface_signature_buffer);
+    StringView hyperv_interface_signature { interface_signature_buffer, strlen(interface_signature_buffer) };
 
     dmesgln("CPU[{}]: Hyper-V interface signature '{}' ({:#x})", current_id(), hyperv_interface_signature, hypervisor_interface.eax());
 
@@ -926,7 +928,7 @@ void Processor::enter_trap(TrapFrame& trap, bool raise_irq)
         // The cs register of this trap tells us where we will return back to
         auto new_previous_mode = ((trap.regs->cs & 3) != 0) ? Thread::PreviousMode::UserMode : Thread::PreviousMode::KernelMode;
         if (current_thread->set_previous_mode(new_previous_mode) && trap.prev_irq_level == 0) {
-            current_thread->update_time_scheduled(Scheduler::current_time(), new_previous_mode == Thread::PreviousMode::KernelMode, false);
+            current_thread->update_time_scheduled(TimeManagement::scheduler_current_time(), new_previous_mode == Thread::PreviousMode::KernelMode, false);
         }
     } else {
         trap.next_trap = nullptr;
@@ -973,7 +975,7 @@ void Processor::exit_trap(TrapFrame& trap)
         }
 
         if (current_thread->set_previous_mode(new_previous_mode))
-            current_thread->update_time_scheduled(Scheduler::current_time(), true, false);
+            current_thread->update_time_scheduled(TimeManagement::scheduler_current_time(), true, false);
     }
 
     VERIFY_INTERRUPTS_DISABLED();
@@ -988,7 +990,7 @@ void Processor::exit_trap(TrapFrame& trap)
 
 void Processor::check_invoke_scheduler()
 {
-    InterruptDisabler disabler;
+    VERIFY_INTERRUPTS_DISABLED();
     VERIFY(!m_in_irq);
     VERIFY(!m_in_critical);
     VERIFY(&Processor::current() == this);
@@ -1559,8 +1561,7 @@ extern "C" void context_first_init([[maybe_unused]] Thread* from_thread, [[maybe
     // the scheduler lock. We don't want to enable interrupts at this point
     // as we're still in the middle of a context switch. Doing so could
     // trigger a context switch within a context switch, leading to a crash.
-    FlatPtr flags = trap->regs->flags();
-    Scheduler::leave_on_first_switch(flags & ~0x200);
+    Scheduler::leave_on_first_switch(InterruptsState::Disabled);
 }
 
 extern "C" void enter_thread_context(Thread* from_thread, Thread* to_thread)
@@ -1661,6 +1662,39 @@ void Processor::assume_context(Thread& thread, FlatPtr flags)
 u64 Processor::time_spent_idle() const
 {
     return m_idle_thread->time_in_user() + m_idle_thread->time_in_kernel();
+}
+
+void Processor::leave_critical()
+{
+    InterruptDisabler disabler;
+    current().do_leave_critical();
+}
+
+void Processor::do_leave_critical()
+{
+    VERIFY(m_in_critical > 0);
+    if (m_in_critical == 1) {
+        if (m_in_irq == 0) {
+            deferred_call_execute_pending();
+            VERIFY(m_in_critical == 1);
+        }
+        m_in_critical = 0;
+        if (m_in_irq == 0)
+            check_invoke_scheduler();
+    } else {
+        m_in_critical = m_in_critical - 1;
+    }
+}
+
+u32 Processor::clear_critical()
+{
+    InterruptDisabler disabler;
+    auto prev_critical = in_critical();
+    write_gs_ptr(__builtin_offsetof(Processor, m_in_critical), 0);
+    auto& proc = current();
+    if (proc.m_in_irq == 0)
+        proc.check_invoke_scheduler();
+    return prev_critical;
 }
 
 }

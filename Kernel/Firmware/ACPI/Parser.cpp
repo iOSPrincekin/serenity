@@ -7,10 +7,13 @@
  */
 
 #include <AK/Format.h>
+#include <AK/Platform.h>
 #include <AK/StringView.h>
 #include <AK/Try.h>
-#include <Kernel/Arch/x86/IO.h>
-#include <Kernel/Arch/x86/InterruptDisabler.h>
+#include <Kernel/InterruptDisabler.h>
+#if ARCH(I386) || ARCH(X86_64)
+#    include <Kernel/Arch/x86/IO.h>
+#endif
 #include <Kernel/Bus/PCI/API.h>
 #include <Kernel/Debug.h>
 #include <Kernel/Firmware/ACPI/Parser.h>
@@ -35,11 +38,11 @@ void Parser::must_initialize(PhysicalAddress rsdp, PhysicalAddress fadt, u8 irq_
     VERIFY(s_acpi_parser);
 }
 
-UNMAP_AFTER_INIT NonnullRefPtr<ACPISysFSComponent> ACPISysFSComponent::create(StringView name, PhysicalAddress paddr, size_t table_size)
+UNMAP_AFTER_INIT NonnullLockRefPtr<ACPISysFSComponent> ACPISysFSComponent::create(StringView name, PhysicalAddress paddr, size_t table_size)
 {
     // FIXME: Handle allocation failure gracefully
     auto table_name = KString::must_create(name);
-    return adopt_ref(*new (nothrow) ACPISysFSComponent(move(table_name), paddr, table_size));
+    return adopt_lock_ref(*new (nothrow) ACPISysFSComponent(move(table_name), paddr, table_size));
 }
 
 ErrorOr<size_t> ACPISysFSComponent::read_bytes(off_t offset, size_t count, UserOrKernelBuffer& buffer, OpenFileDescription*) const
@@ -57,7 +60,7 @@ ErrorOr<size_t> ACPISysFSComponent::read_bytes(off_t offset, size_t count, UserO
 ErrorOr<NonnullOwnPtr<KBuffer>> ACPISysFSComponent::try_to_generate_buffer() const
 {
     auto acpi_blob = TRY(Memory::map_typed<u8>((m_paddr), m_length));
-    return KBuffer::try_create_with_bytes(Span<u8> { acpi_blob.ptr(), m_length });
+    return KBuffer::try_create_with_bytes("ACPISysFSComponent: Blob"sv, Span<u8> { acpi_blob.ptr(), m_length });
 }
 
 UNMAP_AFTER_INIT ACPISysFSComponent::ACPISysFSComponent(NonnullOwnPtr<KString> table_name, PhysicalAddress paddr, size_t table_size)
@@ -70,33 +73,36 @@ UNMAP_AFTER_INIT ACPISysFSComponent::ACPISysFSComponent(NonnullOwnPtr<KString> t
 
 UNMAP_AFTER_INIT void ACPISysFSDirectory::find_tables_and_register_them_as_components()
 {
-    NonnullRefPtrVector<SysFSComponent> components;
     size_t ssdt_count = 0;
-    ACPI::Parser::the()->enumerate_static_tables([&](StringView signature, PhysicalAddress p_table, size_t length) {
-        if (signature == "SSDT") {
-            auto component_name = KString::formatted("{:4s}{}", signature.characters_without_null_termination(), ssdt_count).release_value_but_fixme_should_propagate_errors();
-            components.append(ACPISysFSComponent::create(component_name->view(), p_table, length));
-            ssdt_count++;
-            return;
+    MUST(m_child_components.with([&](auto& list) -> ErrorOr<void> {
+        ACPI::Parser::the()->enumerate_static_tables([&](StringView signature, PhysicalAddress p_table, size_t length) {
+            if (signature == "SSDT") {
+                auto component_name = KString::formatted("{:4s}{}", signature.characters_without_null_termination(), ssdt_count).release_value_but_fixme_should_propagate_errors();
+                list.append(ACPISysFSComponent::create(component_name->view(), p_table, length));
+                ssdt_count++;
+                return;
+            }
+            list.append(ACPISysFSComponent::create(signature, p_table, length));
+        });
+        return {};
+    }));
+
+    MUST(m_child_components.with([&](auto& list) -> ErrorOr<void> {
+        auto rsdp = Memory::map_typed<Structures::RSDPDescriptor20>(ACPI::Parser::the()->rsdp()).release_value_but_fixme_should_propagate_errors();
+        list.append(ACPISysFSComponent::create("RSDP"sv, ACPI::Parser::the()->rsdp(), rsdp->base.revision == 0 ? sizeof(Structures::RSDPDescriptor) : rsdp->length));
+        auto main_system_description_table = Memory::map_typed<Structures::SDTHeader>(ACPI::Parser::the()->main_system_description_table()).release_value_but_fixme_should_propagate_errors();
+        if (ACPI::Parser::the()->is_xsdt_supported()) {
+            list.append(ACPISysFSComponent::create("XSDT"sv, ACPI::Parser::the()->main_system_description_table(), main_system_description_table->length));
+        } else {
+            list.append(ACPISysFSComponent::create("RSDT"sv, ACPI::Parser::the()->main_system_description_table(), main_system_description_table->length));
         }
-        components.append(ACPISysFSComponent::create(signature, p_table, length));
-    });
-    m_components = components;
-
-    auto rsdp = Memory::map_typed<Structures::RSDPDescriptor20>(ACPI::Parser::the()->rsdp()).release_value_but_fixme_should_propagate_errors();
-    m_components.append(ACPISysFSComponent::create("RSDP", ACPI::Parser::the()->rsdp(), rsdp->base.revision == 0 ? sizeof(Structures::RSDPDescriptor) : rsdp->length));
-
-    auto main_system_description_table = Memory::map_typed<Structures::SDTHeader>(ACPI::Parser::the()->main_system_description_table()).release_value_but_fixme_should_propagate_errors();
-    if (ACPI::Parser::the()->is_xsdt_supported()) {
-        m_components.append(ACPISysFSComponent::create("XSDT", ACPI::Parser::the()->main_system_description_table(), main_system_description_table->length));
-    } else {
-        m_components.append(ACPISysFSComponent::create("RSDT", ACPI::Parser::the()->main_system_description_table(), main_system_description_table->length));
-    }
+        return {};
+    }));
 }
 
-UNMAP_AFTER_INIT NonnullRefPtr<ACPISysFSDirectory> ACPISysFSDirectory::must_create(FirmwareSysFSDirectory& firmware_directory)
+UNMAP_AFTER_INIT NonnullLockRefPtr<ACPISysFSDirectory> ACPISysFSDirectory::must_create(FirmwareSysFSDirectory& firmware_directory)
 {
-    auto acpi_directory = MUST(adopt_nonnull_ref_or_enomem(new (nothrow) ACPISysFSDirectory(firmware_directory)));
+    auto acpi_directory = MUST(adopt_nonnull_lock_ref_or_enomem(new (nothrow) ACPISysFSDirectory(firmware_directory)));
     acpi_directory->find_tables_and_register_them_as_components();
     return acpi_directory;
 }
@@ -124,6 +130,7 @@ UNMAP_AFTER_INIT void Parser::locate_static_data()
     locate_main_system_description_table();
     initialize_main_system_description_table();
     process_fadt_data();
+    process_dsdt();
 }
 
 UNMAP_AFTER_INIT Optional<PhysicalAddress> Parser::find_table(StringView signature)
@@ -164,7 +171,6 @@ UNMAP_AFTER_INIT void Parser::process_fadt_data()
 
     auto sdt = Memory::map_typed<Structures::FADT>(m_fadt).release_value_but_fixme_should_propagate_errors();
     dmesgln("ACPI: Fixed ACPI data, Revision {}, length: {} bytes", (size_t)sdt->h.revision, (size_t)sdt->h.length);
-    dmesgln("ACPI: DSDT {}", PhysicalAddress(sdt->dsdt_ptr));
     m_x86_specific_flags.cmos_rtc_not_present = (sdt->ia_pc_boot_arch_flags & (u8)FADTFlags::IA_PC_Flags::CMOS_RTC_Not_Present);
 
     // FIXME: QEMU doesn't report that we have an i8042 controller in these flags, even if it should (when FADT revision is 3),
@@ -199,6 +205,21 @@ UNMAP_AFTER_INIT void Parser::process_fadt_data()
     m_hardware_flags.wbinvd_flush = (sdt->flags & (u32)FADTFlags::FeatureFlags::WBINVD_FLUSH);
 }
 
+UNMAP_AFTER_INIT void Parser::process_dsdt()
+{
+    auto sdt = Memory::map_typed<Structures::FADT>(m_fadt).release_value_but_fixme_should_propagate_errors();
+
+    // Add DSDT-pointer to expose the full table in /sys/firmware/acpi/
+    m_sdt_pointers.append(PhysicalAddress(sdt->dsdt_ptr));
+
+    auto dsdt_or_error = Memory::map_typed<Structures::DSDT>(PhysicalAddress(sdt->dsdt_ptr));
+    if (dsdt_or_error.is_error()) {
+        dmesgln("ACPI: DSDT is unmappable");
+        return;
+    }
+    dmesgln("ACPI: Using DSDT @ {} with {} bytes", PhysicalAddress(sdt->dsdt_ptr), dsdt_or_error.value()->h.length);
+}
+
 bool Parser::can_reboot()
 {
     auto fadt_or_error = Memory::map_typed<Structures::FADT>(m_fadt);
@@ -213,6 +234,7 @@ void Parser::access_generic_address(Structures::GenericAddressStructure const& s
 {
     switch ((GenericAddressStructure::AddressSpace)structure.address_space) {
     case GenericAddressStructure::AddressSpace::SystemIO: {
+#if ARCH(I386) || ARCH(X86_64)
         IOAddress address(structure.address);
         dbgln("ACPI: Sending value {:x} to {}", value, address);
         switch (structure.access_size) {
@@ -233,6 +255,7 @@ void Parser::access_generic_address(Structures::GenericAddressStructure const& s
             address.out(value, (8 << (structure.access_size - 1)));
             break;
         }
+#endif
         return;
     }
     case GenericAddressStructure::AddressSpace::SystemMemory: {

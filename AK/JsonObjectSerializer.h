@@ -38,11 +38,6 @@ public:
 
     JsonObjectSerializer(JsonObjectSerializer const&) = delete;
 
-    ~JsonObjectSerializer()
-    {
-        VERIFY(m_finished);
-    }
-
 #ifndef KERNEL
     ErrorOr<void> add(StringView key, JsonValue const& value)
     {
@@ -89,11 +84,11 @@ public:
         TRY(begin_item(key));
         if constexpr (IsLegacyBuilder<Builder>) {
             TRY(m_builder.try_append('"'));
-            TRY(m_builder.try_append_escaped_for_json(value));
+            TRY(m_builder.try_append_escaped_for_json({ value, strlen(value) }));
             TRY(m_builder.try_append('"'));
         } else {
             TRY(m_builder.append('"'));
-            TRY(m_builder.append_escaped_for_json(value));
+            TRY(m_builder.append_escaped_for_json({ value, strlen(value) }));
             TRY(m_builder.append('"'));
         }
         return {};
@@ -103,9 +98,9 @@ public:
     {
         TRY(begin_item(key));
         if constexpr (IsLegacyBuilder<Builder>)
-            TRY(m_builder.try_append(value ? "true" : "false"));
+            TRY(m_builder.try_append(value ? "true"sv : "false"sv));
         else
-            TRY(m_builder.append(value ? "true" : "false"));
+            TRY(m_builder.append(value ? "true"sv : "false"sv));
         return {};
     }
 
@@ -234,11 +229,11 @@ private:
         if constexpr (IsLegacyBuilder<Builder>) {
             TRY(m_builder.try_append('"'));
             TRY(m_builder.try_append_escaped_for_json(key));
-            TRY(m_builder.try_append("\":"));
+            TRY(m_builder.try_append("\":"sv));
         } else {
             TRY(m_builder.append('"'));
             TRY(m_builder.append_escaped_for_json(key));
-            TRY(m_builder.append("\":"));
+            TRY(m_builder.append("\":"sv));
         }
         return {};
     }

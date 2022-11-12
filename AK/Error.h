@@ -6,12 +6,11 @@
 
 #pragma once
 
-#include <AK/Optional.h>
 #include <AK/StringView.h>
 #include <AK/Try.h>
 #include <AK/Variant.h>
 
-#if defined(__serenity__) && defined(KERNEL)
+#if defined(AK_OS_SERENITY) && defined(KERNEL)
 #    include <LibC/errno_codes.h>
 #else
 #    include <errno.h>
@@ -24,7 +23,24 @@ class Error {
 public:
     static Error from_errno(int code) { return Error(code); }
     static Error from_syscall(StringView syscall_name, int rc) { return Error(syscall_name, rc); }
-    static Error from_string_literal(StringView string_literal) { return Error(string_literal); }
+    static Error from_string_view(StringView string_literal) { return Error(string_literal); }
+
+    // NOTE: Prefer `from_string_literal` when directly typing out an error message:
+    //
+    //     return Error::from_string_literal("Class: Some failure");
+    //
+    // If you need to return a static string based on a dynamic condition (like
+    // picking an error from an array), then prefer `from_string_view` instead.
+    template<size_t N>
+    ALWAYS_INLINE static Error from_string_literal(char const (&string_literal)[N])
+    {
+        return from_string_view(StringView { string_literal, N - 1 });
+    }
+
+    bool operator==(Error const& other) const
+    {
+        return m_code == other.m_code && m_string_literal == other.m_string_literal && m_syscall == other.m_syscall;
+    }
 
     bool is_errno() const { return m_code != 0; }
     bool is_syscall() const { return m_syscall; }
@@ -57,32 +73,36 @@ private:
 };
 
 template<typename T, typename ErrorType>
-class [[nodiscard]] ErrorOr final : public Variant<T, ErrorType> {
+class [[nodiscard]] ErrorOr {
 public:
-    using Variant<T, ErrorType>::Variant;
-
-    template<typename U>
-    ALWAYS_INLINE ErrorOr(U&& value) requires(!IsSame<RemoveCVReference<U>, ErrorOr<T>>)
-        : Variant<T, ErrorType>(forward<U>(value))
+    ErrorOr() requires(IsSame<T, Empty>)
+        : m_value_or_error(Empty {})
     {
     }
 
-#ifdef __serenity__
+    template<typename U>
+    ALWAYS_INLINE ErrorOr(U&& value) requires(!IsSame<RemoveCVReference<U>, ErrorOr<T, ErrorType>>)
+        : m_value_or_error(forward<U>(value))
+    {
+    }
+
+#ifdef AK_OS_SERENITY
     ErrorOr(ErrnoCode code)
-        : Variant<T, ErrorType>(Error::from_errno(code))
+        : m_value_or_error(Error::from_errno(code))
     {
     }
 #endif
 
     T& value()
     {
-        return this->template get<T>();
+        return m_value_or_error.template get<T>();
     }
-    T const& value() const { return this->template get<T>(); }
-    ErrorType& error() { return this->template get<ErrorType>(); }
-    ErrorType const& error() const { return this->template get<ErrorType>(); }
+    T const& value() const { return m_value_or_error.template get<T>(); }
 
-    bool is_error() const { return this->template has<ErrorType>(); }
+    ErrorType& error() { return m_value_or_error.template get<ErrorType>(); }
+    ErrorType const& error() const { return m_value_or_error.template get<ErrorType>(); }
+
+    bool is_error() const { return m_value_or_error.template has<ErrorType>(); }
 
     T release_value() { return move(value()); }
     ErrorType release_error() { return move(error()); }
@@ -94,41 +114,13 @@ public:
     }
 
 private:
-    // 'downcast' is fishy in this context. Let's hide it by making it private.
-    using Variant<T, ErrorType>::downcast;
+    Variant<T, ErrorType> m_value_or_error;
 };
 
-// Partial specialization for void value type
 template<typename ErrorType>
-class [[nodiscard]] ErrorOr<void, ErrorType> {
+class [[nodiscard]] ErrorOr<void, ErrorType> : public ErrorOr<Empty, ErrorType> {
 public:
-    ErrorOr(ErrorType error)
-        : m_error(move(error))
-    {
-    }
-
-#ifdef __serenity__
-    ErrorOr(ErrnoCode code)
-        : m_error(Error::from_errno(code))
-    {
-    }
-#endif
-
-    ErrorOr() = default;
-    ErrorOr(ErrorOr&& other) = default;
-    ErrorOr(ErrorOr const& other) = default;
-    ~ErrorOr() = default;
-
-    ErrorOr& operator=(ErrorOr&& other) = default;
-    ErrorOr& operator=(ErrorOr const& other) = default;
-
-    ErrorType& error() { return m_error.value(); }
-    bool is_error() const { return m_error.has_value(); }
-    ErrorType release_error() { return m_error.release_value(); }
-    void release_value() { }
-
-private:
-    Optional<ErrorType> m_error;
+    using ErrorOr<Empty, ErrorType>::ErrorOr;
 };
 
 }

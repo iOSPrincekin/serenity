@@ -7,7 +7,6 @@
 #pragma once
 
 #include <AK/CircularQueue.h>
-#include <AK/DoublyLinkedList.h>
 #include <AK/Types.h>
 #include <Kernel/API/KeyCode.h>
 #include <Kernel/API/MousePacket.h>
@@ -36,7 +35,7 @@ protected:
     // ^CharacterDevice
     virtual StringView class_name() const override { return "MouseDevice"sv; }
 
-    mutable Spinlock m_queue_lock;
+    mutable Spinlock m_queue_lock { LockRank::None };
     CircularQueue<MousePacket, 100> m_queue;
 };
 

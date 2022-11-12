@@ -28,10 +28,10 @@ RefPtr<Mesh> WavefrontOBJLoader::load(Core::File& file)
     // Start reading file line by line
     for (auto object_line : file.lines()) {
         // Ignore file comments
-        if (object_line.starts_with("#"))
+        if (object_line.starts_with('#'))
             continue;
 
-        if (object_line.starts_with("vt")) {
+        if (object_line.starts_with("vt"sv)) {
             auto tex_coord_line = object_line.split_view(' ');
             if (tex_coord_line.size() != 3) {
                 dbgln("Wavefront: Malformed TexCoord line. Aborting.");
@@ -44,7 +44,7 @@ RefPtr<Mesh> WavefrontOBJLoader::load(Core::File& file)
             continue;
         }
 
-        if (object_line.starts_with("vn")) {
+        if (object_line.starts_with("vn"sv)) {
             auto normal_line = object_line.split_view(' ');
             if (normal_line.size() != 4) {
                 dbgln("Wavefront: Malformed vertex normal line. Aborting.");
@@ -59,7 +59,7 @@ RefPtr<Mesh> WavefrontOBJLoader::load(Core::File& file)
         }
 
         // This line describes a vertex (a position in 3D space)
-        if (object_line.starts_with("v")) {
+        if (object_line.starts_with('v')) {
             auto vertex_line = object_line.split_view(' ');
             if (vertex_line.size() != 4) {
                 dbgln("Wavefront: Malformed vertex line. Aborting.");
@@ -74,7 +74,7 @@ RefPtr<Mesh> WavefrontOBJLoader::load(Core::File& file)
         }
 
         // This line describes a face (a collection of 3+ vertices, aka a triangle or polygon)
-        if (object_line.starts_with("f")) {
+        if (object_line.starts_with('f')) {
             auto face_line = object_line.substring_view(2).split_view(' ');
             auto number_of_vertices = face_line.size();
             if (number_of_vertices < 3) {
@@ -87,7 +87,7 @@ RefPtr<Mesh> WavefrontOBJLoader::load(Core::File& file)
             auto normal_indices = FixedArray<GLuint>::must_create_but_fixme_should_propagate_errors(number_of_vertices);
 
             for (size_t i = 0; i < number_of_vertices; ++i) {
-                auto vertex_parts = face_line.at(i).split_view('/', true);
+                auto vertex_parts = face_line.at(i).split_view('/', SplitBehavior::KeepEmpty);
                 vertex_indices[i] = get_index_value(vertex_parts[0]);
                 tex_coord_indices[i] = (vertex_parts.size() >= 2) ? get_index_value(vertex_parts[1]) : 0;
                 normal_indices[i] = (vertex_parts.size() >= 3) ? get_index_value(vertex_parts[2]) : 0;

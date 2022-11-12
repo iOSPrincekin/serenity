@@ -37,10 +37,7 @@ class VirtIOGraphicsAdapter final
     friend class VirtIOGPU3DDevice;
 
 public:
-    static NonnullRefPtr<VirtIOGraphicsAdapter> initialize(PCI::DeviceIdentifier const&);
-
-    // FIXME: There's a VirtIO VGA GPU variant, so we should consider that
-    virtual bool vga_compatible() const override { return false; }
+    static NonnullLockRefPtr<VirtIOGraphicsAdapter> initialize(PCI::DeviceIdentifier const&);
 
     virtual void initialize() override;
     void initialize_3d_device();
@@ -50,10 +47,25 @@ public:
     Graphics::VirtIOGPU::ResourceID allocate_resource_id(Badge<VirtIODisplayConnector>);
     Graphics::VirtIOGPU::ContextID allocate_context_id(Badge<VirtIODisplayConnector>);
 
+    ErrorOr<void> mode_set_resolution(Badge<VirtIODisplayConnector>, VirtIODisplayConnector&, size_t width, size_t height);
+    void set_dirty_displayed_rect(Badge<VirtIODisplayConnector>, VirtIODisplayConnector&, Graphics::VirtIOGPU::Protocol::Rect const& dirty_rect, bool main_buffer);
+    void flush_displayed_image(Badge<VirtIODisplayConnector>, VirtIODisplayConnector&, Graphics::VirtIOGPU::Protocol::Rect const& dirty_rect, bool main_buffer);
+    void transfer_framebuffer_data_to_host(Badge<VirtIODisplayConnector>, VirtIODisplayConnector&, Graphics::VirtIOGPU::Protocol::Rect const& rect, bool main_buffer);
+
 private:
+    ErrorOr<void> attach_physical_range_to_framebuffer(VirtIODisplayConnector& connector, bool main_buffer, size_t framebuffer_offset, size_t framebuffer_size);
+
     void flush_dirty_rectangle(Graphics::VirtIOGPU::ScanoutID, Graphics::VirtIOGPU::ResourceID, Graphics::VirtIOGPU::Protocol::Rect const& dirty_rect);
     struct Scanout {
-        RefPtr<VirtIODisplayConnector> display_connector;
+        struct PhysicalBuffer {
+            size_t framebuffer_offset { 0 };
+            Graphics::VirtIOGPU::Protocol::Rect dirty_rect {};
+            Graphics::VirtIOGPU::ResourceID resource_id { 0 };
+        };
+
+        LockRefPtr<VirtIODisplayConnector> display_connector;
+        PhysicalBuffer main_buffer;
+        PhysicalBuffer back_buffer;
     };
 
     VirtIOGraphicsAdapter(PCI::DeviceIdentifier const&, NonnullOwnPtr<Memory::Region> scratch_space_region);
@@ -64,6 +76,13 @@ private:
     virtual void handle_queue_update(u16 queue_index) override;
     u32 get_pending_events();
     void clear_pending_events(u32 event_bitmask);
+
+    // 2D framebuffer stuff
+    static ErrorOr<FlatPtr> calculate_framebuffer_size(size_t width, size_t height)
+    {
+        // VirtIO resources can only map on page boundaries!
+        return Memory::page_round_up(sizeof(u32) * width * height);
+    }
 
     // 3D Command stuff
     Graphics::VirtIOGPU::ContextID create_context();
@@ -100,12 +119,12 @@ private:
     // Note: Resource ID 0 is invalid, and we must not allocate 0 as the first resource ID.
     Atomic<u32> m_resource_id_counter { 1 };
     Atomic<u32> m_context_id_counter { 1 };
-    RefPtr<VirtIOGPU3DDevice> m_3d_device;
+    LockRefPtr<VirtIOGPU3DDevice> m_3d_device;
     bool m_has_virgl_support { false };
 
     // Synchronous commands
     WaitQueue m_outstanding_request;
-    Spinlock m_operation_lock;
+    Spinlock m_operation_lock { LockRank::None };
     NonnullOwnPtr<Memory::Region> m_scratch_space;
 };
 }

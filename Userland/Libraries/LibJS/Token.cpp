@@ -8,6 +8,7 @@
 #include "Token.h"
 #include <AK/Assertions.h>
 #include <AK/CharacterTypes.h>
+#include <AK/FloatingPointStringConversions.h>
 #include <AK/GenericLexer.h>
 #include <AK/StringBuilder.h>
 
@@ -79,7 +80,8 @@ double Token::double_value() const
                 return static_cast<double>(strtoul(value_string.characters() + 1, nullptr, 8));
         }
     }
-    return strtod(value_string.characters(), nullptr);
+    // This should always be a valid double
+    return value_string.to_double().release_value();
 }
 
 static u32 hex2int(char x)
@@ -205,7 +207,7 @@ String Token::string_value(StringValueStatus& status) const
         }
 
         lexer.retreat();
-        builder.append(lexer.consume_escaped_character('\\', "b\bf\fn\nr\rt\tv\v"));
+        builder.append(lexer.consume_escaped_character('\\', "b\bf\fn\nr\rt\tv\v"sv));
     }
     return builder.to_string();
 }
@@ -213,7 +215,7 @@ String Token::string_value(StringValueStatus& status) const
 // 12.8.6.2 Static Semantics: TRV, https://tc39.es/ecma262/#sec-static-semantics-trv
 String Token::raw_template_value() const
 {
-    return value().replace("\r\n", "\n", true).replace("\r", "\n", true);
+    return value().replace("\r\n"sv, "\n"sv, ReplaceMode::All).replace("\r"sv, "\n"sv, ReplaceMode::All);
 }
 
 bool Token::bool_value() const

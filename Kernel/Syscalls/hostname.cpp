@@ -10,7 +10,7 @@ namespace Kernel {
 
 ErrorOr<FlatPtr> Process::sys$gethostname(Userspace<char*> buffer, size_t size)
 {
-    VERIFY_NO_PROCESS_BIG_LOCK(this)
+    VERIFY_NO_PROCESS_BIG_LOCK(this);
     TRY(require_promise(Pledge::stdio));
     if (size > NumericLimits<ssize_t>::max())
         return EINVAL;
@@ -24,10 +24,11 @@ ErrorOr<FlatPtr> Process::sys$gethostname(Userspace<char*> buffer, size_t size)
 
 ErrorOr<FlatPtr> Process::sys$sethostname(Userspace<char const*> buffer, size_t length)
 {
-    VERIFY_NO_PROCESS_BIG_LOCK(this)
+    VERIFY_NO_PROCESS_BIG_LOCK(this);
     TRY(require_no_promises());
 
-    if (!is_superuser())
+    auto credentials = this->credentials();
+    if (!credentials->is_superuser())
         return EPERM;
     if (length > 64)
         return ENAMETOOLONG;

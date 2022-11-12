@@ -40,7 +40,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     TRY(Core::System::unveil("/res", "r"));
     TRY(Core::System::unveil("/bin", "r"));
     TRY(Core::System::unveil("/tmp", "rwc"));
-    TRY(Core::System::unveil("/proc/all", "r"));
+    TRY(Core::System::unveil("/sys/kernel/processes", "r"));
     TRY(Core::System::unveil("/etc/passwd", "r"));
     TRY(Core::System::unveil(nullptr, nullptr));
 
@@ -48,10 +48,10 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     pid_t pid;
 
     auto app = TRY(GUI::Application::try_create(arguments));
-    auto app_icon = TRY(GUI::Icon::try_create_default_icon("app-inspector"));
+    auto app_icon = TRY(GUI::Icon::try_create_default_icon("app-inspector"sv));
     if (gui_mode) {
     choose_pid:
-        auto process_chooser = TRY(GUI::ProcessChooser::try_create("Inspector", "Inspect", app_icon.bitmap_for_size(16)));
+        auto process_chooser = TRY(GUI::ProcessChooser::try_create("Inspector"sv, "Inspect"sv, app_icon.bitmap_for_size(16)));
         if (process_chooser->exec() == GUI::Dialog::ExecResult::Cancel)
             return 0;
         pid = process_chooser->pid();
@@ -65,13 +65,16 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     auto window = TRY(GUI::Window::try_create());
 
     if (pid == getpid()) {
-        GUI::MessageBox::show(window, "Cannot inspect Inspector itself!", "Error", GUI::MessageBox::Type::Error);
-        return 1;
+        GUI::MessageBox::show(window, "Cannot inspect Inspector itself!"sv, "Error"sv, GUI::MessageBox::Type::Error);
+        if (gui_mode)
+            goto choose_pid;
+        else
+            return 1;
     }
 
     RemoteProcess remote_process(pid);
     if (!remote_process.is_inspectable()) {
-        GUI::MessageBox::show(window, String::formatted("Process pid={} is not inspectable", remote_process.pid()), "Error", GUI::MessageBox::Type::Error);
+        GUI::MessageBox::show(window, String::formatted("Process pid={} is not inspectable", remote_process.pid()), "Error"sv, GUI::MessageBox::Type::Error);
         if (gui_mode) {
             goto choose_pid;
         } else {
@@ -79,7 +82,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
         }
     }
 
-    TRY(Desktop::Launcher::add_allowed_handler_with_only_specific_urls("/bin/Help", { URL::create_with_file_protocol("/usr/share/man/man1/Inspector.md") }));
+    TRY(Desktop::Launcher::add_allowed_handler_with_only_specific_urls("/bin/Help", { URL::create_with_file_scheme("/usr/share/man/man1/Inspector.md") }));
     TRY(Desktop::Launcher::seal_allowlist());
 
     window->set_title("Inspector");
@@ -90,8 +93,9 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     file_menu.add_action(GUI::CommonActions::make_quit_action([&](auto&) { app->quit(); }));
 
     auto& help_menu = window->add_menu("&Help");
+    help_menu.add_action(GUI::CommonActions::make_command_palette_action(window));
     help_menu.add_action(GUI::CommonActions::make_help_action([](auto&) {
-        Desktop::Launcher::open(URL::create_with_file_protocol("/usr/share/man/man1/Inspector.md"), "/bin/Help");
+        Desktop::Launcher::open(URL::create_with_file_scheme("/usr/share/man/man1/Inspector.md"), "/bin/Help");
     }));
     help_menu.add_action(GUI::CommonActions::make_about_action("Inspector", app_icon, window));
 
@@ -109,7 +113,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     auto& tree_view = splitter.add<GUI::TreeView>();
     tree_view.set_model(remote_process.object_graph_model());
     tree_view.set_activates_on_selection(true);
-    tree_view.set_fixed_width(286);
+    tree_view.set_preferred_width(286);
 
     auto& properties_tree_view = splitter.add<GUI::TreeView>();
     properties_tree_view.set_should_fill_selected_rows(true);
@@ -126,7 +130,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 
     auto properties_tree_view_context_menu = TRY(GUI::Menu::try_create("Properties Tree View"));
 
-    auto copy_bitmap = Gfx::Bitmap::try_load_from_file("/res/icons/16x16/edit-copy.png").release_value_but_fixme_should_propagate_errors();
+    auto copy_bitmap = Gfx::Bitmap::try_load_from_file("/res/icons/16x16/edit-copy.png"sv).release_value_but_fixme_should_propagate_errors();
     auto copy_property_name_action = GUI::Action::create("Copy Property Name", copy_bitmap, [&](auto&) {
         GUI::Clipboard::the().set_plain_text(properties_tree_view.selection().first().data().to_string());
     });

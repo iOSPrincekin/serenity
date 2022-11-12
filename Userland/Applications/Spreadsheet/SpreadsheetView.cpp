@@ -77,6 +77,16 @@ void InfinitelyScrollableTableView::mousemove_event(GUI::MouseEvent& event)
         sheet.disable_updates();
         ScopeGuard sheet_update_enabler { [&] { sheet.enable_updates(); } };
 
+        if (!is_dragging()) {
+            auto tooltip = model->data(index, static_cast<GUI::ModelRole>(SheetModel::Role::Tooltip));
+            if (tooltip.is_string()) {
+                set_tooltip(tooltip.as_string());
+                show_or_hide_tooltip();
+            } else {
+                set_tooltip({});
+            }
+        }
+
         m_is_hovering_cut_zone = false;
         m_is_hovering_extend_zone = false;
         if (selection().size() > 0 && !m_is_dragging_for_select) {
@@ -192,9 +202,9 @@ void InfinitelyScrollableTableView::mousemove_event(GUI::MouseEvent& event)
 
 void InfinitelyScrollableTableView::mousedown_event(GUI::MouseEvent& event)
 {
-    // Override the mouse event so that the the cell that is 'clicked' is not
+    // Override the mouse event so that the cell that is 'clicked' is not
     // the one right beneath the cursor but instead the one that is referred to
-    // when m_is_hovering_cut_zone as it can be the case that the user is targetting
+    // when m_is_hovering_cut_zone as it can be the case that the user is targeting
     // a cell yet be outside of its bounding box due to the select_padding.
     if (m_is_hovering_cut_zone || m_is_hovering_extend_zone) {
         if (m_is_hovering_cut_zone)

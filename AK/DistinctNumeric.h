@@ -67,10 +67,6 @@ public:
     {
         return this->m_value == other.m_value;
     }
-    constexpr bool operator!=(Self const& other) const
-    {
-        return this->m_value != other.m_value;
-    }
 
     // Only implemented when `Incr` is true:
     constexpr Self& operator++()
@@ -284,9 +280,9 @@ struct Formatter<DistinctNumeric<T, X, Incr, Cmp, Bool, Flags, Shift, Arith>> : 
 
 }
 
-#define TYPEDEF_DISTINCT_NUMERIC_GENERAL(T, Incr, Cmp, Bool, Flags, Shift, Arith, NAME) \
+#define AK_TYPEDEF_DISTINCT_NUMERIC_GENERAL(T, Incr, Cmp, Bool, Flags, Shift, Arith, NAME) \
     using NAME = DistinctNumeric<T, struct __##NAME##_tag, Incr, Cmp, Bool, Flags, Shift, Arith>;
-#define TYPEDEF_DISTINCT_ORDERED_ID(T, NAME) TYPEDEF_DISTINCT_NUMERIC_GENERAL(T, false, true, true, false, false, false, NAME)
+#define AK_TYPEDEF_DISTINCT_ORDERED_ID(T, NAME) AK_TYPEDEF_DISTINCT_NUMERIC_GENERAL(T, false, true, true, false, false, false, NAME)
 // TODO: Further type aliases?
 
 template<typename T, typename X, auto... Args>

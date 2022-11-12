@@ -5,12 +5,14 @@
  */
 
 #include <LibWeb/HTML/HTMLAreaElement.h>
+#include <LibWeb/HTML/Window.h>
 
 namespace Web::HTML {
 
 HTMLAreaElement::HTMLAreaElement(DOM::Document& document, DOM::QualifiedName qualified_name)
     : HTMLElement(document, move(qualified_name))
 {
+    set_prototype(&Bindings::cached_web_prototype(realm(), "HTMLAreaElement"));
 }
 
 HTMLAreaElement::~HTMLAreaElement() = default;
@@ -30,7 +32,14 @@ String HTMLAreaElement::hyperlink_element_utils_href() const
 
 void HTMLAreaElement::set_hyperlink_element_utils_href(String href)
 {
-    set_attribute(HTML::AttributeNames::href, move(href));
+    MUST(set_attribute(HTML::AttributeNames::href, move(href)));
+}
+
+// https://html.spec.whatwg.org/multipage/interaction.html#dom-tabindex
+i32 HTMLAreaElement::default_tab_index_value() const
+{
+    // See the base function for the spec comments.
+    return 0;
 }
 
 }
