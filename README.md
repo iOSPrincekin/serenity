@@ -170,7 +170,14 @@ CMake Error at CMakeLists.txt:23 (message):
 gdbserver args:
 
 ```
--ex "set arch i386:intel" -ex "show remotetimeout" -ex "set remotetimeout 15000" -ex "show remotetimeout" -ex "set confirm off" -ex "add-symbol-file /Users/lee/Desktop/Computer_Systems/serenity/Meta/../cmake-build-default/Kernel/Kernel -o 0xc0200000" -ex "--eval-command=\"shell sleep 5\"" -ex "file /Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/Kernel/Prekernel/Prekernel32"
+-ex "set arch i386:intel" -ex "show remotetimeout" -ex "set remotetimeout 15000" -ex "show remotetimeout" -ex "set confirm off" -ex "add-symbol-file /Users/lee/Desktop/Computer_Systems/serenity/Meta/../cmake-build-default/Kernel/Kernel -o 0xc0200000" -ex "--eval-command=\"shell sleep 5\"" -ex "file /Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/Kernel/Prekernel/Prekernel32" 
+
+```
+
+
+```
+
+-ex "set arch i386:intel" -ex "set confirm off" -ex "add-symbol-file /Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/Kernel/Prekernel/Prekernel32" -ex "file /Users/lee/Desktop/Computer_Systems/serenity/Meta/../cmake-build-default/Kernel/Kernel -o 0xc0200000" -ex "source /Users/lee/Desktop/Computer_Systems/serenity/Meta/serenity_gdb.py" -ex "shell sleep 5"
 
 ```
 
@@ -239,3 +246,26 @@ add-symbol-file /Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default
 ```
 
 才可以正确加载用户程序的调试信息，进行调试SystemServer程序
+
+### 6.Evaluation hung: add-symbol-file /Users/lee/Desktop/Computer_Systems/serenity/cmake-build-default/Kernel/Kernel -o 0xc0200000 This may be caused by something like a deadlock or an infinite loop. To prevent this from happening when variables are calculated, please toggle 'Enable value renderers' off.
+
+
+（ctrl + shift + a） and typing "registry" and then enter. And then adjusting the "cidr.debugger.timeout.eveluate" setting to a larger，默认是30000ms（30s），可调大（ref：detail）
+
+
+https://www.jetbrains.com/help/clion/configuring-debugger-options.html#gdb-startup
+
+You can control the GDB timeout values by setting the corresponding properties in CLion registry.
+
+Press ⇧ ⌘ A or choose Help | Find Action from the main menu. In the popup that opens, start typing Registry, select the corresponding item and press ⏎.
+
+![](./pic/6_1.png)
+
+In the dialog that opens, start typing cidr.debugger.timeout. Click the Value field of the highlighted string and enter the timeout value in milliseconds.
+
+
+![](./pic/6_2.png)
+
+
+
+
