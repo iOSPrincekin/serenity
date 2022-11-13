@@ -647,7 +647,7 @@ void ELF::DynamicLinker::linker_main(String&& main_program_path, int main_progra
         auto entry_point = main_executable_loader->image().entry();
         if (main_executable_loader->is_dynamic()) {
             FlatPtr base_address = main_executable_loader->base_address().get();
-            dbgln("linker_main,name:{},base_address: {:p}",main_program_name, base_address);
+            dbgln("linker_main,name:{},base_address: {:p}",main_program_path, base_address);
             entry_point = entry_point.offset(base_address);
         }
         return (EntryPointFunction)(entry_point.as_ptr());

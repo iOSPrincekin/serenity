@@ -110,7 +110,7 @@ bool perform_relative_relocations(FlatPtr base_address)
                     relocated_address += base_address;
                     __builtin_memcpy(patch_ptr, &relocated_address, sizeof(FlatPtr));
 #else
-                    patch_relr(patch_ptr);
+                    patch_relr(patch_ptr+j);
 #endif
                 }
 
