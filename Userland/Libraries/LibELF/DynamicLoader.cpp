@@ -151,6 +151,8 @@ RefPtr<DynamicObject> DynamicLoader::map()
     VERIFY(!m_base_address.is_null());
 
     m_dynamic_object = DynamicObject::create(m_filepath, m_base_address, m_dynamic_section_address);
+    dbgln_if(DYNAMIC_LOAD_DEBUG,"DynamicLoader::map():{},base_address: {}",m_dynamic_object->filepath(), m_dynamic_object->base_address());
+
     m_dynamic_object->set_tls_offset(m_tls_offset);
     m_dynamic_object->set_tls_size(m_tls_size_of_current_object);
 
@@ -546,7 +548,8 @@ DynamicLoader::RelocationResult DynamicLoader::do_relocation(const ELF::DynamicO
             }
         }
         VERIFY(symbol_location != m_dynamic_object->base_address());
-        *patch_ptr = symbol_location.get();
+        FlatPtr symbol_location_adr = symbol_location.get();
+        *patch_ptr = symbol_location_adr;
         break;
     }
 #if ARCH(I386)

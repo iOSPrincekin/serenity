@@ -168,9 +168,11 @@ static Result<void, DlErrorMessage> map_dependencies(String const& path)
 {
     VERIFY(path.starts_with('/'));
 
-    dbgln_if(DYNAMIC_LOAD_DEBUG, "mapping dependencies for: {}", path);
 
     auto const& parent_object = (*s_loaders.get(path))->dynamic_object();
+
+    VirtualAddress base_address = parent_object.base_address();
+    dbgln_if(DYNAMIC_LOAD_DEBUG, "mapping dependencies for: {},base_address:{}", path,base_address);
 
     for (auto const& needed_name : get_dependencies(path)) {
         dbgln_if(DYNAMIC_LOAD_DEBUG, "needed library: {}", needed_name.characters());

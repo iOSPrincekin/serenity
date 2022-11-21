@@ -31,7 +31,8 @@ ErrorOr<FlatPtr> Process::sys$ioctl(int fd, unsigned request, FlatPtr arg)
         });
         return 0;
     }
-    TRY(description->file().ioctl(*description, request, arg));
+    File& file = description->file();
+    TRY(file.ioctl(*description, request, arg));
     return 0;
 }
 
