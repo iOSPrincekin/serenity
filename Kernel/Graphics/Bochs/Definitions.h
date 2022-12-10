@@ -41,7 +41,7 @@ struct [[gnu::packed]] DISPIInterface {
     u16 index_id;
     u16 xres;
     u16 yres;
-    u16 bpp;
+    u16 bpp;  //在当前色彩模式下每个象素点在地址空间中所占的二进制位数;
     u16 enable;
     u16 bank;
     u16 virt_width;

@@ -51,7 +51,10 @@ UNMAP_AFTER_INIT ErrorOr<void> BochsGraphicsAdapter::initialize_adapter(PCI::Dev
     if (pci_device_identifier.revision_id().value() == 0x0 || virtual_box_hardware) {
         m_display_connector = BochsDisplayConnector::must_create(PhysicalAddress(PCI::get_BAR0(pci_device_identifier.address()) & 0xfffffff0), bar0_space_size, virtual_box_hardware);
     } else {
-        auto registers_mapping = TRY(Memory::map_typed_writable<BochsDisplayMMIORegisters volatile>(PhysicalAddress(PCI::get_BAR2(pci_device_identifier.address()) & 0xfffffff0)));
+        Kernel::PCI::Address pci_device_identifier_address = pci_device_identifier.address();
+        u32 bar2Address = PCI::get_BAR2(pci_device_identifier_address);
+        PhysicalAddress pa = PhysicalAddress(bar2Address & 0xfffffff0);
+        auto registers_mapping = TRY(Memory::map_typed_writable<BochsDisplayMMIORegisters volatile>(pa));
         VERIFY(registers_mapping.region);
         m_display_connector = QEMUDisplayConnector::must_create(PhysicalAddress(PCI::get_BAR0(pci_device_identifier.address()) & 0xfffffff0), bar0_space_size, move(registers_mapping));
     }
