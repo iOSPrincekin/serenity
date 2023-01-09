@@ -45,6 +45,7 @@ ErrorOr<FlatPtr> Process::sys$socket(int domain, int type, int protocol)
         auto socket = TRY(Socket::create(domain, type, protocol));
         auto description = TRY(OpenFileDescription::try_create(socket));
         setup_socket_fd(fds, fd_allocation.fd, move(description), type);
+        dbgln("Process::sys$socket:socket:{},socket->socketNo():{},fd_allocation.fd:{}",socket,socket->socketNo(),fd_allocation.fd);
         return fd_allocation.fd;
     });
 }
@@ -116,6 +117,9 @@ ErrorOr<FlatPtr> Process::sys$accept4(Userspace<Syscall::SC_accept4_params const
             return EINTR;
     }
 
+    dbgln("Process::sys$accept4:accepting_socket_fd:{},accepted_socket->socketNo():{},accepting_socket_description->socket():{},fd_allocation.fd:{},socket.socketNo():{}",accepting_socket_fd,accepted_socket->socketNo(),accepting_socket_description->socket(),fd_allocation.fd,socket.socketNo());
+
+
     if (user_address) {
         sockaddr_un address_buffer {};
         address_size = min(sizeof(sockaddr_un), static_cast<size_t>(address_size));
@@ -153,6 +157,7 @@ ErrorOr<FlatPtr> Process::sys$connect(int sockfd, Userspace<sockaddr const*> use
         return ENOTSOCK;
     auto& socket = *description->socket();
     REQUIRE_PROMISE_FOR_SOCKET_DOMAIN(socket.domain());
+    dbgln("Process::sys$connect:sockfd:{},socket:{},socket.socketNo():{}",sockfd,description->socket(),socket.socketNo());
     TRY(socket.connect(credentials(), *description, user_address, user_address_size));
     return 0;
 }

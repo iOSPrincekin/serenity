@@ -486,7 +486,7 @@ public:
     RefPtr<Core::Notifier> notifier() { return m_helper.notifier(); }
 
     virtual ~LocalSocket() { close(); }
-
+    PosixSocketHelper m_helper { Badge<LocalSocket> {} };
 private:
     LocalSocket() = default;
 
@@ -501,7 +501,7 @@ private:
         };
     }
 
-    PosixSocketHelper m_helper { Badge<LocalSocket> {} };
+
 };
 
 // Buffered stream wrappers

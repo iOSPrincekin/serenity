@@ -24,6 +24,13 @@ public:
     static ErrorOr<NonnullLockRefPtr<Socket>> create(int domain, int type, int protocol);
     virtual ~Socket() override;
 
+    int socketNo() {
+        return _socketNo;
+    };
+
+    void setSocketNo(int socketNo){
+        _socketNo = socketNo;
+    }
     int domain() const { return m_domain; }
     int type() const { return m_type; }
     int protocol() const { return m_protocol; }
@@ -181,6 +188,8 @@ private:
     ErrorOr<void> m_so_error;
 
     NonnullLockRefPtrVector<Socket> m_pending;
+
+    int _socketNo {-1};
 };
 
 // This is a special variant of TRY() that also updates the socket's SO_ERROR field on error.

@@ -212,7 +212,209 @@ m_framebuffer_fd 句柄为 10
 
 -GNinja -DDYNAMIC_LOAD_DEBUG=ON -DENABLE_EXTRA_KERNEL_DEBUG_SYMBOLS=ON -DCMAKE_TOOLCHAIN_FILE=$CMakeProjectDir$/Build/i686/CMakeToolchain.txt -DCMAKE_PREFIX_PATH=$CMakeProjectDir$/Build/lagom-install -DSERENITY_ARCH=i686
 
-### gdb调试
+
+#### 5.3 关于 windowServer 创建 Messages::WindowServer::MessageID::CreateMenu: 消息的过程
+
+1.SytemServer 创建 Terminal 应用  可以从 /Users/lee/Desktop/Computer_Systems/serenity/Base/home/anon/.config/SystemServer.ini 文件中看到；
+
+2.Terminal 使用 ErrorOr<NonnullOwnPtr<LocalSocket>> LocalSocket::connect(String const& path) 创建一个本地连接和 windowServer 中的     m_window_server = MUST(IPC::MultiServer<ConnectionFromClient>::try_create("/tmp/portal/window")); 进行链接；
+
+3.连接完成后，即accept以后创建一个新的connection，其socketid = accept 返回的 22（例子），    
+
+```
+
+ErrorOr<NonnullOwnPtr<Stream::LocalSocket>> LocalServer::accept()
+{
+    VERIFY(m_listening);
+    sockaddr_un un;
+    socklen_t un_size = sizeof(un);
+#ifndef AK_OS_MACOS
+    int accepted_fd = ::accept4(m_fd, (sockaddr*)&un, &un_size, SOCK_NONBLOCK | SOCK_CLOEXEC);
+    dbgln("LocalServer::accept:this:{},m_fd:{},accepted_fd:{}",this,m_fd,accepted_fd);
+#else
+    int accepted_fd = ::accept(m_fd, (sockaddr*)&un, &un_size);
+#endif
+    if (accepted_fd < 0) {
+        return Error::from_syscall("accept"sv, -errno);
+    }
+
+#ifdef AK_OS_MACOS
+    int option = 1;
+    ioctl(m_fd, FIONBIO, &option);
+    (void)fcntl(accepted_fd, F_SETFD, FD_CLOEXEC);
+#endif
+
+    return Stream::LocalSocket::adopt_fd(accepted_fd);
+}
+
+    m_server->on_accept = [&](auto client_socket) {
+            auto client_id = ++m_next_client_id;
+            (void)IPC::new_client_connection<ConnectionFromClientType>(move(client_socket), client_id);
+        };
+```
+4.创建 client_socket 时会设置好 通知，加入 当前线中的 static thread_local HashTable<Notifier*>* s_notifiers; 中，等待message
+
+```
+ErrorOr<NonnullOwnPtr<LocalSocket>> LocalSocket::adopt_fd(int fd)
+{
+    if (fd < 0) {
+        return Error::from_errno(EBADF);
+    }
+
+    auto socket = TRY(adopt_nonnull_own_or_enomem(new (nothrow) LocalSocket()));
+    socket->m_helper.set_fd(fd);
+    socket->setup_notifier();
+    return socket;
+}
+
+void PosixSocketHelper::setup_notifier()
+{
+    if (!m_notifier)
+        m_notifier = Core::Notifier::construct(m_fd, Core::Notifier::Read);
+}
+
+Notifier::Notifier(int fd, unsigned event_mask, Object* parent)
+    : Object(parent)
+    , m_fd(fd)
+    , m_event_mask(event_mask)
+{
+    set_enabled(true);
+}
+
+void Notifier::set_enabled(bool enabled)
+{
+    if (m_fd < 0)
+        return;
+    if (enabled)
+        Core::EventLoop::register_notifier({}, *this);
+    else
+        Core::EventLoop::unregister_notifier({}, *this);
+}
+
+```
+
+5.Terminal 应用发送  #2  0x06677ed1 in WindowServerProxy<WindowClientEndpoint, WindowServerEndpoint>::async_create_menu (this=0x41904d0, menu_id=1976194937, menu_title=...) at ./cmake-build-default/Userland/Services/WindowServer/WindowServerEndpoint.h:8721 消息；
+
+6.eventLoop接收到 Notifier 消息可读，通知 ConnectionFromClient 进行读取
+
+```
+
+    ConnectionFromClient(ServerStub& stub, NonnullOwnPtr<Core::Stream::LocalSocket> socket, int client_id)
+        : IPC::Connection<ServerEndpoint, ClientEndpoint>(stub, move(socket))
+        , ClientEndpoint::template Proxy<ServerEndpoint>(*this, {})
+        , m_client_id(client_id)
+    {
+        VERIFY(this->socket().is_open());
+        this->socket().on_ready_to_read = [this] {
+            // FIXME: Do something about errors.
+            (void)this->drain_messages_from_peer();
+        };
+    }
+
+ErrorOr<void> ConnectionBase::drain_messages_from_peer()
+{
+    auto bytes = TRY(read_as_much_as_possible_from_socket_without_blocking());
+
+    size_t index = 0;
+    try_parse_messages(bytes, index);
+
+    if (index < bytes.size()) {
+        // Sometimes we might receive a partial message. That's okay, just stash away
+        // the unprocessed bytes and we'll prepend them to the next incoming message
+        // in the next run of this function.
+        auto remaining_bytes = TRY(ByteBuffer::copy(bytes.span().slice(index)));
+        if (!m_unprocessed_bytes.is_empty()) {
+            shutdown();
+            return Error::from_string_literal("drain_messages_from_peer: Already have unprocessed bytes");
+        }
+        m_unprocessed_bytes = move(remaining_bytes);
+    }
+
+    if (!m_unprocessed_messages.is_empty()) {
+        m_deferred_invoker->schedule([strong_this = NonnullRefPtr(*this)]() mutable {
+            strong_this->handle_messages();
+        });
+    }
+    return {};
+}
+
+void ConnectionBase::handle_messages()
+{
+    auto messages = move(m_unprocessed_messages);
+    for (auto& message : messages) {
+        if (message.endpoint_magic() == m_local_endpoint_magic) {
+            if (auto response = m_local_stub.handle(message)) {
+                if (auto result = post_message(*response); result.is_error()) {
+                    dbgln("IPC::ConnectionBase::handle_messages: {}", result.error());
+                }
+            }
+        }
+    }
+}
+
+    virtual void try_parse_messages(Vector<u8> const& bytes, size_t& index) override
+    {
+        u32 message_size = 0;
+        for (; index + sizeof(message_size) < bytes.size(); index += message_size) {
+            memcpy(&message_size, bytes.data() + index, sizeof(message_size));
+            if (message_size == 0 || bytes.size() - index - sizeof(uint32_t) < message_size)
+                break;
+            index += sizeof(message_size);
+            auto remaining_bytes = ReadonlyBytes { bytes.data() + index, message_size };
+            if (auto message = LocalEndpoint::decode_message(remaining_bytes, fd_passing_socket())) {
+                m_unprocessed_messages.append(message.release_nonnull());
+            } else if (auto message = PeerEndpoint::decode_message(remaining_bytes, fd_passing_socket())) {
+                m_unprocessed_messages.append(message.release_nonnull());
+            } else {
+                dbgln("Failed to parse a message");
+                break;
+            }
+        }
+    }
+
+
+```
+
+
+7.if (auto message = LocalEndpoint::decode_message(remaining_bytes, fd_passing_socket())) { 对消息进行解析
+ 
+```
+
+ static OwnPtr<IPC::Message> decode_message(ReadonlyBytes buffer, [[maybe_unused]] Core::Stream::LocalSocket& socket)
+    {
+        InputMemoryStream stream { buffer };
+        u32 message_endpoint_magic = 0;
+        stream >> message_endpoint_magic;
+        if (stream.handle_any_error()) {
+
+            return {};
+        }
+
+        if (message_endpoint_magic != 2938215075) {
+
+            return {};
+        }
+
+        i32 message_id = 0;
+        stream >> message_id;
+        if (stream.handle_any_error()) {
+
+            return {};
+        }
+
+        OwnPtr<IPC::Message> message;
+        switch (message_id) {
+
+        case (int)Messages::WindowServer::MessageID::CreateMenu:
+            message = Messages::WindowServer::CreateMenu::decode(stream, socket);
+            break;
+
+}
+```
+
+
+
+### 6.gdb调试
 
 #### 
 
@@ -267,5 +469,16 @@ In the dialog that opens, start typing cidr.debugger.timeout. Click the Value fi
 ![](./pic/6_2.png)
 
 
+
+
+### lldb调试
+
+#### 1.设置target
+
+lldb /Users/lee/Desktop/Computer_Systems/serenity/Build/i686/Kernel/Kernel
+
+#### 2.添加符号文件
+
+ target modules load --file /Users/lee/Desktop/Computer_Systems/serenity/Build/i686/Kernel/Kernel --slide  0xc0200000
 
 

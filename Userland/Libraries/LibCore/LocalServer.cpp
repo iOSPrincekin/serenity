@@ -41,7 +41,7 @@ ErrorOr<void> LocalServer::take_over_from_system_server(String const& socket_pat
     auto const parsed_path = TRY(Core::SessionManagement::parse_path_with_sid(socket_path));
     auto socket = TRY(take_over_socket_from_system_server(parsed_path));
     m_fd = TRY(socket->release_fd());
-
+    dbgln("LocalServer::take_over_from_system_server:this:{},m_fd:{},socket_path:{}",this,m_fd,socket_path);
     m_listening = true;
     setup_notifier();
     return {};
@@ -74,6 +74,7 @@ bool LocalServer::listen(String const& address)
 
 #ifdef SOCK_NONBLOCK
     m_fd = socket(AF_LOCAL, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
+    dbgln("LocalServer::listen:this:{},m_fd:{}",this,m_fd);
 #else
     m_fd = socket(AF_LOCAL, SOCK_STREAM, 0);
     int option = 1;
@@ -120,6 +121,7 @@ ErrorOr<NonnullOwnPtr<Stream::LocalSocket>> LocalServer::accept()
     socklen_t un_size = sizeof(un);
 #ifndef AK_OS_MACOS
     int accepted_fd = ::accept4(m_fd, (sockaddr*)&un, &un_size, SOCK_NONBLOCK | SOCK_CLOEXEC);
+    dbgln("LocalServer::accept:this:{},m_fd:{},accepted_fd:{}",this,m_fd,accepted_fd);
 #else
     int accepted_fd = ::accept(m_fd, (sockaddr*)&un, &un_size);
 #endif

@@ -211,7 +211,7 @@ ErrorOr<void> LocalSocket::connect(Credentials const& credentials, OpenFileDescr
         return set_so_error(EINTR);
     }
 
-    dbgln_if(LOCAL_SOCKET_DEBUG, "LocalSocket({}) connect({}) status is {}", this, *m_path, to_string(setup_state()));
+    dbgln_if(LOCAL_SOCKET_DEBUG, "LocalSocket::connect:LocalSocket({}) connect({}) status is {},this->socketNo():{},peer:{},peer->socket_path():{},peer->socketNo():{}", this, *m_path, to_string(setup_state()),this->socketNo(), peer,peer->socket_path(),peer->socketNo());
 
     if (!has_flag(unblock_flags, Thread::OpenFileDescriptionBlocker::BlockFlags::Connect)) {
         set_connect_side_role(Role::None);

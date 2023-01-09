@@ -25,13 +25,13 @@ public:
 
     Function<void(NonnullOwnPtr<Stream::LocalSocket>)> on_accept;
     Function<void(Error)> on_accept_error;
-
+    int m_fd { -1 };
 private:
     explicit LocalServer(Object* parent = nullptr);
 
     void setup_notifier();
 
-    int m_fd { -1 };
+
     bool m_listening { false };
     RefPtr<Notifier> m_notifier;
 };

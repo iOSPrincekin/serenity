@@ -19,11 +19,18 @@ namespace Kernel {
 
 ErrorOr<NonnullLockRefPtr<Socket>> Socket::create(int domain, int type, int protocol)
 {
+    static int socketNo = 0;
     switch (domain) {
-    case AF_LOCAL:
-        return TRY(LocalSocket::try_create(type & SOCK_TYPE_MASK));
-    case AF_INET:
-        return IPv4Socket::create(type & SOCK_TYPE_MASK, protocol);
+    case AF_LOCAL: {
+        ErrorOr<NonnullLockRefPtr<Socket>> socket = TRY(LocalSocket::try_create(type & SOCK_TYPE_MASK));
+        socket.value().ptr()->setSocketNo(socketNo++);
+        return socket;
+    }
+    case AF_INET: {
+        ErrorOr<NonnullLockRefPtr<Socket>> socket = IPv4Socket::create(type & SOCK_TYPE_MASK, protocol);
+        socket.value().ptr()->setSocketNo(socketNo++);
+        return socket;
+    }
     default:
         return EAFNOSUPPORT;
     }

@@ -560,7 +560,7 @@ ErrorOr<NonnullOwnPtr<LocalSocket>> LocalSocket::connect(String const& path)
     socket->m_helper.set_fd(fd);
 
     TRY(connect_local(fd, path));
-
+    dbgln("LocalSocket::connect:fd:{},path:{},socket:{},fd():{},m_helper.fd():{},",fd,path,socket,socket,socket->m_helper.fd());
     socket->setup_notifier();
     return socket;
 }
