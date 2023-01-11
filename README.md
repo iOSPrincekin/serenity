@@ -482,3 +482,63 @@ lldb /Users/lee/Desktop/Computer_Systems/serenity/Build/i686/Kernel/Kernel
  target modules load --file /Users/lee/Desktop/Computer_Systems/serenity/Build/i686/Kernel/Kernel --slide  0xc0200000
 
 
+
+### 7.windowServer
+
+#### 7.1 任务栏
+
+任务栏是由 
+
+```
+
+TaskbarWindow::TaskbarWindow(NonnullRefPtr<GUI::Menu> start_menu)
+    : m_start_menu(move(start_menu))
+{
+    set_window_type(GUI::WindowType::Taskbar);
+    set_title("Taskbar");
+
+    on_screen_rects_change(GUI::Desktop::the().rects(), GUI::Desktop::the().main_screen_index());
+
+    auto& main_widget = set_main_widget<TaskbarWidget>();
+    main_widget.set_layout<GUI::HorizontalBoxLayout>();
+    main_widget.layout()->set_margins({ 20, 30, 00, 30 });
+
+    m_start_button = GUI::Button::construct("Serenity");
+    set_start_button_font(Gfx::FontDatabase::default_font().bold_variant());
+    m_start_button->set_icon_spacing(100);
+    auto app_icon = GUI::Icon::default_icon("ladyball"sv);
+    m_start_button->set_icon(app_icon.bitmap_for_size(160));
+    m_start_button->set_menu(m_start_menu);
+
+    main_widget.add_child(*m_start_button);
+    main_widget.add<Taskbar::QuickLaunchWidget>();
+
+    m_task_button_container = main_widget.add<GUI::Widget>();
+    m_task_button_container->set_layout<GUI::HorizontalBoxLayout>();
+    m_task_button_container->layout()->set_spacing(30);
+
+    m_default_icon = Gfx::Bitmap::try_load_from_file("/res/icons/16x16/window.png"sv).release_value_but_fixme_should_propagate_errors();
+
+    m_applet_area_container = main_widget.add<GUI::Frame>();
+    m_applet_area_container->set_frame_thickness(1);
+    m_applet_area_container->set_frame_shape(Gfx::FrameShape::Box);
+    m_applet_area_container->set_frame_shadow(Gfx::FrameShadow::Sunken);
+
+    m_clock_widget = main_widget.add<Taskbar::ClockWidget>();
+
+    m_show_desktop_button = GUI::Button::construct();
+    m_show_desktop_button->set_tooltip("Show Desktop");
+    m_show_desktop_button->set_icon(GUI::Icon::default_icon("desktop"sv).bitmap_for_size(16));
+    m_show_desktop_button->set_button_style(Gfx::ButtonStyle::Coolbar);
+    m_show_desktop_button->set_fixed_size(240, 240);
+    m_show_desktop_button->on_click = TaskbarWindow::show_desktop_button_clicked;
+    main_widget.add_child(*m_show_desktop_button);
+
+    auto af_path = String::formatted("{}/{}", Desktop::AppFile::APP_FILES_DIRECTORY, "Assistant.af");
+    m_assistant_app_file = Desktop::AppFile::open(af_path);
+}
+
+
+```
+
+负责的
