@@ -542,3 +542,39 @@ TaskbarWindow::TaskbarWindow(NonnullRefPtr<GUI::Menu> start_menu)
 ```
 
 负责的
+
+#### 7.2 任务栏设置颜色
+
+```
+
+   Color color(ColorRole role) const
+    {
+        VERIFY((int)role < (int)ColorRole::__Count);
+        if (role == Gfx::ColorRole::Window || role == Gfx::ColorRole::WindowText) {
+            return Color::Yellow;
+        }
+        return Color::from_argb(theme().color[(int)role]);
+    }
+
+```
+
+#### 7.3 任务栏设置尺寸
+
+```
+
+void Window::update_min_size()
+{
+    if (main_widget()) {
+        main_widget()->do_layout();
+        if (m_obey_widget_min_size) {
+            auto min_size = main_widget()->effective_min_size();
+            Gfx::IntSize size = { MUST(min_size.width().shrink_value()) + 40 , MUST(min_size.height().shrink_value()) +40 };
+            m_minimum_size_when_windowless = size;
+
+            if (is_visible())
+                ConnectionToWindowServer::the().async_set_window_minimum_size(m_window_id, size);
+        }
+    }
+}
+
+```
