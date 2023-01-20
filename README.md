@@ -578,3 +578,38 @@ void Window::update_min_size()
 }
 
 ```
+
+#### 7.4 设置任务栏位置
+
+```
+
+Gfx::IntPoint Compositor::window_transition_offset(Window& window)
+{
+    return {20,20};
+    if (WindowManager::is_stationary_window_type(window.type()))
+        return {};
+
+    if (window.is_moving_to_another_stack())
+        return {};
+
+    return window.window_stack().transition_offset();
+}
+
+ErrorOr<int> serenity_main(Main::Arguments arguments){
+
+    window->show();
+
+
+
+    window->make_window_manager(
+        WindowServer::WMEventMask::WindowStateChanges
+        | WindowServer::WMEventMask::WindowRemovals
+        | WindowServer::WMEventMask::WindowIconChanges
+        | WindowServer::WMEventMask::WorkspaceChanges);
+
+    window->set_rect({0,0,100,100});
+    window->set_base_size({100,100});
+    window->set_minimum_size({100,100});
+    return app->exec();
+}
+```

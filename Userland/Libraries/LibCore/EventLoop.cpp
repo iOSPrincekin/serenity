@@ -466,7 +466,7 @@ size_t EventLoop::pump(WaitMode mode)
         auto receiver = queued_event.receiver.strong_ref();
         auto& event = *queued_event.event;
         if (receiver)
-            dbgln_if(EVENTLOOP_DEBUG, "Core::EventLoop: {} event {}", *receiver, event.type());
+            dbgln_if(EVENTLOOP_DEBUG, "Core::EventLoop: {} event: {} event.type(): {}", *receiver, queued_event.event, event.type());
 
         if (!receiver) {
             switch (event.type()) {
@@ -504,7 +504,7 @@ size_t EventLoop::pump(WaitMode mode)
 void EventLoop::post_event(Object& receiver, NonnullOwnPtr<Event>&& event, ShouldWake should_wake)
 {
     Threading::MutexLocker lock(m_private->lock);
-    dbgln_if(EVENTLOOP_DEBUG, "Core::EventLoop::post_event: ({}) << receiver={}, event={}", m_queued_events.size(), receiver, event);
+    dbgln_if(EVENTLOOP_DEBUG, "Core::EventLoop::post_event: ({}) << receiver={}, event={},event->type():{}", m_queued_events.size(), receiver, event, event->type());
     m_queued_events.empend(receiver, move(event));
     if (should_wake == ShouldWake::Yes)
         wake();
