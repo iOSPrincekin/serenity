@@ -614,7 +614,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments){
 }
 ```
 
-
+通过          new_rect = {new_rect.x(),new_rect.y()-60,new_rect.width(),new_rect.height()}; 设置位置和尺寸
 ```
 
 
@@ -705,7 +705,7 @@ void ConnectionFromClient::create_window(i32 window_id, Gfx::IntRect const& rect
 
 ```
 
-set_window_minimum_size 也会调整位置
+set_window_minimum_size 也会调整位置，首先触发     if (window.width() < window.minimum_size().width() || window.height() < window.minimum_size().height()) { 条件
 ```
 
 
@@ -737,6 +737,24 @@ void ConnectionFromClient::set_window_minimum_size(i32 window_id, Gfx::IntSize c
         if (did_size_clamp)
             window.refresh_client_size();
     }
+}
+
+```
+
+通过 apply_minimum_size 重新设置      rect.set_width(new_width);
+    rect.set_height(new_height); 的宽和高
+```
+
+bool Window::apply_minimum_size(Gfx::IntRect& rect)
+{
+    int new_width = max(m_minimum_size.width(), rect.width());
+    int new_height = max(m_minimum_size.height(), rect.height());
+    bool did_size_clamp = new_width != rect.width() || new_height != rect.height();
+
+    rect.set_width(new_width);
+    rect.set_height(new_height);
+
+    return did_size_clamp;
 }
 
 ```
