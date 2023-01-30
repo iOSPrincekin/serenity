@@ -613,3 +613,130 @@ ErrorOr<int> serenity_main(Main::Arguments arguments){
     return app->exec();
 }
 ```
+
+
+```
+
+
+void ConnectionFromClient::create_window(i32 window_id, Gfx::IntRect const& rect,
+    bool auto_position, bool has_alpha_channel, bool minimizable, bool closeable, bool resizable,
+    bool fullscreen, bool frameless, bool forced_shadow, float opacity,
+    float alpha_hit_threshold, Gfx::IntSize const& base_size, Gfx::IntSize const& size_increment,
+    Gfx::IntSize const& minimum_size, Optional<Gfx::IntSize> const& resize_aspect_ratio, i32 type, i32 mode,
+    String const& title, i32 parent_window_id, Gfx::IntRect const& launch_origin_rect)
+{
+    if (rect.is_null() || auto_position == true || forced_shadow == true || minimum_size.is_null() ||
+        launch_origin_rect.is_null()) {
+
+    }
+    Window* parent_window = nullptr;
+    if (parent_window_id) {
+        parent_window = window_from_id(parent_window_id);
+        if (!parent_window) {
+            did_misbehave("CreateWindow with bad parent_window_id");
+            return;
+        }
+    }
+
+    if (type < 0 || type >= (i32)WindowType::_Count) {
+        did_misbehave("CreateWindow with a bad type");
+        return;
+    }
+
+    if (mode < 0 || mode >= (i32)WindowMode::_Count) {
+        did_misbehave("CreateWindow with a bad mode");
+        return;
+    }
+
+    if (m_windows.contains(window_id)) {
+        did_misbehave("CreateWindow with already-used window ID");
+        return;
+    }
+
+    auto window = Window::construct(*this, (WindowType)type, (WindowMode)mode, window_id, minimizable, closeable, frameless, resizable, fullscreen, parent_window);
+
+    window->set_forced_shadow(forced_shadow);
+
+    if (!launch_origin_rect.is_empty())
+    {
+
+    }
+
+    window->set_has_alpha_channel(has_alpha_channel);
+    window->set_title(title);
+    if (!fullscreen) {
+        Gfx::IntRect new_rect = rect;
+        if (auto_position && window->is_movable()) {
+            new_rect = { WindowManager::the().get_recommended_window_position({ 100, 100 }), rect.size() };
+            window->set_default_positioned(true);
+        }
+        new_rect = {new_rect.x(),new_rect.y()-60,new_rect.width(),new_rect.height()};
+        auto system_window_minimum_size = calculate_minimum_size_for_window(window);
+        window->set_minimum_size({ max(minimum_size.width(), system_window_minimum_size.width()),
+            max(minimum_size.height(), system_window_minimum_size.height()) });
+        bool did_size_clamp = window->apply_minimum_size(new_rect);
+        window->set_rect(new_rect);
+
+        if (did_size_clamp)
+            window->refresh_client_size();
+    }
+    if (window->type() == WindowType::Desktop) {
+        window->set_rect(Screen::bounding_rect());
+        window->recalculate_rect();
+    }
+    window->set_opacity(opacity);
+    window->set_alpha_hit_threshold(alpha_hit_threshold);
+    window->set_size_increment(size_increment);
+    window->set_base_size(base_size);
+    if (resize_aspect_ratio.has_value() && !resize_aspect_ratio.value().is_null())
+        window->set_resize_aspect_ratio(resize_aspect_ratio);
+    window->invalidate(true, true);
+    if (window->type() == WindowType::Applet)
+        AppletManager::the().add_applet(*window);
+    m_windows.set(window_id, move(window));
+}
+
+
+```
+
+创建窗口时就已经调整好了位置，调整位置和大小
+```
+        new_rect = {new_rect.x(),new_rect.y()-60,new_rect.width(),new_rect.height()};
+
+```
+
+set_window_minimum_size 也会调整位置
+```
+
+
+void ConnectionFromClient::set_window_minimum_size(i32 window_id, Gfx::IntSize const& size)
+{
+    auto it = m_windows.find(window_id);
+    if (it == m_windows.end()) {
+        did_misbehave("SetWindowMinimumSize: Bad window ID");
+        return;
+    }
+    auto& window = *(*it).value;
+    if (window.is_fullscreen()) {
+        dbgln("ConnectionFromClient: Ignoring SetWindowMinimumSize request for fullscreen window");
+        return;
+    }
+
+    auto system_window_minimum_size = calculate_minimum_size_for_window(window);
+    window.set_minimum_size({ max(size.width(), system_window_minimum_size.width()),
+        max(size.height(), system_window_minimum_size.height()) });
+
+    dbgln("ConnectionFromClient::set_window_minimum_size--window.title()--::{},window.window_id()--:{},window.rect()--{},window.minimum_size()--::{}",window.title(),window.window_id(),window.rect(),window.minimum_size());
+    if (window.width() < window.minimum_size().width() || window.height() < window.minimum_size().height()) {
+        // New minimum size is larger than the current window size, resize accordingly.
+        auto new_rect = window.rect();
+        bool did_size_clamp = window.apply_minimum_size(new_rect);
+        window.set_rect(new_rect);
+        window.request_update(window.rect());
+
+        if (did_size_clamp)
+            window.refresh_client_size();
+    }
+}
+
+```
