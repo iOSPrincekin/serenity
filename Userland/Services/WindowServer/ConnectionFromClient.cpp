@@ -22,6 +22,8 @@
 #include <stdio.h>
 #include <unistd.h>
 
+//#define debug_ConnectionFromClient
+
 namespace WindowServer {
 
 HashMap<int, NonnullRefPtr<ConnectionFromClient>>* s_connections;
@@ -469,13 +471,16 @@ Messages::WindowServer::SetWindowRectResponse ConnectionFromClient::set_window_r
         did_misbehave(String::formatted("SetWindowRect: Bad window sizing(width={}, height={}), dimension exceeds INT16_MAX", rect.width(), rect.height()).characters());
         return nullptr;
     }
-
+#ifdef debug_ConnectionFromClient
     Gfx::IntRect old_rect = window.rect();
+#endif
     if (rect.location() != window.rect().location()) {
         window.set_default_positioned(false);
     }
     auto new_rect = rect;
+#ifdef debug_ConnectionFromClient
     dbgln("ConnectionFromClient::set_window_rect--window.title()--::{},window.window_id()--:{},old_rect--::{},new_rect--::{}",window.title(),window.window_id(),old_rect,new_rect);
+#endif
     window.apply_minimum_size(new_rect);
     window.set_rect(new_rect);
     window.request_update(window.rect());
