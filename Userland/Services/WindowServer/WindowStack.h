@@ -9,6 +9,7 @@
 
 #include "Window.h"
 
+//#define Debug_WindowStack
 namespace WindowServer {
 
 class Compositor;
@@ -89,11 +90,20 @@ private:
 };
 
 template<typename Callback>
-inline IterationDecision WindowStack::for_each_visible_window_of_type_from_back_to_front(WindowType type, Callback callback, bool ignore_highlight)
+IterationDecision WindowStack::for_each_visible_window_of_type_from_back_to_front(WindowType type, Callback callback, bool ignore_highlight)
 {
     auto* highlight_window = this->highlight_window();
     bool do_highlight_window_at_end = false;
     for (auto& window : m_windows) {
+#ifdef Debug_WindowStack
+        bool b = (!ignore_highlight && &window == highlight_window);
+        dbgln("WindowStack::for_each_visible_window_of_type_from_back_to_front:window.title():{},window.window_id():{},window.is_visible():{},window.is_minimized():{},(!ignore_highlight && &window == highlight_window):{},window.minimum_size():{},window.size():{}",window.title(),window.window_id(),window.is_visible(),window.is_minimized(),b,window.minimum_size(),window.size());
+        String window_title = window.title();
+        if (window_title == "Taskbar")
+        {
+            dbgln("WindowStack::for_each_visible_window_of_type_from_back_to_front:window_title == Taskbar");
+        }
+#endif
         if (!window.is_visible())
             continue;
         if (window.is_minimized())
@@ -115,7 +125,7 @@ inline IterationDecision WindowStack::for_each_visible_window_of_type_from_back_
 }
 
 template<typename Callback>
-inline IterationDecision WindowStack::for_each_visible_window_of_type_from_front_to_back(WindowType type, Callback callback, bool ignore_highlight)
+IterationDecision WindowStack::for_each_visible_window_of_type_from_front_to_back(WindowType type, Callback callback, bool ignore_highlight)
 {
     auto* highlight_window = this->highlight_window();
     if (!ignore_highlight && highlight_window && highlight_window->type() == type && highlight_window->is_visible() && !highlight_window->is_minimized()) {
@@ -126,6 +136,15 @@ inline IterationDecision WindowStack::for_each_visible_window_of_type_from_front
     auto reverse_iterator = m_windows.rbegin();
     for (; reverse_iterator != m_windows.rend(); ++reverse_iterator) {
         auto& window = *reverse_iterator;
+#ifdef Debug_WindowStack
+        bool b = (!ignore_highlight && &window == highlight_window);
+        dbgln("WindowStack::for_each_visible_window_of_type_from_front_to_back:window.title():{},window.window_id():{},window.is_visible():{},window.is_minimized():{},(!ignore_highlight && &window == highlight_window):{},window.minimum_size():{},window.size():{}",window.title(),window.window_id(),window.is_visible(),window.is_minimized(),b,window.minimum_size(),window.size());
+        String window_title = window.title();
+        if (window_title == "Taskbar")
+        {
+            dbgln("WindowStack::for_each_visible_window_of_type_from_front_to_back:window_title == Taskbar");
+        }
+#endif
         if (!window.is_visible())
             continue;
         if (window.is_minimized())
@@ -141,7 +160,7 @@ inline IterationDecision WindowStack::for_each_visible_window_of_type_from_front
 }
 
 template<typename Callback>
-inline void WindowStack::for_each_window(Callback callback)
+void WindowStack::for_each_window(Callback callback)
 {
     auto reverse_iterator = m_windows.rbegin();
     for (; reverse_iterator != m_windows.rend(); ++reverse_iterator) {
@@ -152,7 +171,7 @@ inline void WindowStack::for_each_window(Callback callback)
 }
 
 template<typename Callback>
-inline IterationDecision WindowStack::for_each_window_from_back_to_front(Callback callback)
+IterationDecision WindowStack::for_each_window_from_back_to_front(Callback callback)
 {
     for (auto& window : m_windows) {
         IterationDecision decision = callback(window);
@@ -163,7 +182,7 @@ inline IterationDecision WindowStack::for_each_window_from_back_to_front(Callbac
 }
 
 template<typename Callback>
-inline IterationDecision WindowStack::for_each_window_of_type_from_front_to_back(WindowType type, Callback callback, bool ignore_highlight)
+IterationDecision WindowStack::for_each_window_of_type_from_front_to_back(WindowType type, Callback callback, bool ignore_highlight)
 {
     auto* highlight_window = this->highlight_window();
     if (!ignore_highlight && highlight_window && highlight_window->type() == type && highlight_window->is_visible()) {

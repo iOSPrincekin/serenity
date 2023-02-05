@@ -131,12 +131,16 @@ void Window::set_title(String const& title)
     if (m_title == title)
         return;
     m_title = title;
+    int type = (int)this->type();
+    dbgln("Window::set_title:{},this->m_window_id:{},this->type():{},this->rect():{},this->m_minimum_size:{}",this->title(),this->m_window_id,type,this->rect(),this->m_minimum_size);
     frame().invalidate_titlebar();
     WindowManager::the().notify_title_changed(*this);
 }
 
+
 void Window::set_rect(Gfx::IntRect const& rect)
 {
+    dbgln("Window::set_rect--window.title()--::{},window.window_id()--:{},m_rect--{},rect--::{}",this->title(),this->window_id(),m_rect,rect);
     if (m_rect == rect)
         return;
     auto old_rect = m_rect;

@@ -368,7 +368,7 @@ void Compositor::compose()
         auto window_rect = window.rect().translated(transition_offset);
         auto frame_rects = frame_rect.shatter(window_rect);
 
-        dbgln_if(COMPOSE_DEBUG, "  window {} frame rect: {}", window.title(), frame_rect);
+        dbgln_if(COMPOSE_DEBUG, "  window.title:{} ，transition_offset:{},frame rect: {},window_rect:{},frame_rects:{}", window.title(), transition_offset, frame_rect,window_rect,frame_rects);
 
         RefPtr<Gfx::Bitmap> backing_store = window.backing_store();
         auto compose_window_rect = [&](Screen& screen, Gfx::Painter& painter, const Gfx::IntRect& rect) {

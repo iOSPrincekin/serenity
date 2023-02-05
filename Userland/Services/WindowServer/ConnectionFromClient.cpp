@@ -470,10 +470,12 @@ Messages::WindowServer::SetWindowRectResponse ConnectionFromClient::set_window_r
         return nullptr;
     }
 
+    Gfx::IntRect old_rect = window.rect();
     if (rect.location() != window.rect().location()) {
         window.set_default_positioned(false);
     }
     auto new_rect = rect;
+    dbgln("ConnectionFromClient::set_window_rect--window.title()--::{},window.window_id()--:{},old_rect--::{},new_rect--::{}",window.title(),window.window_id(),old_rect,new_rect);
     window.apply_minimum_size(new_rect);
     window.set_rect(new_rect);
     window.request_update(window.rect());
@@ -540,6 +542,7 @@ void ConnectionFromClient::set_window_minimum_size(i32 window_id, Gfx::IntSize c
     window.set_minimum_size({ max(size.width(), system_window_minimum_size.width()),
         max(size.height(), system_window_minimum_size.height()) });
 
+    dbgln("ConnectionFromClient::set_window_minimum_size--window.title()--::{},window.window_id()--:{},window.rect()--{},window.minimum_size()--::{}",window.title(),window.window_id(),window.rect(),window.minimum_size());
     if (window.width() < window.minimum_size().width() || window.height() < window.minimum_size().height()) {
         // New minimum size is larger than the current window size, resize accordingly.
         auto new_rect = window.rect();

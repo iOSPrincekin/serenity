@@ -25,6 +25,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+//#define Debug_Connection
 namespace IPC {
 
 // NOTE: This is an abstraction to allow using IPC::Connection without a Core::EventLoop.
@@ -138,7 +139,9 @@ protected:
                 break;
             index += sizeof(message_size);
             auto remaining_bytes = ReadonlyBytes { bytes.data() + index, message_size };
+#ifdef Debug_Connection
             dbgln("try_parse_messages:{},m_socket:{},m_helper.fd():{},m_fd_passing_socket:{}",this,this->m_socket,this->m_socket->m_helper.fd(),this->m_fd_passing_socket.ptr());
+#endif
             if (auto message = LocalEndpoint::decode_message(remaining_bytes, fd_passing_socket())) {
                 m_unprocessed_messages.append(message.release_nonnull());
             } else if (auto message = PeerEndpoint::decode_message(remaining_bytes, fd_passing_socket())) {
